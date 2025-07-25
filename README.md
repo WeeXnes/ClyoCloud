@@ -1,31 +1,29 @@
-# Nuxt.js Website
+# ClyoCloud
 
-This is a web application built with Nuxt.js, designed to provide a platform for user interaction, content creation, and community features. It includes functionalities for user authentication, post management, commenting, and search.
+ClyoCloud is a modern, open-source file sharing platform built with Nuxt.js and Tailwind CSS. It provides a simple and intuitive interface for uploading, managing, and sharing files.
+
+
 
 ## Features
 
-*   **User Authentication:** Register, login, and logout functionalities.
-*   **User Profiles:** View and manage user-specific information.
-*   **Post Management:** Create, view, and interact with posts.
-*   **Commenting System:** Add comments to posts.
-*   **Search Functionality:** Search for content within the application.
-*   **Contact Form:** A dedicated page for users to send messages.
-*   **Markdown Support:** Content rendering using Markdown.
+*   **File Upload:** Upload files with a simple drag-and-drop interface.
+*   **File Management:** View, rename, and delete files.
+*   **File Sharing:** Generate shareable links for files.
+*   **Responsive Design:** A fully responsive design that works on all devices.
+*   **Dark Mode:** A beautiful dark mode for late-night file browsing.
+*   **File Previews:** Previews for common file types.
 
 ## Technologies Used
 
 *   **Frontend:**
-    *   Nuxt.js (Vue.js Framework)
-    *   Tailwind CSS (for styling)
-    *   DaisyUI (Tailwind CSS Component Library)
+    *   [Nuxt.js](https://nuxt.com/) (Vue.js Framework)
+    *   [Tailwind CSS](https://tailwindcss.com/) (for styling)
+    *   [Iconify](https://iconify.design/) (for icons)
 *   **Backend:**
-    *   Node.js with Express.js (via Nuxt server routes)
-    *   MongoDB (via Mongoose for database interaction)
+    *   [Node.js](https://nodejs.org/) with [Express.js](https://expressjs.com/) (via Nuxt server routes)
 *   **Other:**
-    *   bcryptjs (for password hashing)
-    *   jsonwebtoken (for authentication tokens)
-    *   markdown-it (for Markdown parsing)
-    *   axios (HTTP client)
+    *   [TypeScript](https://www.typescriptlang.org/)
+    *   [Sass](https://sass-lang.com/)
 
 ## Getting Started
 
@@ -35,14 +33,13 @@ Follow these steps to set up and run the project locally.
 
 *   Node.js (LTS version recommended)
 *   npm (Node Package Manager) or Yarn
-*   MongoDB instance (local or cloud-hosted)
 
 ### Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://git.weexnes.dev/WeeXnes/website
-    cd website
+    git clone https://git.weexnes.dev/WeeXnes/clyocloud
+    cd clyocloud
     ```
 2.  **Install dependencies:**
     ```bash
@@ -55,12 +52,7 @@ Follow these steps to set up and run the project locally.
 
 ### Configuration
 
-Create a `.env` file in the root directory of the project and add your environment variables, such as your MongoDB connection string and JWT secret:
-
-```
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-```
+Create a `.env` file in the root directory of the project and add your environment variables.
 
 ### Running the Development Server
 
@@ -96,21 +88,6 @@ or
 yarn preview
 ```
 
-For a full production build and preview:
-
-```bash
-npm run quick-preview
-```
-
-### Production Deployment (PM2)
-
-The `package.json` includes a script for production deployment using PM2:
-
-```bash
-npm run production-build
-```
-This script stops all PM2 processes, deletes them, builds the Nuxt application, and then starts it using PM2. Ensure PM2 is installed globally (`npm install -g pm2`).
-
 ## Project Structure
 
 ```
@@ -124,10 +101,17 @@ This script stops all PM2 processes, deletes them, builds the Nuxt application, 
 ├── middleware/             # Nuxt middleware
 ├── pages/                  # Vue pages/routes
 ├── public/                 # Static assets
-├── server/                 # Backend API routes, models, and utilities
+├── server/                 # Backend API routes, models, and plugins
 │   ├── api/                # API endpoints
-│   ├── models/             # Mongoose schemas
-│   ├── plugins/            # Server-side plugins
-│   └── util/               # Server-side utilities (e.g., database connection)
-└── styles/                 # Global styles
+│   ├── models/             # Data models
+│   └── plugins/            # Server-side plugins
+└── types/                  # TypeScript types
 ```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a pull request or open an issue.
+
+## License
+
+This project is licensed under the **MIT License**.
