@@ -220,7 +220,10 @@ const hasThumbnail = (filename: string) => {
 }
 
 const getThumbnailUrl = (filename: string) => {
-  return `https://placehold.co/600x400`
+  const url = useRequestURL();
+  const baseUrl = url.origin;
+  const subpath = useRoute().params.path;
+  return `${baseUrl}/thumbnail/${subpath}/${encodeURIComponent(filename)}`
 }
 
 const onFileClick = (file: File) => {

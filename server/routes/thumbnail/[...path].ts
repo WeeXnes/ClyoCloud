@@ -26,8 +26,8 @@ export default defineEventHandler(async (event) => {
     const requestedThumbnail = resolve(join(thumbnailPath, decodedPath + '.jpg'))
     const requestedFile = resolve(join(storagePath, decodedPath))
 
-    console.log(`Requested thumbnail: ${requestedThumbnail}`)
-    console.log(`Requested file: ${requestedFile}`)
+    //console.log(`Requested thumbnail: ${requestedThumbnail}`)
+    //console.log(`Requested file: ${requestedFile}`)
 
     // Security check to prevent directory traversal
     if (!requestedThumbnail.startsWith(resolve(thumbnailPath)) || !requestedFile.startsWith(resolve(storagePath))) {
@@ -38,14 +38,16 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    // Check if the original file is a supported video type
+    // Check if the original file is a supported type
     const contentType = mime.lookup(requestedFile)
-    const supportedTypes = ['video/mp4', 'application/mp4']
+    const supportedVideoTypes = ['video/mp4', 'application/mp4']
+    const supportedImageTypes = ['image/png', 'image/jpeg', 'image/gif']
+    const supportedTypes = [...supportedVideoTypes, ...supportedImageTypes]
     if (!contentType || !supportedTypes.includes(contentType)) {
         console.error(`Unsupported file type: ${contentType}`)
         throw createError({
             statusCode: 400,
-            statusMessage: 'Unsupported file type. Only MP4 is supported'
+            statusMessage: 'Unsupported file type. Only MP4, PNG, JPEG, and GIF are supported'
         })
     }
 
@@ -54,7 +56,7 @@ export default defineEventHandler(async (event) => {
         try {
             const thumbnailStats = await stat(requestedThumbnail)
             if (thumbnailStats.isFile()) {
-                console.log(`Serving existing thumbnail: ${requestedThumbnail}`)
+                //console.log(`Serving existing thumbnail: ${requestedThumbnail}`)
                 setHeader(event, 'Content-Type', 'image/jpeg')
                 setHeader(event, 'Content-Length', thumbnailStats.size)
                 setHeader(event, 'Content-Disposition', 'inline')
@@ -62,7 +64,7 @@ export default defineEventHandler(async (event) => {
             }
         } catch (error) {
             // Thumbnail doesn't exist, continue to generate
-            console.log(`Thumbnail not found, generating new one: ${requestedThumbnail}`)
+            //console.log(`Thumbnail not found, generating new one: ${requestedThumbnail}`)
         }
 
         // Verify original file exists
@@ -78,17 +80,56 @@ export default defineEventHandler(async (event) => {
         // Create thumbnail directory if it doesn't exist
         await execAsync(`mkdir -p "${path.dirname(requestedThumbnail)}"`)
 
-        // Generate thumbnail using ffmpeg
-        const ffmpegCommand = `ffmpeg -i "${requestedFile}" -vf "thumbnail,scale=320:180" -frames:v 1 "${requestedThumbnail}" -y`
-        try {
-            await execAsync(ffmpegCommand)
-            console.log(`Thumbnail generated successfully: ${requestedThumbnail}`)
-        } catch (ffmpegError) {
-            console.error(`Error generating thumbnail: ${ffmpegError}`)
-            throw createError({
-                statusCode: 500,
-                statusMessage: 'Failed to generate thumbnail'
-            })
+        // Handle images and videos differently
+        if (supportedImageTypes.includes(contentType)) {
+            // For images, check dimensions using ffprobe
+            let needsResize = true
+            try {
+                const ffprobeCommand = `ffprobe -v error -show_entries stream=width,height -of json "${requestedFile}"`
+                const { stdout } = await execAsync(ffprobeCommand)
+                const data = JSON.parse(stdout)
+                const { width, height } = data.streams[0] || {}
+                if (width && height && width <= 320 && height <= 180) {
+                    needsResize = false
+                    //console.log(`Image is small enough (${width}x${height}), serving directly: ${requestedFile}`)
+                }
+            } catch (ffprobeError) {
+                console.warn(`Error checking image dimensions, proceeding with resize: ${ffprobeError}`)
+            }
+
+            if (!needsResize) {
+                // Serve original image directly
+                setHeader(event, 'Content-Type', contentType)
+                setHeader(event, 'Content-Length', fileStats.size)
+                setHeader(event, 'Content-Disposition', 'inline')
+                return createReadStream(requestedFile)
+            }
+
+            // Resize image using ffmpeg
+            const ffmpegCommand = `ffmpeg -i "${requestedFile}" -vf "scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:(ow-iw)/2:(oh-ih)/2" "${requestedThumbnail}" -y`
+            try {
+                await execAsync(ffmpegCommand)
+                console.log(`Image thumbnail generated successfully: ${requestedThumbnail}`)
+            } catch (ffmpegError) {
+                console.error(`Error generating image thumbnail: ${ffmpegError}`)
+                throw createError({
+                    statusCode: 500,
+                    statusMessage: 'Failed to generate image thumbnail'
+                })
+            }
+        } else {
+            // Generate video thumbnail using ffmpeg, seeking to 5 seconds
+            const ffmpegCommand = `ffmpeg -i "${requestedFile}" -ss 5 -vf "thumbnail,scale=320:180" -frames:v 1 "${requestedThumbnail}" -y`
+            try {
+                await execAsync(ffmpegCommand)
+                console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
+            } catch (ffmpegError) {
+                console.error(`Error generating video thumbnail: ${ffmpegError}`)
+                throw createError({
+                    statusCode: 500,
+                    statusMessage: 'Failed to generate video thumbnail'
+                })
+            }
         }
 
         // Verify and serve the generated thumbnail
