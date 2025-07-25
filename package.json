@@ -1,0 +1,29 @@
+{
+  "name": "website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview"
+  },
+  "dependencies": {
+    "@nuxt/icon": "^1.10.3",
+    "@nuxtjs/sitemap": "^7.4.3",
+    "@nuxtjs/tailwindcss": "^6.13.1",
+    "@tailwindcss/typography": "^0.5.16",
+    "bcryptjs": "^3.0.0",
+    "daisyui": "^4.12.23",
+    "dotenv": "^16.6.1",
+    "jsonwebtoken": "^9.0.2",
+    "nuxt": "^3.15.4",
+    "uuid": "^11.0.5",
+    "vue": "latest",
+    "vue-router": "latest"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.8",
+    "sass": "^1.85.1"
+  }
+}

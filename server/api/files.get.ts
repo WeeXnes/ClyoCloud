@@ -1,0 +1,75 @@
+import { defineEventHandler, getQuery, createError } from 'h3'
+import fs from 'fs/promises'
+import path from 'path'
+import type { File, FileMeta } from '~/types/File'
+
+export default defineEventHandler(async (event): Promise<File[]> => {
+    try {
+        const config = useRuntimeConfig()
+        const storagePath = config.storagePath
+
+        const query = getQuery(event)
+        const subPath = query.path ? query.path.toString() : ''
+
+        console.log("--------------------")
+        console.log(storagePath)
+
+        console.log("--------------------")
+        console.log(subPath)
+
+        const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '')
+        const fullPath = path.join(storagePath, safeSubPath)
+
+        const fileNames = await fs.readdir(fullPath)
+
+        const filteredFileNames = fileNames.filter(name => !name.endsWith('.cloudinfo'))
+
+        const files = await Promise.all(
+            filteredFileNames.map(async (name) => {
+                const filePath = path.join(fullPath, name)
+                const stats = await fs.stat(filePath)
+                const extension = path.extname(name)
+
+                const cloudInfoFileName = `${name}.cloudinfo`
+                const cloudInfoPath = path.join(fullPath, cloudInfoFileName)
+                let meta: FileMeta
+
+                try {
+                    await fs.access(cloudInfoPath)
+                    const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8')
+                    meta = JSON.parse(cloudInfoContent) as FileMeta
+                } catch {
+                    meta = {
+                        tags: [],
+                    } as FileMeta
+
+                    await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')
+                }
+
+                return {
+                    name,
+                    size: stats.size,
+                    type: extension,
+                    lastModified: stats.mtime.getTime(),
+                    isFolder: stats.isDirectory(),
+                    meta: meta
+                }
+            })
+        )
+
+        files.sort((a, b) => {
+            if (a.isFolder !== b.isFolder) {
+                return a.isFolder ? -1 : 1 // Folders first
+            }
+            return a.name.localeCompare(b.name) // Alphabetical within type
+        })
+
+        return files
+    } catch (error) {
+        console.error('Error reading files:', error)
+        throw createError({
+            statusCode: 500,
+            statusMessage: 'Could not list files',
+        })
+    }
+})
