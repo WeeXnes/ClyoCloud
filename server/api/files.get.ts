@@ -11,12 +11,6 @@ export default defineEventHandler(async (event): Promise<File[]> => {
         const query = getQuery(event)
         const subPath = query.path ? query.path.toString() : ''
 
-        console.log("--------------------")
-        console.log(storagePath)
-
-        console.log("--------------------")
-        console.log(subPath)
-
         const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '')
         const fullPath = path.join(storagePath, safeSubPath)
 

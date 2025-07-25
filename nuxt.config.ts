@@ -7,7 +7,8 @@ export default defineNuxtConfig({
     url: 'https://weexnes.dev',
   },
   runtimeConfig: {
-    storagePath: process.env.STORAGE_PATH
+    storagePath: process.env.STORAGE_PATH,
+    thumbnailPath: process.env.THUMBNAIL_PATH
   },
   router: {
     options: {
