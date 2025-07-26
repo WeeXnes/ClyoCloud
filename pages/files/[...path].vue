@@ -163,7 +163,13 @@
             </p>
             <p v-if="isVideoFile(selectedFile.name) && !selectedFile.isFolder">
               <span class="font-medium">Preview:</span>
-              <video controls class="mt-2 w-full h-40 object-contain rounded-lg" style="aspect-ratio: 16 / 9;">
+              <video
+                  id="previewVideo"
+                  :key="selectedFile.name"
+                  controls
+                  class="mt-2 w-full h-40 object-contain rounded-lg"
+                  style="aspect-ratio: 16 / 9;"
+              >
                 <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
@@ -177,7 +183,7 @@
         <div class="modal-action">
           <label class="btn btn-sm" @click="downloadFile(selectedFile)">Download</label>
           <label class="btn btn-sm" @click="copyFileLinkStatic(selectedFile)">Copy Link</label>
-          <label for="file-info-modal" class="btn btn-sm">Close</label>
+          <label for="file-info-modal" class="btn btn-sm" @click="closeFileModal">Close</label>
         </div>
       </div>
     </div>
@@ -345,6 +351,15 @@ const copyFileLinkStatic = (file: File) => {
 
 const downloadFile = (file: File) => {
   window.location.href = getStaticUrl(file)
+}
+
+const closeFileModal = () => {
+  const videoEl = document.getElementById('previewVideo') as HTMLVideoElement
+  if (videoEl) {
+    videoEl.pause()
+    videoEl.currentTime = 0
+  }
+  selectedFile.value = null
 }
 </script>
 
