@@ -53,9 +53,9 @@ export default defineEventHandler(async (event): Promise<File[]> => {
 
         files.sort((a, b) => {
             if (a.isFolder !== b.isFolder) {
-                return a.isFolder ? -1 : 1 // Folders first
+                return a.isFolder ? -1 : 1
             }
-            return a.name.localeCompare(b.name) // Alphabetical within type
+            return a.name.localeCompare(b.name)
         })
 
         return files

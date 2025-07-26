@@ -17,13 +17,11 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    // Decode the filePath to handle URL-encoded characters
     const decodedPath = decodeURIComponent(filePath)
     console.log(`Requested file path: ${decodedPath}`) // Debug log
 
     const resolvedPath = resolve(join(storagePath, decodedPath))
 
-    // Security check to prevent directory traversal
     if (!resolvedPath.startsWith(resolve(storagePath))) {
         console.error(`Access denied: Resolved path ${resolvedPath} is outside storage directory ${storagePath}`)
         throw createError({
@@ -60,7 +58,6 @@ export default defineEventHandler(async (event) => {
         if (inlineTypes.includes(contentType)) {
             setHeader(event, 'Content-Disposition', 'inline')
         } else {
-            // Encode the filename in Content-Disposition to handle spaces
             const encodedFileName = encodeURIComponent(path.basename(resolvedPath))
             setHeader(event, 'Content-Disposition', `attachment; filename*=UTF-8''${encodedFileName}`)
         }

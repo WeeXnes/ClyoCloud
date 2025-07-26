@@ -155,7 +155,20 @@
                     class="badge badge-sm text-white inline-block ml-2"
                     :style="{ backgroundColor: tag.color }"> {{ tag.name }} </span>
             </p>
-            <p v-if="hasThumbnail(selectedFile.name) && !selectedFile.isFolder">
+            <p v-if="isVideoFile(selectedFile.name) && !selectedFile.isFolder">
+              <span class="font-medium">Preview:</span>
+              <video
+                  id="previewVideo"
+                  :key="selectedFile.name"
+                  controls
+                  class="mt-2 w-full h-40 object-contain rounded-lg"
+                  style="aspect-ratio: 16 / 9;"
+              >
+                <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </p>
+            <p v-else-if="hasThumbnail(selectedFile.name) && !selectedFile.isFolder">
               <span class="font-medium">Preview:</span>
               <img :src="getThumbnailUrl(selectedFile.name)" class="mt-2 w-full h-40 object-cover rounded-lg" alt="File preview" style="aspect-ratio: 16 / 9;" />
             </p>
@@ -164,7 +177,7 @@
         <div class="modal-action">
           <label class="btn btn-sm" @click="downloadFile(selectedFile)">Download</label>
           <label class="btn btn-sm" @click="copyFileLinkStatic(selectedFile)">Copy Link</label>
-          <label for="file-info-modal" class="btn btn-sm">Close</label>
+          <label for="file-info-modal" class="btn btn-sm" @click="closeFileModal">Close</label>
         </div>
       </div>
     </div>
@@ -185,9 +198,6 @@ const isGridView = ref(isGridViewCookie.value)
 watch(isGridView, (newVal) => {
   isGridViewCookie.value = newVal
 })
-
-
-
 
 onMounted(async () => {
   const route = useRoute()
@@ -224,14 +234,19 @@ const uploadFile = () => {
 
 const hasThumbnail = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['jpg', 'jpeg', 'png', 'mp4'].includes(ext)
+  return ['mp4', 'jpg', 'jpeg', 'png'].includes(ext)
+}
+
+const isVideoFile = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return ['mp4', 'webm'].includes(ext)
 }
 
 const getThumbnailUrl = (filename: string) => {
-  const url = useRequestURL();
-  const baseUrl = url.origin;
-  const subpath = useRoute().params.path;
-  const joinedPath = Array.isArray(subpath) ? subpath.map(encodeURIComponent).join('/') : encodeURIComponent(subpath);
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  const subpath = useRoute().params.path
+  const joinedPath = Array.isArray(subpath) ? subpath.map(encodeURIComponent).join('/') : encodeURIComponent(subpath)
   return `${baseUrl}/thumbnail/${joinedPath}/${encodeURIComponent(filename)}`
 }
 
@@ -245,17 +260,31 @@ const onFileClick = (file: File) => {
 }
 
 const getStaticUrl = (file: File) => {
-  const url = useRequestURL();
-  const baseUrl = url.origin;
-  const subpath = useRoute().params.path;
-  return `${baseUrl}/file/${subpath}/${encodeURIComponent(file.name)}`
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  const subpath = useRoute().params.path
+  const joinedPath = Array.isArray(subpath) ? subpath.map(encodeURIComponent).join('/') : encodeURIComponent(subpath)
+  // Use streaming endpoint for video files
+  const isVideo = isVideoFile(file.name)
+  const endpoint = isVideo ? '/stream' : '/file'
+  return `${baseUrl}${endpoint}/${joinedPath}/${encodeURIComponent(file.name)}`
 }
 
 const copyFileLinkStatic = (file: File) => {
   console.log(getStaticUrl(file))
 }
+
 const downloadFile = (file: File) => {
-  window.location.href = getStaticUrl(file);
+  window.location.href = getStaticUrl(file)
+}
+
+const closeFileModal = () => {
+  const videoEl = document.getElementById('previewVideo') as HTMLVideoElement
+  if (videoEl) {
+    videoEl.pause()
+    videoEl.currentTime = 0
+  }
+  selectedFile.value = null
 }
 </script>
 
@@ -279,7 +308,7 @@ const downloadFile = (file: File) => {
   overflow-y: auto;
 }
 
-img {
+img, video {
   max-width: 100%;
   max-height: 100%;
 }

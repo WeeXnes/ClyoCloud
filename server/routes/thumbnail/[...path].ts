@@ -29,7 +29,6 @@ export default defineEventHandler(async (event) => {
     //console.log(`Requested thumbnail: ${requestedThumbnail}`)
     //console.log(`Requested file: ${requestedFile}`)
 
-    // Security check to prevent directory traversal
     if (!requestedThumbnail.startsWith(resolve(thumbnailPath)) || !requestedFile.startsWith(resolve(storagePath))) {
         console.error(`Access denied: Path outside allowed directories`)
         throw createError({
@@ -38,7 +37,6 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    // Check if the original file is a supported type
     const contentType = mime.lookup(requestedFile)
     const supportedVideoTypes = ['video/mp4', 'application/mp4']
     const supportedImageTypes = ['image/png', 'image/jpeg', 'image/gif']
@@ -52,7 +50,6 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        // Check if thumbnail exists
         try {
             const thumbnailStats = await stat(requestedThumbnail)
             if (thumbnailStats.isFile()) {
@@ -63,11 +60,9 @@ export default defineEventHandler(async (event) => {
                 return createReadStream(requestedThumbnail)
             }
         } catch (error) {
-            // Thumbnail doesn't exist, continue to generate
             //console.log(`Thumbnail not found, generating new one: ${requestedThumbnail}`)
         }
 
-        // Verify original file exists
         const fileStats = await stat(requestedFile)
         if (!fileStats.isFile()) {
             console.error(`Original file not found: ${requestedFile}`)
@@ -77,12 +72,9 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        // Create thumbnail directory if it doesn't exist
         await execAsync(`mkdir -p "${path.dirname(requestedThumbnail)}"`)
 
-        // Handle images and videos differently
         if (supportedImageTypes.includes(contentType)) {
-            // For images, check dimensions using ffprobe
             let needsResize = true
             try {
                 const ffprobeCommand = `ffprobe -v error -show_entries stream=width,height -of json "${requestedFile}"`
@@ -98,14 +90,12 @@ export default defineEventHandler(async (event) => {
             }
 
             if (!needsResize) {
-                // Serve original image directly
                 setHeader(event, 'Content-Type', contentType)
                 setHeader(event, 'Content-Length', fileStats.size)
                 setHeader(event, 'Content-Disposition', 'inline')
                 return createReadStream(requestedFile)
             }
 
-            // Resize image using ffmpeg
             const ffmpegCommand = `ffmpeg -i "${requestedFile}" -vf "scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:(ow-iw)/2:(oh-ih)/2" "${requestedThumbnail}" -y`
             try {
                 await execAsync(ffmpegCommand)
@@ -118,7 +108,6 @@ export default defineEventHandler(async (event) => {
                 })
             }
         } else {
-            // Generate video thumbnail using ffmpeg, seeking to 5 seconds
             const ffmpegCommand = `ffmpeg -i "${requestedFile}" -ss 5 -vf "thumbnail,scale=320:180" -frames:v 1 "${requestedThumbnail}" -y`
             try {
                 await execAsync(ffmpegCommand)
@@ -132,7 +121,6 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        // Verify and serve the generated thumbnail
         const thumbnailStats = await stat(requestedThumbnail)
         if (!thumbnailStats.isFile()) {
             console.error(`Generated thumbnail not found: ${requestedThumbnail}`)
