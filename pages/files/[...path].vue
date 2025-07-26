@@ -234,7 +234,7 @@ const uploadFile = () => {
 
 const hasThumbnail = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['mp4', 'jpg', 'jpeg', 'png'].includes(ext)
+  return ['mp4', 'webm', 'jpg', 'jpeg', 'png'].includes(ext)
 }
 
 const isVideoFile = (filename: string) => {
