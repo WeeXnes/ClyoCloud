@@ -1,6 +1,6 @@
 <template>
   <div>
-    <!-- Existing header and breadcrumb sections remain unchanged -->
+    <!-- Header and breadcrumb sections -->
     <div class="flex justify-between items-center mb-4 lg:mb-6">
       <div class="flex items-center gap-2">
         <label for="sidebar-drawer" class="btn btn-ghost btn-circle lg:hidden">
@@ -116,11 +116,17 @@
           <label class="label">
             <span class="label-text">Select File</span>
           </label>
-          <input type="file" @change="handleFileUpload" class="file-input file-input-bordered w-full" />
+          <input type="file" @change="handleFileSelect" class="file-input file-input-bordered w-full" />
         </div>
+        <div v-if="isUploading" class="mt-2">
+          <progress class="progress progress-primary w-full" :value="uploadProgress" max="100"></progress>
+          <p class="text-sm text-center">{{ uploadProgress }}% Complete</p>
+        </div>
+        <div v-if="uploadError" class="text-error text-sm mt-2">{{ uploadError }}</div>
+        <div v-if="uploadSuccess" class="text-success text-sm mt-2">File uploaded successfully!</div>
         <div class="modal-action">
           <label for="upload-modal" class="btn btn-sm">Cancel</label>
-          <label for="upload-modal" class="btn btn-primary btn-sm" @click="uploadFile">Upload</label>
+          <label class="btn btn-primary btn-sm" :class="{ 'loading': isUploading }" @click="uploadFile">Upload</label>
         </div>
       </div>
     </div>
@@ -157,13 +163,7 @@
             </p>
             <p v-if="isVideoFile(selectedFile.name) && !selectedFile.isFolder">
               <span class="font-medium">Preview:</span>
-              <video
-                  id="previewVideo"
-                  :key="selectedFile.name"
-                  controls
-                  class="mt-2 w-full h-40 object-contain rounded-lg"
-                  style="aspect-ratio: 16 / 9;"
-              >
+              <video controls class="mt-2 w-full h-40 object-contain rounded-lg" style="aspect-ratio: 16 / 9;">
                 <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
@@ -177,7 +177,7 @@
         <div class="modal-action">
           <label class="btn btn-sm" @click="downloadFile(selectedFile)">Download</label>
           <label class="btn btn-sm" @click="copyFileLinkStatic(selectedFile)">Copy Link</label>
-          <label for="file-info-modal" class="btn btn-sm" @click="closeFileModal">Close</label>
+          <label for="file-info-modal" class="btn btn-sm">Close</label>
         </div>
       </div>
     </div>
@@ -192,6 +192,11 @@ import type { File } from '~/types/File'
 const files = ref<File[]>([])
 const selectedFile = ref<File | null>(null)
 const showFileInfoModal = ref(false)
+const selectedFileForUpload = ref<File | null>(null)
+const isUploading = ref(false)
+const uploadError = ref('')
+const uploadSuccess = ref(false)
+const uploadProgress = ref(0)
 
 const isGridViewCookie = useCookie<boolean>('isGridView', { default: () => false })
 const isGridView = ref(isGridViewCookie.value)
@@ -200,8 +205,11 @@ watch(isGridView, (newVal) => {
 })
 
 onMounted(async () => {
+  await fetchFiles()
+})
+
+const fetchFiles = async () => {
   const route = useRoute()
-  console.log(useRoute())
   const pathParam = route.params.path
   const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
 
@@ -212,29 +220,88 @@ onMounted(async () => {
     }
     files.value = await response.json()
   } catch (error) {
-    console.error(error)
+    console.error('Error fetching files:', error)
   }
-})
-
-const handleFileUpload = (event) => {
-  selectedFile.value = event.target.files[0]
 }
 
-const uploadFile = () => {
-  if (selectedFile.value) {
-    files.value.push({
-      id: files.value.length + 1,
-      name: selectedFile.value.name,
-      size: selectedFile.value.size,
-      lastModified: new Date().toISOString()
-    })
-    selectedFile.value = null
+const handleFileSelect = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files.length > 0) {
+    selectedFileForUpload.value = input.files[0]
+  } else {
+    uploadError.value = 'No file selected'
+  }
+}
+
+const uploadFile = async () => {
+  if (!selectedFileForUpload.value) {
+    uploadError.value = 'No file selected'
+    return
+  }
+
+  isUploading.value = true
+  uploadError.value = ''
+  uploadSuccess.value = false
+  uploadProgress.value = 0
+
+  const formData = new FormData()
+  formData.append('file', selectedFileForUpload.value)
+  const route = useRoute()
+  const pathParam = route.params.path
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  formData.append('path', folderPath)
+
+  try {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', '/api/upload', true)
+
+    // Track upload progress
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100)
+        uploadProgress.value = percentComplete
+      }
+    }
+
+    // Handle completion
+    xhr.onload = async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        uploadSuccess.value = true
+        selectedFileForUpload.value = null
+        await fetchFiles() // Refresh file list
+      } else {
+        let errorMessage = 'Failed to upload file'
+        try {
+          const response = JSON.parse(xhr.responseText)
+          errorMessage = response.statusMessage || response.message || errorMessage
+        } catch (e) {
+          errorMessage = xhr.responseText || errorMessage
+        }
+        uploadError.value = errorMessage
+      }
+      isUploading.value = false
+      uploadProgress.value = 0
+    }
+
+    // Handle errors
+    xhr.onerror = () => {
+      uploadError.value = 'Upload failed due to a network error'
+      isUploading.value = false
+      uploadProgress.value = 0
+    }
+
+    xhr.send(formData)
+  } catch (error) {
+    uploadError.value = error.message || 'Upload failed'
+    console.error('Upload error:', error)
+    isUploading.value = false
+    uploadProgress.value = 0
   }
 }
 
 const hasThumbnail = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['mp4', 'webm', 'jpg', 'jpeg', 'png'].includes(ext)
+  return ['jpg', 'jpeg', 'png', 'mp4', 'webm'].includes(ext)
 }
 
 const isVideoFile = (filename: string) => {
@@ -264,10 +331,12 @@ const getStaticUrl = (file: File) => {
   const baseUrl = url.origin
   const subpath = useRoute().params.path
   const joinedPath = Array.isArray(subpath) ? subpath.map(encodeURIComponent).join('/') : encodeURIComponent(subpath)
-  // Use streaming endpoint for video files
   const isVideo = isVideoFile(file.name)
   const endpoint = isVideo ? '/stream' : '/file'
-  return `${baseUrl}${endpoint}/${joinedPath}/${encodeURIComponent(file.name)}`
+  if(!joinedPath)
+    return `${baseUrl}${endpoint}/${encodeURIComponent(file.name)}`
+  else
+    return `${baseUrl}${endpoint}/${joinedPath}/${encodeURIComponent(file.name)}`
 }
 
 const copyFileLinkStatic = (file: File) => {
@@ -276,15 +345,6 @@ const copyFileLinkStatic = (file: File) => {
 
 const downloadFile = (file: File) => {
   window.location.href = getStaticUrl(file)
-}
-
-const closeFileModal = () => {
-  const videoEl = document.getElementById('previewVideo') as HTMLVideoElement
-  if (videoEl) {
-    videoEl.pause()
-    videoEl.currentTime = 0
-  }
-  selectedFile.value = null
 }
 </script>
 
@@ -311,5 +371,9 @@ const closeFileModal = () => {
 img, video {
   max-width: 100%;
   max-height: 100%;
+}
+
+.progress {
+  height: 1rem;
 }
 </style>

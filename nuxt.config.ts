@@ -8,7 +8,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     storagePath: process.env.STORAGE_PATH,
-    thumbnailPath: process.env.THUMBNAIL_PATH
+    thumbnailPath: process.env.THUMBNAIL_PATH,
+    maxFileSize: 500 * 1024 * 1024
   },
   router: {
     options: {

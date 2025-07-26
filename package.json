@@ -16,6 +16,7 @@
     "bcryptjs": "^3.0.0",
     "daisyui": "^4.12.23",
     "dotenv": "^16.6.1",
+    "formidable": "^3.5.4",
     "jsonwebtoken": "^9.0.2",
     "nuxt": "^3.15.4",
     "uuid": "^11.0.5",
@@ -23,6 +24,7 @@
     "vue-router": "latest"
   },
   "devDependencies": {
+    "@types/formidable": "^3.4.5",
     "@types/jsonwebtoken": "^9.0.8",
     "sass": "^1.85.1"
   }
