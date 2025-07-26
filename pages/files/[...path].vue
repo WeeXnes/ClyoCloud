@@ -13,7 +13,7 @@
       <div class="flex items-center gap-4">
         <label class="flex items-center gap-2">
           <span class="text-sm">List</span>
-          <input type="checkbox" v-model="isGridView" class="toggle toggle-primary" />
+          <input type="checkbox" class="toggle toggle-primary" v-model="isGridView"/>
           <span class="text-sm">Grid</span>
         </label>
         <label for="upload-modal" class="btn btn-primary btn-sm lg:btn-md">
@@ -45,17 +45,17 @@
     <br>
 
     <!-- File grid/list -->
-    <div :class="isGridView ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4'">
-      <div v-for="file in files" :key="file.name" class="card bg-base-100 shadow-md">
+    <div :class="isGridView ? 'grid gap-4 justify-center' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4'" :style="isGridView ? 'grid-template-columns: repeat(auto-fit, minmax(240px, 240px));' : ''">
+      <div v-for="file in files" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md w-[240px]' : 'card bg-base-100 shadow-md'">
         <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick(file)">
-          <div class="w-full h-40 bg-base-200 rounded-lg flex items-center justify-center">
+          <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden">
             <template v-if="file.isFolder">
               <button class="text-blue-600 hover:underline flex flex-col items-center">
                 <Icon name="vscode-icons:default-folder" class="w-12 h-12" />
               </button>
             </template>
             <template v-else>
-              <img v-if="hasThumbnail(file.name)" :src="getThumbnailUrl(file.name)" class="w-full h-full object-cover rounded-lg" alt="Thumbnail" />
+              <img v-if="hasThumbnail(file.name)" :src="getThumbnailUrl(file.name)" class="w-full h-full object-cover rounded-lg" alt="Thumbnail" style="aspect-ratio: 16 / 9;" />
               <Icon v-else class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20" v-bind:name="getIconForExtension(file.name)" />
             </template>
           </div>
@@ -157,7 +157,7 @@
             </p>
             <p v-if="hasThumbnail(selectedFile.name) && !selectedFile.isFolder">
               <span class="font-medium">Preview:</span>
-              <img :src="getThumbnailUrl(selectedFile.name)" class="mt-2 w-full h-40 object-cover rounded-lg" alt="File preview" />
+              <img :src="getThumbnailUrl(selectedFile.name)" class="mt-2 w-full h-40 object-cover rounded-lg" alt="File preview" style="aspect-ratio: 16 / 9;" />
             </p>
           </div>
         </div>
@@ -177,9 +177,17 @@ import { getIconForExtension } from '~/core/fileIcons'
 import type { File } from '~/types/File'
 
 const files = ref<File[]>([])
-const isGridView = ref(false)
 const selectedFile = ref<File | null>(null)
 const showFileInfoModal = ref(false)
+
+const isGridViewCookie = useCookie<boolean>('isGridView', { default: () => false })
+const isGridView = ref(isGridViewCookie.value)
+watch(isGridView, (newVal) => {
+  isGridViewCookie.value = newVal
+})
+
+
+
 
 onMounted(async () => {
   const route = useRoute()
