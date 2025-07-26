@@ -231,7 +231,8 @@ const getThumbnailUrl = (filename: string) => {
   const url = useRequestURL();
   const baseUrl = url.origin;
   const subpath = useRoute().params.path;
-  return `${baseUrl}/thumbnail/${subpath}/${encodeURIComponent(filename)}`
+  const joinedPath = Array.isArray(subpath) ? subpath.map(encodeURIComponent).join('/') : encodeURIComponent(subpath);
+  return `${baseUrl}/thumbnail/${joinedPath}/${encodeURIComponent(filename)}`
 }
 
 const onFileClick = (file: File) => {
