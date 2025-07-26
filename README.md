@@ -2,28 +2,27 @@
 
 ClyoCloud is a modern, open-source file sharing platform built with Nuxt.js and Tailwind CSS. It provides a simple and intuitive interface for uploading, managing, and sharing files.
 
-
-
 ## Features
 
 *   **File Upload:** Upload files with a simple drag-and-drop interface.
 *   **File Management:** View, rename, and delete files.
 *   **File Sharing:** Generate shareable links for files.
+*   **User Authentication:** Secure user authentication with JWT.
 *   **Responsive Design:** A fully responsive design that works on all devices.
 *   **Dark Mode:** A beautiful dark mode for late-night file browsing.
-*   **File Previews:** Previews for common file types.
+*   **File Previews:** Previews for common file types and thumbnail generation for images.
+*   **Notifications:** In-app notifications for various actions.
 
 ## Technologies Used
 
-*   **Frontend:**
-    *   [Nuxt.js](https://nuxt.com/) (Vue.js Framework)
-    *   [Tailwind CSS](https://tailwindcss.com/) (for styling)
-    *   [Iconify](https://iconify.design/) (for icons)
-*   **Backend:**
-    *   [Node.js](https://nodejs.org/) with [Express.js](https://expressjs.com/) (via Nuxt server routes)
-*   **Other:**
-    *   [TypeScript](https://www.typescriptlang.org/)
-    *   [Sass](https://sass-lang.com/)
+*   **Core Framework:** [Nuxt.js](https://nuxt.com/)
+*   **Backend Engine:** [Nitro](https://nitro.unjs.io/) (Nuxt's built-in server)
+*   **UI:** [Tailwind CSS](https://tailwindcss.com/) with the [DaisyUI](https://daisyui.com/) component library
+*   **Icons:** [Nuxt Icon](https://nuxt.com/modules/icon)
+*   **Authentication:** [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) & [bcryptjs](https://github.com/dcodeIO/bcrypt.js)
+*   **File Handling:** [formidable](https://github.com/node-formidable/formidable) for uploads
+*   **Language:** [TypeScript](https://www.typescriptlang.org/)
+*   **Styling:** [Sass](https://sass-lang.com/)
 
 ## Getting Started
 
@@ -52,7 +51,14 @@ Follow these steps to set up and run the project locally.
 
 ### Configuration
 
-Create a `.env` file in the root directory of the project and add your environment variables.
+Create a `.env` file in the root directory of the project and add the following environment variables:
+
+```
+STORAGE_PATH=/path/to/your/storage
+THUMBNAIL_PATH=/path/to/your/thumbnails
+```
+
+**Note:** The `maxFileSize` is set in `nuxt.config.ts` and is currently configured to 500MB.
 
 ### Running the Development Server
 
@@ -104,7 +110,8 @@ yarn preview
 ├── server/                 # Backend API routes, models, and plugins
 │   ├── api/                # API endpoints
 │   ├── models/             # Data models
-│   └── plugins/            # Server-side plugins
+│   ├── plugins/            # Server-side plugins
+│   └── routes/             # Server-side routes
 └── types/                  # TypeScript types
 ```
 
