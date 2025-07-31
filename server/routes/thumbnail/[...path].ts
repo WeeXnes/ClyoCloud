@@ -123,12 +123,12 @@ export default defineEventHandler(async (event) => {
                     console.error(`Final Error generating video thumbnail: ${ffmpegError}`)
                     throw createError({
                         statusCode: 500,
-                        statusMessage: 'Failed to generate video thumbnail'
+                        statusMessage: 'Final Error generating video thumbnail'
                     })
                 }
                 throw createError({
                     statusCode: 500,
-                    statusMessage: 'Failed to generate video thumbnail'
+                    statusMessage: 'Error generating video thumbnail for 5s mark'
                 })
             }
         }
