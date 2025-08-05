@@ -2,20 +2,10 @@
 
 ClyoCloud is a modern, open-source file sharing platform built with Nuxt.js and Tailwind CSS. It provides a simple and intuitive interface for uploading, managing, and sharing files.
 
-## Features
-
-*   **File Upload:** Upload files with a simple drag-and-drop interface.
-*   **File Management:** View, rename, and delete files.
-*   **File Sharing:** Generate shareable links for files.
-*   **User Authentication:** Secure user authentication with JWT.
-*   **Responsive Design:** A fully responsive design that works on all devices.
-*   **Dark Mode:** A beautiful dark mode for late-night file browsing.
-*   **File Previews:** Previews for common file types and thumbnail generation for images.
-*   **Notifications:** In-app notifications for various actions.
 
 ## Technologies Used
 
-*   **Core Framework:** [Nuxt.js](https://nuxt.com/)
+*   **Core Framework:** [Nuxt 3](https://nuxt.com/)
 *   **Backend Engine:** [Nitro](https://nitro.unjs.io/) (Nuxt's built-in server)
 *   **UI:** [Tailwind CSS](https://tailwindcss.com/) with the [DaisyUI](https://daisyui.com/) component library
 *   **Icons:** [Nuxt Icon](https://nuxt.com/modules/icon)
@@ -37,7 +27,7 @@ Follow these steps to set up and run the project locally.
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://git.weexnes.dev/WeeXnes/clyocloud
+    git clone https://code.weexnes.dev/clyocloud
     cd clyocloud
     ```
 2.  **Install dependencies:**
