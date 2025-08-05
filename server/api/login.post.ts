@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken'
 
 interface User {
     name: string
-    password: string // bcryptjs-hashed
+    password: string
 }
 
 export default defineEventHandler(async (event) => {
@@ -26,7 +26,6 @@ export default defineEventHandler(async (event) => {
         const usersData = await fs.readFile(usersFilePath, 'utf-8')
         const users: User[] = JSON.parse(usersData)
 
-        // Find user
         const user = users.find((u) => u.name === username)
         if (!user) {
             throw createError({
@@ -35,7 +34,6 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        // Verify password
         const isValid = await bcrypt.compare(password, user.password)
         if (!isValid) {
             throw createError({
@@ -44,12 +42,10 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        // Create JWT
         const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
-            expiresIn: '7d', // 1 week
+            expiresIn: '7d',
         })
 
-        // Create user directory
         await fs.mkdir(path.join(config.storagePath, username), { recursive: true })
 
         // Return token in response body

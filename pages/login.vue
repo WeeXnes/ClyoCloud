@@ -56,7 +56,6 @@ const router = useRouter()
 const login = async () => {
   isLoading.value = true
   error.value = ''
-
   try {
     const response: any = await $fetch('/api/login', {
       method: 'POST',
@@ -71,7 +70,7 @@ const login = async () => {
     const cookie = useCookie('token');
     cookie.value = token;
     await createNotification("Logged in successfully", NotificationType.SUCCESS)
-    await router.push('/');
+    await router.push('/files');
   } catch (error: any) {
     await createNotification(error.response?.data?.message || 'An error occurred', NotificationType.ERROR)
   }
