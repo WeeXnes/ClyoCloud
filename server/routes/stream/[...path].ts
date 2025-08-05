@@ -6,27 +6,26 @@ import path, { join, resolve } from 'path'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
-    const storagePath = config.storagePath
-
+    const userStoragePath = path.join(config.storagePath, event.context.user.name)
     const filePath = getRouterParam(event, 'path')
 
     if (!filePath) {
         throw createError({
             statusCode: 400,
-            statusMessage: 'File path is required'
+            statusMessage: 'File path is required',
         })
     }
 
     const decodedPath = decodeURIComponent(filePath)
     console.log(`Requested stream path: ${decodedPath}`)
 
-    const resolvedPath = resolve(join(storagePath, decodedPath))
+    const resolvedPath = resolve(join(userStoragePath, decodedPath))
 
-    if (!resolvedPath.startsWith(resolve(storagePath))) {
-        console.error(`Access denied: Resolved path ${resolvedPath} is outside storage directory ${storagePath}`)
+    if (!resolvedPath.startsWith(resolve(userStoragePath))) {
+        console.error(`Access denied: Resolved path ${resolvedPath} is outside user directory ${userStoragePath}`)
         throw createError({
             statusCode: 403,
-            statusMessage: 'Access denied: Path outside storage directory'
+            statusMessage: 'Access denied: Path outside user directory',
         })
     }
 
@@ -36,17 +35,17 @@ export default defineEventHandler(async (event) => {
             console.error(`Not a file: ${resolvedPath}`)
             throw createError({
                 statusCode: 404,
-                statusMessage: 'File not found'
+                statusMessage: 'File not found',
             })
         }
 
         const contentType = mime.lookup(resolvedPath) || 'application/octet-stream'
-        const videoTypes = ['video/mp4', 'video/webm','application/mp4']
+        const videoTypes = ['video/mp4', 'video/webm', 'application/mp4']
         if (!videoTypes.includes(contentType)) {
             console.error(`Unsupported media type: ${contentType}`)
             throw createError({
                 statusCode: 415,
-                statusMessage: 'Unsupported media type'
+                statusMessage: 'Unsupported media type',
             })
         }
 
@@ -64,7 +63,7 @@ export default defineEventHandler(async (event) => {
             if (start >= stats.size || end >= stats.size) {
                 throw createError({
                     statusCode: 416,
-                    statusMessage: 'Range not satisfiable'
+                    statusMessage: 'Range not satisfiable',
                 })
             }
 
@@ -84,7 +83,7 @@ export default defineEventHandler(async (event) => {
         }
         throw createError({
             statusCode: 404,
-            statusMessage: 'File not found'
+            statusMessage: 'File not found',
         })
     }
 })

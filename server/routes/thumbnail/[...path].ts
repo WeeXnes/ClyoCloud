@@ -10,30 +10,26 @@ const execAsync = promisify(exec)
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
-    const thumbnailPath = config.thumbnailPath
-    const storagePath = config.storagePath
-
+    const userStoragePath = path.join(config.storagePath, event.context.user.name)
+    const userThumbnailPath = path.join(config.thumbnailPath, event.context.user.name)
     const filePath = getRouterParam(event, 'path')
 
     if (!filePath) {
         throw createError({
             statusCode: 400,
-            statusMessage: 'File path is required'
+            statusMessage: 'File path is required',
         })
     }
 
     const decodedPath = decodeURIComponent(filePath)
-    const requestedThumbnail = resolve(join(thumbnailPath, decodedPath + '.jpg'))
-    const requestedFile = resolve(join(storagePath, decodedPath))
+    const requestedThumbnail = resolve(join(userThumbnailPath, decodedPath + '.jpg'))
+    const requestedFile = resolve(join(userStoragePath, decodedPath))
 
-    //console.log(`Requested thumbnail: ${requestedThumbnail}`)
-    //console.log(`Requested file: ${requestedFile}`)
-
-    if (!requestedThumbnail.startsWith(resolve(thumbnailPath)) || !requestedFile.startsWith(resolve(storagePath))) {
+    if (!requestedThumbnail.startsWith(resolve(userThumbnailPath)) || !requestedFile.startsWith(resolve(userStoragePath))) {
         console.error(`Access denied: Path outside allowed directories`)
         throw createError({
             statusCode: 403,
-            statusMessage: 'Access denied: Path outside allowed directories'
+            statusMessage: 'Access denied: Path outside allowed directories',
         })
     }
 
@@ -45,7 +41,7 @@ export default defineEventHandler(async (event) => {
         console.error(`Unsupported file type: ${contentType}`)
         throw createError({
             statusCode: 400,
-            statusMessage: 'Unsupported file type. Only MP4, PNG, JPEG, and GIF are supported'
+            statusMessage: 'Unsupported file type. Only MP4, PNG, JPEG, and GIF are supported',
         })
     }
 
@@ -53,14 +49,13 @@ export default defineEventHandler(async (event) => {
         try {
             const thumbnailStats = await stat(requestedThumbnail)
             if (thumbnailStats.isFile()) {
-                //console.log(`Serving existing thumbnail: ${requestedThumbnail}`)
                 setHeader(event, 'Content-Type', 'image/jpeg')
                 setHeader(event, 'Content-Length', thumbnailStats.size)
                 setHeader(event, 'Content-Disposition', 'inline')
                 return createReadStream(requestedThumbnail)
             }
         } catch (error) {
-            //console.log(`Thumbnail not found, generating new one: ${requestedThumbnail}`)
+            // Thumbnail not found, proceed to generate
         }
 
         const fileStats = await stat(requestedFile)
@@ -68,7 +63,7 @@ export default defineEventHandler(async (event) => {
             console.error(`Original file not found: ${requestedFile}`)
             throw createError({
                 statusCode: 404,
-                statusMessage: 'Original file not found'
+                statusMessage: 'Original file not found',
             })
         }
 
@@ -83,7 +78,6 @@ export default defineEventHandler(async (event) => {
                 const { width, height } = data.streams[0] || {}
                 if (width && height && width <= 320 && height <= 180) {
                     needsResize = false
-                    //console.log(`Image is small enough (${width}x${height}), serving directly: ${requestedFile}`)
                 }
             } catch (ffprobeError) {
                 console.warn(`Error checking image dimensions, proceeding with resize: ${ffprobeError}`)
@@ -104,7 +98,7 @@ export default defineEventHandler(async (event) => {
                 console.error(`Error generating image thumbnail: ${ffmpegError}`)
                 throw createError({
                     statusCode: 500,
-                    statusMessage: 'Failed to generate image thumbnail'
+                    statusMessage: 'Failed to generate image thumbnail',
                 })
             }
         } else {
@@ -114,7 +108,6 @@ export default defineEventHandler(async (event) => {
                 console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
             } catch (ffmpegError) {
                 console.error(`Error generating video thumbnail for 5s mark: ${ffmpegError}`)
-
                 const ffmpegCommand2 = `ffmpeg -i "${requestedFile}" -ss 1 -vf "thumbnail,scale=320:180" -frames:v 1 "${requestedThumbnail}" -y`
                 try {
                     await execAsync(ffmpegCommand2)
@@ -123,13 +116,9 @@ export default defineEventHandler(async (event) => {
                     console.error(`Final Error generating video thumbnail: ${ffmpegError}`)
                     throw createError({
                         statusCode: 500,
-                        statusMessage: 'Final Error generating video thumbnail'
+                        statusMessage: 'Final Error generating video thumbnail',
                     })
                 }
-                throw createError({
-                    statusCode: 500,
-                    statusMessage: 'Error generating video thumbnail for 5s mark'
-                })
             }
         }
 
@@ -138,21 +127,19 @@ export default defineEventHandler(async (event) => {
             console.error(`Generated thumbnail not found: ${requestedThumbnail}`)
             throw createError({
                 statusCode: 500,
-                statusMessage: 'Failed to generate thumbnail'
+                statusMessage: 'Failed to generate thumbnail',
             })
         }
 
-        console.log(`Serving generated thumbnail: ${requestedThumbnail}`)
         setHeader(event, 'Content-Type', 'image/jpeg')
         setHeader(event, 'Content-Length', thumbnailStats.size)
         setHeader(event, 'Content-Disposition', 'inline')
         return createReadStream(requestedThumbnail)
-
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error processing thumbnail:', error)
         throw createError({
             statusCode: 404,
-            statusMessage: 'File not found or processing error'
+            statusMessage: 'File not found or processing error',
         })
     }
 })

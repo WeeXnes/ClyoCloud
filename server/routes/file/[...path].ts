@@ -6,27 +6,26 @@ import path, { join, resolve } from 'path'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
-    const storagePath = config.storagePath
-
+    const userStoragePath = path.join(config.storagePath, event.context.user.name)
     const filePath = getRouterParam(event, 'path')
 
     if (!filePath) {
         throw createError({
             statusCode: 400,
-            statusMessage: 'File path is required'
+            statusMessage: 'File path is required',
         })
     }
 
     const decodedPath = decodeURIComponent(filePath)
     console.log(`Requested file path: ${decodedPath}`)
 
-    const resolvedPath = resolve(join(storagePath, decodedPath))
+    const resolvedPath = resolve(join(userStoragePath, decodedPath))
 
-    if (!resolvedPath.startsWith(resolve(storagePath))) {
-        console.error(`Access denied: Resolved path ${resolvedPath} is outside storage directory ${storagePath}`)
+    if (!resolvedPath.startsWith(resolve(userStoragePath))) {
+        console.error(`Access denied: Resolved path ${resolvedPath} is outside user directory ${userStoragePath}`)
         throw createError({
             statusCode: 403,
-            statusMessage: 'Access denied: Path outside storage directory'
+            statusMessage: 'Access denied: Path outside user directory',
         })
     }
 
@@ -36,7 +35,7 @@ export default defineEventHandler(async (event) => {
             console.error(`Not a file: ${resolvedPath}`)
             throw createError({
                 statusCode: 404,
-                statusMessage: 'File not found'
+                statusMessage: 'File not found',
             })
         }
 
@@ -47,14 +46,7 @@ export default defineEventHandler(async (event) => {
         setHeader(event, 'Content-Length', stats.size)
         setHeader(event, 'Accept-Ranges', 'bytes')
 
-        const inlineTypes = [
-            'image/png',
-            'image/jpeg',
-            'image/gif',
-            'video/mp4',
-            'video/webm'
-        ]
-
+        const inlineTypes = ['image/png', 'image/jpeg', 'image/gif', 'video/mp4', 'video/webm']
         if (inlineTypes.includes(contentType)) {
             setHeader(event, 'Content-Disposition', 'inline')
         } else {
@@ -63,11 +55,11 @@ export default defineEventHandler(async (event) => {
         }
 
         return createReadStream(resolvedPath)
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error serving file:', error)
         throw createError({
             statusCode: 404,
-            statusMessage: 'File not found'
+            statusMessage: 'File not found',
         })
     }
 })
