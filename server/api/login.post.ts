@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const usersFilePath = config.usersFilePath || path.join(process.env.HOME || process.env.USERPROFILE || '/default/path', '.clyo', 'users.json')
+        const usersFilePath = config.usersFilePath
         const usersData = await fs.readFile(usersFilePath, 'utf-8')
         const users: User[] = JSON.parse(usersData)
 
