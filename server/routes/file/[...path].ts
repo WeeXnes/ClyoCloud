@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const decodedPath = decodeURIComponent(filePath)
-    console.log(`Requested file path: ${decodedPath}`) // Debug log
+    console.log(`Requested file path: ${decodedPath}`)
 
     const resolvedPath = resolve(join(storagePath, decodedPath))
 
