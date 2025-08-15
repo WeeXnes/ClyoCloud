@@ -1,5 +1,6 @@
 {
-  "name": "website",
+  "name": "clyocloud",
+  "version": "0.0.6",
   "private": true,
   "type": "module",
   "scripts": {
