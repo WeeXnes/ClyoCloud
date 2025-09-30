@@ -12,6 +12,7 @@ export interface File {
 
 export interface FileMeta {
     tags: Tag[];
+    description?: string;
 }
 
 export interface Tag {

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import type { Video, FileMeta } from '~/types/File'
 
 const videos = ref<Video[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
+const searchQuery = ref('')
 
 async function fetchVideos() {
   try {
@@ -59,16 +60,39 @@ const getThumbnailUrl = (fullPath: string) => {
 }
 
 const goToVideo = (fullPath: string) => {
-  // Split fullPath into segments and encode each
   const segments = fullPath.split('/')
   const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
   navigateTo(`/media/${encodedPath}`)
 }
+
+const filteredVideos = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return videos.value
+  }
+  const query = searchQuery.value.trim().toLowerCase()
+  return videos.value.filter(video => {
+    // Check if query matches video.name
+    const nameMatch = video.name.toLowerCase().includes(query)
+    // Check if query matches any tag.name
+    const tagMatch = video.meta.tags.some(tag => tag.name.toLowerCase().includes(query))
+    return nameMatch || tagMatch
+  })
+})
 </script>
 
 <template>
   <div class="container mx-auto p-4">
     <h1 class="text-3xl font-bold mb-6">Browse Videos</h1>
+
+    <!-- Search Bar -->
+    <div class="mb-6">
+      <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search videos by name or tag..."
+          class="input input-bordered input-primary w-full max-w-md"
+      />
+    </div>
 
     <!-- Loading State -->
     <div v-if="isLoading" class="flex justify-center items-center h-64">
@@ -81,11 +105,11 @@ const goToVideo = (fullPath: string) => {
     </div>
 
     <!-- Video Grid -->
-    <div v-else-if="videos.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div v-else-if="filteredVideos.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <div
-          v-for="video in videos"
+          v-for="video in filteredVideos"
           :key="video.fullPath"
-          class="card bg-base-100 shadow-xl cursor-pointer hover:bg-base-300"
+          class="card bg-base-100 shadow-xl cursor-pointer hover:bg-gray-200"
           @click="goToVideo(video.fullPath)"
       >
         <figure>
