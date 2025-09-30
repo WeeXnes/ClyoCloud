@@ -1,29 +1,16 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
-import type { Video, FileMeta, Tag } from '~/types/File'
+import type { Video, FileMeta } from '~/types/File'
 
 /**
- * Generates a random 20-character string
- * @returns A 20-character random string
- */
-function generateRandomString(): string {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 20; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-}
-
-/**
- * Recursively scans a directory for MP4 files and returns a HashMap of UUID to Video objects
+ * Recursively scans a directory for MP4 files and returns an array of Video objects with relative paths
  * @param directoryPath - The root directory to scan
- * @param userStoragePath - The user's root directory to restrict access
- * @returns Promise<Map<string, Video>> - HashMap with UUID keys and Video objects
+ * @param userStoragePath - The user's root directory to restrict access and compute relative paths
+ * @returns Promise<Video[]> - Array of Video objects
  */
-async function scanMp4Files(directoryPath: string, userStoragePath: string): Promise<Map<string, Video>> {
-    const fileMap = new Map<string, Video>();
+async function scanMp4Files(directoryPath: string, userStoragePath: string): Promise<Video[]> {
+    const videos: Video[] = [];
 
     async function scanDir(currentPath: string): Promise<void> {
         try {
@@ -61,14 +48,17 @@ async function scanMp4Files(directoryPath: string, userStoragePath: string): Pro
                         await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8');
                     }
 
+                    // Compute relative path
+                    const relativePath = path.relative(userStoragePath, fullPath).replace(/\\/g, '/');
+
                     const file: Video = {
                         name: entry.name,
                         size: stats.size,
                         lastModified: stats.mtime.getTime(),
                         meta,
-                        fullPath
+                        fullPath: relativePath || entry.name, // Fallback to name if relative path is empty
                     };
-                    fileMap.set(generateRandomString(), file);
+                    videos.push(file);
                 }
             }
         } catch (error) {
@@ -77,11 +67,19 @@ async function scanMp4Files(directoryPath: string, userStoragePath: string): Pro
     }
 
     await scanDir(directoryPath);
-    return fileMap;
+    return videos;
 }
 
 export default defineEventHandler(async (event): Promise<Video[]> => {
     try {
+        // Check if user is authenticated
+        if (!event.context.user || !event.context.user.name) {
+            throw createError({
+                statusCode: 401,
+                statusMessage: 'Unauthorized: User not authenticated',
+            });
+        }
+
         const config = useRuntimeConfig();
         const userStoragePath = path.join(config.storagePath, event.context.user.name);
         const query = getQuery(event);
@@ -100,19 +98,15 @@ export default defineEventHandler(async (event): Promise<Video[]> => {
         }
 
         // Scan for MP4 files
-        const videoMap = await scanMp4Files(fullPath, userStoragePath);
+        const videos = await scanMp4Files(fullPath, userStoragePath);
 
-        // Convert Map to array and sort
-        const videos = Array.from(videoMap.values()).sort((a, b) => {
-            return a.name.localeCompare(b.name);
-        });
-
-        return videos;
-    } catch (error) {
+        // Sort videos by name
+        return videos.sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error: any) {
         console.error('Error reading videos:', error);
         throw createError({
-            statusCode: 500,
-            statusMessage: 'Could not list videos',
+            statusCode: error.statusCode || 500,
+            statusMessage: error.statusMessage || 'Could not list videos',
         });
     }
 });

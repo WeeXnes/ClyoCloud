@@ -52,10 +52,16 @@ const hasThumbnail = (filename: string) => {
   return ['mp4'].includes(ext)
 }
 
-const getThumbnailUrl = (filename: string) => {
+const getThumbnailUrl = (fullPath: string) => {
   const url = useRequestURL()
   const baseUrl = url.origin
-  return `${baseUrl}/thumbnail/${encodeURIComponent(filename)}`
+  return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
+}
+
+const goToVideo = (fullPath: string) => {
+  // Double encode to handle special characters
+  const encodedPath = encodeURIComponent(fullPath)
+  navigateTo(`/media/${encodedPath}`)
 }
 </script>
 
@@ -75,11 +81,16 @@ const getThumbnailUrl = (filename: string) => {
 
     <!-- Video Grid -->
     <div v-else-if="videos.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <div v-for="video in videos" :key="video.fullPath" class="card bg-base-100 shadow-xl">
+      <div
+          v-for="video in videos"
+          :key="video.fullPath"
+          class="card bg-base-100 shadow-xl cursor-pointer hover:bg-gray-100"
+          @click="goToVideo(video.fullPath)"
+      >
         <figure>
           <img
               v-if="hasThumbnail(video.name)"
-              :src="getThumbnailUrl(video.name)"
+              :src="getThumbnailUrl(video.fullPath)"
               class="w-full h-48 object-cover rounded-t-lg"
               alt="Video thumbnail"
               style="aspect-ratio: 16 / 9;"
@@ -102,9 +113,6 @@ const getThumbnailUrl = (filename: string) => {
             >
               {{ tag.name }}
             </span>
-          </div>
-          <div class="card-actions justify-end mt-4">
-            <button class="btn btn-primary btn-sm">Play</button>
           </div>
         </div>
       </div>
