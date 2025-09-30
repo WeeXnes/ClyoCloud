@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import type { Video, FileMeta } from '~/types/File'
 
 const route = useRoute()
@@ -7,11 +7,13 @@ const videos = ref<Video[]>([])
 const currentVideo = ref<Video | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
+const showTagModal = ref(false)
+const tagName = ref('')
+const tagColor = ref('#4B5EAA') // Default to DaisyUI primary blue
 
 const getStreamUrl = () => {
   const url = useRequestURL()
   const baseUrl = url.origin
-  // Join path segments without encoding slashes
   const subpath = Array.isArray(route.params.path) ? route.params.path.join('/') : route.params.path || ''
   return `${baseUrl}/stream/${encodeURIComponent(subpath)}`
 }
@@ -37,7 +39,6 @@ async function fetchVideos() {
       throw new Error(`Failed to fetch videos: ${response.statusText}`)
     }
     videos.value = await response.json()
-    // Decode the route path to match video.fullPath
     const subpath = Array.isArray(route.params.path) ? route.params.path.map(decodeURIComponent).join('/') : decodeURIComponent(route.params.path || '')
     currentVideo.value = videos.value.find(video => video.fullPath === subpath) || null
   } catch (err) {
@@ -68,11 +69,79 @@ function formatDate(timestamp: number): string {
 }
 
 const goToVideo = (fullPath: string) => {
-  // Encode segments individually to preserve slashes
   const segments = fullPath.split('/')
   const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
   navigateTo(`/media/${encodedPath}`)
 }
+
+const openTagModal = () => {
+  tagName.value = ''
+  tagColor.value = '#4B5EAA'
+  showTagModal.value = true
+}
+
+const closeTagModal = () => {
+  showTagModal.value = false
+  tagName.value = ''
+  tagColor.value = '#4B5EAA'
+}
+
+const addTag = async () => {
+  if (!tagName.value.trim()) {
+    alert('Tag name is required')
+    return
+  }
+  if (!currentVideo.value) {
+    alert('No video selected')
+    return
+  }
+  try {
+    const response = await fetch('/api/video-tag', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        fullPath: currentVideo.value.fullPath,
+        tagName: tagName.value.trim(),
+        tagColor: tagColor.value,
+      }),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to add tag: ${response.statusText}`)
+    }
+    await fetchVideos() // Refresh video list
+    closeTagModal()
+  } catch (err) {
+    console.error('Error adding tag:', err)
+    alert('Failed to add tag. Please try again.')
+  }
+}
+
+const recommendedVideos = computed(() => {
+  if (!currentVideo.value || !currentVideo.value.meta.tags.length) {
+    // If no current video or no tags, return videos excluding current, unsorted
+    return videos.value.filter(v => v.fullPath !== currentVideo.value?.fullPath)
+  }
+
+  const currentTags = new Set(currentVideo.value.meta.tags.map(tag => tag.name.toLowerCase()))
+
+  // Map videos to their shared tag count and original video
+  const videosWithTagCount = videos.value
+      .filter(v => v.fullPath !== currentVideo.value?.fullPath) // Exclude current video
+      .map(video => {
+        const sharedTagCount = video.meta.tags.filter(tag =>
+            currentTags.has(tag.name.toLowerCase())
+        ).length
+        return { video, sharedTagCount }
+      })
+
+  // Sort by shared tag count in descending order
+  return videosWithTagCount
+      .sort((a, b) => b.sharedTagCount - a.sharedTagCount)
+      .map(item => item.video)
+})
 
 onMounted(() => {
   fetchVideos()
@@ -120,7 +189,7 @@ onMounted(() => {
           </div>
 
           <!-- Tags -->
-          <div v-if="currentVideo.meta.tags.length" class="flex flex-wrap gap-2 mb-4">
+          <div class="flex flex-wrap gap-2 mb-4">
             <span
                 v-for="tag in currentVideo.meta.tags"
                 :key="tag.name"
@@ -129,6 +198,12 @@ onMounted(() => {
             >
               {{ tag.name }}
             </span>
+            <button
+                class="btn btn-secondary btn-sm"
+                @click="openTagModal"
+            >
+              Add Tag
+            </button>
           </div>
 
           <!-- Description -->
@@ -148,7 +223,7 @@ onMounted(() => {
           <h2 class="text-lg font-semibold mb-4">Recommended Videos</h2>
           <div class="space-y-4">
             <div
-                v-for="video in videos.filter(v => v.fullPath !== currentVideo.fullPath)"
+                v-for="video in recommendedVideos"
                 :key="video.fullPath"
                 class="flex gap-3 hover:bg-base-300 p-2 rounded-lg cursor-pointer"
                 @click="goToVideo(video.fullPath)"
@@ -170,6 +245,38 @@ onMounted(() => {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tag Modal -->
+      <div v-if="showTagModal" class="modal modal-open">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg">Add Tag to Video</h3>
+          <div class="form-control mt-4">
+            <label class="label">
+              <span class="label-text">Tag Name</span>
+            </label>
+            <input
+                v-model="tagName"
+                type="text"
+                placeholder="Enter tag name"
+                class="input input-bordered w-full"
+            />
+          </div>
+          <div class="form-control mt-4">
+            <label class="label">
+              <span class="label-text">Tag Color</span>
+            </label>
+            <input
+                v-model="tagColor"
+                type="color"
+                class="input input-bordered w-full"
+            />
+          </div>
+          <div class="modal-action">
+            <button class="btn btn-primary" @click="addTag">Add Tag</button>
+            <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
           </div>
         </div>
       </div>

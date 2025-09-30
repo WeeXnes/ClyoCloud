@@ -6,6 +6,10 @@ const videos = ref<Video[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const searchQuery = ref('')
+const showTagModal = ref(false)
+const selectedVideoPath = ref('')
+const tagName = ref('')
+const tagColor = ref('#4B5EAA') // Default to DaisyUI primary blue
 
 async function fetchVideos() {
   try {
@@ -65,15 +69,55 @@ const goToVideo = (fullPath: string) => {
   navigateTo(`/media/${encodedPath}`)
 }
 
+const openTagModal = (fullPath: string) => {
+  selectedVideoPath.value = fullPath
+  tagName.value = ''
+  tagColor.value = '#4B5EAA'
+  showTagModal.value = true
+}
+
+const closeTagModal = () => {
+  showTagModal.value = false
+  tagName.value = ''
+  tagColor.value = '#4B5EAA'
+}
+
+const addTag = async () => {
+  if (!tagName.value.trim()) {
+    alert('Tag name is required')
+    return
+  }
+  try {
+    const response = await fetch('/api/video-tag', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        fullPath: selectedVideoPath.value,
+        tagName: tagName.value.trim(),
+        tagColor: tagColor.value,
+      }),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to add tag: ${response.statusText}`)
+    }
+    await fetchVideos() // Refresh video list
+    closeTagModal()
+  } catch (err) {
+    console.error('Error adding tag:', err)
+    alert('Failed to add tag. Please try again.')
+  }
+}
+
 const filteredVideos = computed(() => {
   if (!searchQuery.value.trim()) {
     return videos.value
   }
   const query = searchQuery.value.trim().toLowerCase()
   return videos.value.filter(video => {
-    // Check if query matches video.name
     const nameMatch = video.name.toLowerCase().includes(query)
-    // Check if query matches any tag.name
     const tagMatch = video.meta.tags.some(tag => tag.name.toLowerCase().includes(query))
     return nameMatch || tagMatch
   })
@@ -129,7 +173,7 @@ const filteredVideos = computed(() => {
           <p class="text-sm text-gray-500">
             {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
           </p>
-          <div v-if="video.meta.tags.length" class="flex flex-wrap gap-2 mt-2">
+          <div class="flex flex-wrap gap-2 mt-2">
             <span
                 v-for="tag in video.meta.tags"
                 :key="tag.name"
@@ -139,6 +183,14 @@ const filteredVideos = computed(() => {
               {{ tag.name }}
             </span>
           </div>
+          <div class="card-actions justify-end mt-4">
+            <button
+                class="btn btn-secondary btn-sm"
+                @click.stop="openTagModal(video.fullPath)"
+            >
+              Add Tag
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -146,6 +198,38 @@ const filteredVideos = computed(() => {
     <!-- Empty State -->
     <div v-else class="text-center py-12">
       <p class="text-xl text-gray-500">No videos found.</p>
+    </div>
+
+    <!-- Tag Modal -->
+    <div v-if="showTagModal" class="modal modal-open">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg">Add Tag to Video</h3>
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text">Tag Name</span>
+          </label>
+          <input
+              v-model="tagName"
+              type="text"
+              placeholder="Enter tag name"
+              class="input input-bordered w-full"
+          />
+        </div>
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text">Tag Color</span>
+          </label>
+          <input
+              v-model="tagColor"
+              type="color"
+              class="input input-bordered w-full"
+          />
+        </div>
+        <div class="modal-action">
+          <button class="btn btn-primary" @click="addTag">Add Tag</button>
+          <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
