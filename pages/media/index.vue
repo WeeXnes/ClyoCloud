@@ -59,8 +59,9 @@ const getThumbnailUrl = (fullPath: string) => {
 }
 
 const goToVideo = (fullPath: string) => {
-  // Double encode to handle special characters
-  const encodedPath = encodeURIComponent(fullPath)
+  // Split fullPath into segments and encode each
+  const segments = fullPath.split('/')
+  const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
   navigateTo(`/media/${encodedPath}`)
 }
 </script>

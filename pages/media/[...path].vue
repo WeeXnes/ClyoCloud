@@ -11,6 +11,7 @@ const error = ref<string | null>(null)
 const getStreamUrl = () => {
   const url = useRequestURL()
   const baseUrl = url.origin
+  // Join path segments without encoding slashes
   const subpath = Array.isArray(route.params.path) ? route.params.path.join('/') : route.params.path || ''
   return `${baseUrl}/stream/${encodeURIComponent(subpath)}`
 }
@@ -36,8 +37,9 @@ async function fetchVideos() {
       throw new Error(`Failed to fetch videos: ${response.statusText}`)
     }
     videos.value = await response.json()
-    const subpath = Array.isArray(route.params.path) ? route.params.path.join('/') : route.params.path || ''
-    currentVideo.value = videos.value.find(video => video.fullPath === decodeURIComponent(subpath)) || null
+    // Decode the route path to match video.fullPath
+    const subpath = Array.isArray(route.params.path) ? route.params.path.map(decodeURIComponent).join('/') : decodeURIComponent(route.params.path || '')
+    currentVideo.value = videos.value.find(video => video.fullPath === subpath) || null
   } catch (err) {
     console.error('Error fetching videos:', err)
     error.value = 'Failed to load video data. Please try again.'
@@ -66,7 +68,10 @@ function formatDate(timestamp: number): string {
 }
 
 const goToVideo = (fullPath: string) => {
-  navigateTo(`/media/${encodeURIComponent(fullPath)}`)
+  // Encode segments individually to preserve slashes
+  const segments = fullPath.split('/')
+  const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
+  navigateTo(`/media/${encodedPath}`)
 }
 
 onMounted(() => {
