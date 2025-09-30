@@ -125,110 +125,130 @@ const filteredVideos = computed(() => {
 </script>
 
 <template>
-  <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold mb-6">Browse Videos</h1>
+  <div class="drawer">
+    <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content">
+      <div class="container mx-auto p-4">
+        <!-- Drawer Button -->
+        <div class="flex items-center mb-4">
+          <label for="sidebar-drawer" class="btn btn-ghost btn-circle lg:hidden">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+            </svg>
+          </label>
+          <h1 class="text-3xl font-bold ml-2">Browse Videos</h1>
+        </div>
 
-    <!-- Search Bar -->
-    <div class="mb-6">
-      <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search videos by name or tag..."
-          class="input input-bordered input-primary w-full max-w-md"
-      />
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="isLoading" class="flex justify-center items-center h-64">
-      <div class="loading loading-spinner loading-lg"></div>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="alert alert-error">
-      <span>{{ error }}</span>
-    </div>
-
-    <!-- Video Grid -->
-    <div v-else-if="filteredVideos.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <div
-          v-for="video in filteredVideos"
-          :key="video.fullPath"
-          class="card bg-base-100 shadow-xl cursor-pointer hover:bg-gray-200"
-          @click="goToVideo(video.fullPath)"
-      >
-        <figure>
-          <img
-              v-if="hasThumbnail(video.name)"
-              :src="getThumbnailUrl(video.fullPath)"
-              class="w-full h-48 object-cover rounded-t-lg"
-              alt="Video thumbnail"
-              style="aspect-ratio: 16 / 9;"
+        <!-- Search Bar -->
+        <div class="mb-6">
+          <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search videos by name or tag..."
+              class="input input-bordered input-primary w-full max-w-md"
           />
-          <div v-else class="w-full h-48 bg-gray-200 flex items-center justify-center">
-            <span class="text-gray-500">No Thumbnail</span>
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="isLoading" class="flex justify-center items-center h-64">
+          <div class="loading loading-spinner loading-lg"></div>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="error" class="alert alert-error">
+          <span>{{ error }}</span>
+        </div>
+
+        <!-- Video Grid -->
+        <div v-else-if="filteredVideos.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div
+              v-for="video in filteredVideos"
+              :key="video.fullPath"
+              class="card bg-base-100 shadow-xl cursor-pointer hover:bg-base-300"
+              @click="goToVideo(video.fullPath)"
+          >
+            <figure>
+              <img
+                  v-if="hasThumbnail(video.name)"
+                  :src="getThumbnailUrl(video.fullPath)"
+                  class="w-full h-48 object-cover rounded-t-lg"
+                  alt="Video thumbnail"
+                  style="aspect-ratio: 16 / 9;"
+              />
+              <div v-else class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                <span class="text-gray-500">No Thumbnail</span>
+              </div>
+            </figure>
+            <div class="card-body">
+              <h2 class="card-title text-lg line-clamp-2">{{ video.name }}</h2>
+              <p class="text-sm text-gray-500">
+                {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
+              </p>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span
+                    v-for="tag in video.meta.tags"
+                    :key="tag.name"
+                    class="badge"
+                    :style="{ backgroundColor: tag.color }"
+                >
+                  {{ tag.name }}
+                </span>
+              </div>
+              <div class="card-actions justify-end mt-4">
+                <button
+                    class="btn btn-secondary btn-sm"
+                    @click.stop="openTagModal(video.fullPath)"
+                >
+                  Add Tag
+                </button>
+              </div>
+            </div>
           </div>
-        </figure>
-        <div class="card-body">
-          <h2 class="card-title text-lg line-clamp-2">{{ video.name }}</h2>
-          <p class="text-sm text-gray-500">
-            {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
-          </p>
-          <div class="flex flex-wrap gap-2 mt-2">
-            <span
-                v-for="tag in video.meta.tags"
-                :key="tag.name"
-                class="badge"
-                :style="{ backgroundColor: tag.color }"
-            >
-              {{ tag.name }}
-            </span>
-          </div>
-          <div class="card-actions justify-end mt-4">
-            <button
-                class="btn btn-secondary btn-sm"
-                @click.stop="openTagModal(video.fullPath)"
-            >
-              Add Tag
-            </button>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else class="text-center py-12">
+          <p class="text-xl text-gray-500">No videos found.</p>
+        </div>
+
+        <!-- Tag Modal -->
+        <div v-if="showTagModal" class="modal modal-open">
+          <div class="modal-box">
+            <h3 class="font-bold text-lg">Add Tag to Video</h3>
+            <div class="form-control mt-4">
+              <label class="label">
+                <span class="label-text">Tag Name</span>
+              </label>
+              <input
+                  v-model="tagName"
+                  type="text"
+                  placeholder="Enter tag name"
+                  class="input input-bordered w-full"
+              />
+            </div>
+            <div class="form-control mt-4">
+              <label class="label">
+                <span class="label-text">Tag Color</span>
+              </label>
+              <input
+                  v-model="tagColor"
+                  type="color"
+                  class="input input-bordered w-full"
+              />
+            </div>
+            <div class="modal-action">
+              <button class="btn btn-primary" @click="addTag">Add Tag</button>
+              <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Empty State -->
-    <div v-else class="text-center py-12">
-      <p class="text-xl text-gray-500">No videos found.</p>
-    </div>
-
-    <!-- Tag Modal -->
-    <div v-if="showTagModal" class="modal modal-open">
-      <div class="modal-box">
-        <h3 class="font-bold text-lg">Add Tag to Video</h3>
-        <div class="form-control mt-4">
-          <label class="label">
-            <span class="label-text">Tag Name</span>
-          </label>
-          <input
-              v-model="tagName"
-              type="text"
-              placeholder="Enter tag name"
-              class="input input-bordered w-full"
-          />
-        </div>
-        <div class="form-control mt-4">
-          <label class="label">
-            <span class="label-text">Tag Color</span>
-          </label>
-          <input
-              v-model="tagColor"
-              type="color"
-              class="input input-bordered w-full"
-          />
-        </div>
-        <div class="modal-action">
-          <button class="btn btn-primary" @click="addTag">Add Tag</button>
-          <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
-        </div>
+    <div class="drawer-side">
+      <label for="sidebar-drawer" class="drawer-overlay"></label>
+      <div class="bg-base-200 w-64 h-full p-4">
+        <h2 class="text-lg font-semibold mb-4">Sidebar Content</h2>
+        <p>Replace this with your sidebar navigation or content.</p>
       </div>
     </div>
   </div>
