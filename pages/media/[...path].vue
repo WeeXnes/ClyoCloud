@@ -138,7 +138,7 @@ onMounted(() => {
           >
             {{ currentVideo.meta.description }}
           </div>
-          <div v-else class="bg-gray-100 p-4 rounded-lg text-sm text-gray-700">
+          <div v-else class="bg-base-300 p-4 rounded-lg text-sm text-gray-700">
             No description available.
           </div>
         </div>
@@ -150,7 +150,7 @@ onMounted(() => {
             <div
                 v-for="video in videos.filter(v => v.fullPath !== currentVideo.fullPath)"
                 :key="video.fullPath"
-                class="flex gap-3 hover:bg-gray-100 p-2 rounded-lg cursor-pointer"
+                class="flex gap-3 hover:bg-base-300 p-2 rounded-lg cursor-pointer"
                 @click="goToVideo(video.fullPath)"
             >
               <img

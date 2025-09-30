@@ -85,7 +85,7 @@ const goToVideo = (fullPath: string) => {
       <div
           v-for="video in videos"
           :key="video.fullPath"
-          class="card bg-base-100 shadow-xl cursor-pointer hover:bg-gray-100"
+          class="card bg-base-100 shadow-xl cursor-pointer hover:bg-base-300"
           @click="goToVideo(video.fullPath)"
       >
         <figure>

@@ -29,6 +29,12 @@
               </NuxtLink>
             </li>
             <li>
+              <NuxtLink to="/media">
+                <Icon name="material-symbols:video-library-rounded" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" />
+                Media
+              </NuxtLink>
+            </li>
+            <li>
               <NuxtLink to="/shared">
                 <Icon name="ic:round-folder-shared" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" />
                 Shared
