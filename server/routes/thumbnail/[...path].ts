@@ -102,21 +102,44 @@ export default defineEventHandler(async (event) => {
                 })
             }
         } else {
+            let duration
             try {
                 const ffprobeCommand = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${requestedFile}"`
                 const { stdout } = await execAsync(ffprobeCommand)
-                const duration = parseFloat(stdout)
-                const seekTime = duration * 0.1
-
-                const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vf "thumbnail,scale=320:180" -frames:v 1 -strict -2 "${requestedThumbnail}" -y`
-                await execAsync(ffmpegCommand)
-                console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
-            } catch (ffmpegError) {
-                console.error(`Error generating video thumbnail: ${ffmpegError}`)
+                duration = parseFloat(stdout)
+                if (isNaN(duration)) {
+                    throw new Error('Failed to parse video duration.')
+                }
+            } catch (ffprobeError: any) {
+                console.error(`Error getting video duration: ${ffprobeError.message}`)
                 throw createError({
                     statusCode: 500,
-                    statusMessage: 'Failed to generate video thumbnail',
+                    statusMessage: 'Failed to get video duration',
                 })
+            }
+
+            const seekTime = duration * 0.1
+            const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vf scale=320:180 -frames:v 1 -pix_fmt yuvj420p "${requestedThumbnail}" -y`
+
+            try {
+                await execAsync(ffmpegCommand)
+                console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
+            } catch (ffmpegError: any) {
+                console.error(`Error generating video thumbnail: ${ffmpegError.message}`)
+
+                // Check for a second time point if the first one fails
+                const secondSeekTime = duration * 0.5
+                const secondFfmpegCommand = `ffmpeg -ss ${secondSeekTime} -i "${requestedFile}" -vf scale=320:180 -frames:v 1 -pix_fmt yuvj420p "${requestedThumbnail}" -y`
+                try {
+                    await execAsync(secondFfmpegCommand)
+                    console.log(`Video thumbnail generated successfully on second attempt: ${requestedThumbnail}`)
+                } catch (secondFfmpegError: any) {
+                    console.error(`Final Error generating video thumbnail: ${secondFfmpegError.message}`)
+                    throw createError({
+                        statusCode: 500,
+                        statusMessage: 'Final Error generating video thumbnail',
+                    })
+                }
             }
         }
 
@@ -134,10 +157,10 @@ export default defineEventHandler(async (event) => {
         setHeader(event, 'Content-Disposition', 'inline')
         return createReadStream(requestedThumbnail)
     } catch (error: any) {
-        console.error('Error processing thumbnail:', error)
+        console.error('Error processing thumbnail:', error.message)
         throw createError({
-            statusCode: 404,
-            statusMessage: 'File not found or processing error',
+            statusCode: error.statusCode || 500,
+            statusMessage: error.statusMessage || 'File not found or processing error',
         })
     }
 })
