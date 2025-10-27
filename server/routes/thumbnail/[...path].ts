@@ -108,7 +108,7 @@ export default defineEventHandler(async (event) => {
                 const duration = parseFloat(stdout)
                 const seekTime = duration * 0.1
 
-                const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vf "thumbnail,scale=320:180" -frames:v 1 "${requestedThumbnail}" -y`
+                const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vf "thumbnail,scale=320:180" -frames:v 1 -strict -2 "${requestedThumbnail}" -y`
                 await execAsync(ffmpegCommand)
                 console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
             } catch (ffmpegError) {
