@@ -11,18 +11,13 @@
       <div class="drawer-side">
         <label for="sidebar-drawer" class="drawer-overlay"></label>
         <div class="w-64 bg-base-100 shadow-xl h-full">
-          <div class="p-4 flex items-center space-x-4">
-            <img src="/clyo.png" alt="Clyo" class="h-6 lg:h-8" />
-            <h1 class="text-xl lg:text-2xl font-bold text-primary">Clyo Cloud</h1>
-          </div>
           <ul class="menu menu-compact flex flex-col p-4">
             <li>
               <NuxtLink to="/">
                 <Icon name="ic:baseline-house" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" />
                 Home
               </NuxtLink>
-            </li>
-            <li>
+            </li>            <li>
               <NuxtLink to="/files">
                 <Icon name="ic:round-folder" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" />
                 Folders
@@ -32,12 +27,6 @@
               <NuxtLink to="/media">
                 <Icon name="material-symbols:video-library-rounded" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" />
                 Media
-              </NuxtLink>
-            </li>
-            <li>
-              <NuxtLink to="/shared">
-                <Icon name="ic:round-folder-shared" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" />
-                Shared
               </NuxtLink>
             </li>
           </ul>
