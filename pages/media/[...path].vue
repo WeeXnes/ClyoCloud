@@ -120,29 +120,39 @@ const addTag = async () => {
 }
 
 const recommendedVideos = computed(() => {
-  if (!currentVideo.value || !currentVideo.value.meta.tags.length) {
-    return videos.value.filter(v => v.fullPath !== currentVideo.value?.fullPath)
+  if (!currentVideo.value) {
+    return [];
   }
 
-  const currentTags = new Set(currentVideo.value.meta.tags.map(tag => tag.name.toLowerCase()))
+  const currentTags = new Set(currentVideo.value.meta.tags.map(tag => tag.name.toLowerCase()));
 
   const videosWithTagCount = videos.value
       .filter(v => v.fullPath !== currentVideo.value?.fullPath)
       .map(video => {
         const sharedTagCount = video.meta.tags.filter(tag =>
             currentTags.has(tag.name.toLowerCase())
-        ).length
-        return { video, sharedTagCount }
-      })
+        ).length;
+        return { video, sharedTagCount };
+      });
 
   return videosWithTagCount
       .sort((a, b) => b.sharedTagCount - a.sharedTagCount)
-      .map(item => item.video)
-})
+      .map(item => item.video);
+});
+
+const visibleVideosCount = ref(30);
+
+const visibleRecommendedVideos = computed(() => {
+  return recommendedVideos.value.slice(0, visibleVideosCount.value);
+});
+
+const loadMore = () => {
+  visibleVideosCount.value += 30;
+};
 
 onMounted(() => {
-  fetchVideos()
-})
+  fetchVideos();
+});
 </script>
 
 <template>
@@ -183,78 +193,78 @@ onMounted(() => {
             </video>
           </div>
 
-          <!-- Video Info and Sidebar -->
-          <div class="mt-6 flex flex-col lg:flex-row gap-8">
-            <!-- Left: Video Title & Metadata -->
-            <div class="flex-1">
-              <!-- Title -->
-              <h1 class="text-2xl font-bold mb-2">
-                {{ currentVideo.name }}
-              </h1>
+          <!-- Video Info -->
+          <div class="mt-6">
+            <!-- Title -->
+            <h1 class="text-2xl font-bold mb-2">
+              {{ currentVideo.name }}
+            </h1>
 
-              <!-- Metadata -->
-              <div class="text-sm text-gray-500 mb-4">
-                {{ formatFileSize(currentVideo.size) }} • {{ formatDate(currentVideo.lastModified) }}
-              </div>
-
-              <!-- Tags -->
-              <div class="flex flex-wrap gap-2 mb-4">
-                <span
-                    v-for="tag in currentVideo.meta.tags"
-                    :key="tag.name"
-                    class="badge"
-                    :style="{ backgroundColor: tag.color }"
-                >
-                  {{ tag.name }}
-                </span>
-                <button
-                    class="btn btn-secondary btn-sm"
-                    @click="openTagModal"
-                >
-                  Add Tag
-                </button>
-              </div>
-
-              <!-- Description -->
-              <div
-                  v-if="currentVideo.meta.description"
-                  class="bg-gray-100 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-line"
-              >
-                {{ currentVideo.meta.description }}
-              </div>
-              <div v-else class="bg-base-300 p-4 rounded-lg text-sm text-gray-700">
-                No description available.
-              </div>
+            <!-- Metadata -->
+            <div class="text-sm text-gray-500 mb-4">
+              {{ formatFileSize(currentVideo.size) }} • {{ formatDate(currentVideo.lastModified) }}
             </div>
 
-            <!-- Right: Recommended Videos -->
-            <div class="w-full lg:w-80">
-              <h2 class="text-lg font-semibold mb-4">Recommended Videos</h2>
-              <div class="space-y-4">
-                <div
-                    v-for="video in recommendedVideos"
-                    :key="video.fullPath"
-                    class="flex gap-3 hover:bg-base-300 p-2 rounded-lg cursor-pointer"
-                    @click="goToVideo(video.fullPath)"
-                >
-                  <img
-                      v-if="hasThumbnail(video.name)"
-                      :src="getThumbnailUrl(video.fullPath)"
-                      alt="Thumbnail"
-                      class="w-32 h-auto rounded"
-                      style="aspect-ratio: 16 / 9;"
-                  />
-                  <div v-else class="w-32 h-18 bg-gray-200 flex items-center justify-center rounded">
-                    <span class="text-gray-500 text-xs">No Thumbnail</span>
-                  </div>
-                  <div class="flex flex-col">
-                    <p class="font-medium line-clamp-2">{{ video.name }}</p>
-                    <span class="text-sm text-gray-500">
-                      {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
-                    </span>
-                  </div>
+            <!-- Tags -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span
+                  v-for="tag in currentVideo.meta.tags"
+                  :key="tag.name"
+                  class="badge"
+                  :style="{ backgroundColor: tag.color }"
+              >
+                {{ tag.name }}
+              </span>
+              <button
+                  class="btn btn-secondary btn-sm"
+                  @click="openTagModal"
+              >
+                Add Tag
+              </button>
+            </div>
+
+            <!-- Description -->
+            <div
+                v-if="currentVideo.meta.description"
+                class="bg-gray-100 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-line"
+            >
+              {{ currentVideo.meta.description }}
+            </div>
+            <div v-else class="bg-base-300 p-4 rounded-lg text-sm text-gray-700">
+              No description available.
+            </div>
+          </div>
+
+          <!-- Recommended Videos Grid -->
+          <div class="mt-8">
+            <h2 class="text-lg font-semibold mb-4">Recommended Videos</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div
+                  v-for="video in visibleRecommendedVideos"
+                  :key="video.fullPath"
+                  class="flex flex-col gap-2 hover:bg-base-300 p-2 rounded-lg cursor-pointer"
+                  @click="goToVideo(video.fullPath)"
+              >
+                <img
+                    v-if="hasThumbnail(video.name)"
+                    :src="getThumbnailUrl(video.fullPath)"
+                    alt="Thumbnail"
+                    class="w-full h-auto rounded"
+                    style="aspect-ratio: 16 / 9;"
+                />
+                <div v-else class="w-full h-32 bg-gray-200 flex items-center justify-center rounded">
+                  <span class="text-gray-500 text-xs">No Thumbnail</span>
+                </div>
+                <div class="flex flex-col">
+                  <p class="font-medium line-clamp-2">{{ video.name }}</p>
+                  <span class="text-sm text-gray-500">
+                    {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
+                  </span>
                 </div>
               </div>
+            </div>
+            <div v-if="visibleVideosCount < recommendedVideos.length" class="text-center mt-6">
+              <button @click="loadMore" class="btn btn-primary">Load More</button>
             </div>
           </div>
 
