@@ -102,23 +102,21 @@ export default defineEventHandler(async (event) => {
                 })
             }
         } else {
-            const ffmpegCommand1 = `ffmpeg -i "${requestedFile}" -ss 5 -vf "thumbnail,scale=320:180" -frames:v 1 "${requestedThumbnail}" -y`
             try {
-                await execAsync(ffmpegCommand1)
+                const ffprobeCommand = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${requestedFile}"`
+                const { stdout } = await execAsync(ffprobeCommand)
+                const duration = parseFloat(stdout)
+                const seekTime = duration * 0.1
+
+                const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vf "thumbnail,scale=320:180" -frames:v 1 "${requestedThumbnail}" -y`
+                await execAsync(ffmpegCommand)
                 console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
             } catch (ffmpegError) {
-                console.error(`Error generating video thumbnail for 5s mark: ${ffmpegError}`)
-                const ffmpegCommand2 = `ffmpeg -i "${requestedFile}" -ss 1 -vf "thumbnail,scale=320:180" -frames:v 1 "${requestedThumbnail}" -y`
-                try {
-                    await execAsync(ffmpegCommand2)
-                    console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
-                } catch (ffmpegError) {
-                    console.error(`Final Error generating video thumbnail: ${ffmpegError}`)
-                    throw createError({
-                        statusCode: 500,
-                        statusMessage: 'Final Error generating video thumbnail',
-                    })
-                }
+                console.error(`Error generating video thumbnail: ${ffmpegError}`)
+                throw createError({
+                    statusCode: 500,
+                    statusMessage: 'Failed to generate video thumbnail',
+                })
             }
         }
 
