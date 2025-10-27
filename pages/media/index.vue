@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import type { Video, FileMeta } from '~/types/File'
 
 const videos = ref<Video[]>([])
@@ -111,6 +111,10 @@ const addTag = async () => {
   }
 }
 
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
+
 const filteredVideos = computed(() => {
   if (!searchQuery.value.trim()) {
     return videos.value
@@ -122,6 +126,31 @@ const filteredVideos = computed(() => {
     return nameMatch || tagMatch
   })
 })
+
+const currentPage = ref(1)
+const videosPerPage = 30
+
+const paginatedVideos = computed(() => {
+  const start = (currentPage.value - 1) * videosPerPage
+  const end = start + videosPerPage
+  return filteredVideos.value.slice(start, end)
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredVideos.value.length / videosPerPage)
+})
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+function prevPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
 </script>
 
 <template>
@@ -160,9 +189,9 @@ const filteredVideos = computed(() => {
         </div>
 
         <!-- Video Grid -->
-        <div v-else-if="filteredVideos.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div v-else-if="paginatedVideos.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <div
-              v-for="video in filteredVideos"
+              v-for="video in paginatedVideos"
               :key="video.fullPath"
               class="card bg-base-100 shadow-xl cursor-pointer hover:bg-base-300"
               @click="goToVideo(video.fullPath)"
@@ -204,6 +233,25 @@ const filteredVideos = computed(() => {
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div v-if="totalPages > 1" class="flex justify-center items-center mt-8">
+          <button
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="btn btn-primary mr-4"
+          >
+            Previous
+          </button>
+          <span class="text-lg">{{ currentPage }} / {{ totalPages }}</span>
+          <button
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="btn btn-primary ml-4"
+          >
+            Next
+          </button>
         </div>
 
         <!-- Empty State -->
