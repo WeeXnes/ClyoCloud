@@ -10,7 +10,7 @@ const error = ref<string | null>(null)
 const showTagModal = ref(false)
 const selectedTags = ref<Tag[]>([])
 const predefinedTags = ref<Tag[]>([])
-const showNewTagForm = ref(false)
+whyconst showNewTagForm = ref(true)
 const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 
@@ -93,7 +93,7 @@ const goToVideo = (fullPath: string) => {
 
 const openTagModal = () => {
   selectedTags.value = []
-  showNewTagForm.value = false
+  showNewTagForm.value = true
   newTagName.value = ''
   newTagColor.value = '#4B5EAA'
   showTagModal.value = true
@@ -101,6 +101,19 @@ const openTagModal = () => {
 
 const closeTagModal = () => {
   showTagModal.value = false
+}
+
+const toggleTagSelection = (tag: Tag) => {
+  const index = selectedTags.value.findIndex(t => t.name === tag.name)
+  if (index > -1) {
+    selectedTags.value.splice(index, 1)
+  } else {
+    selectedTags.value.push(tag)
+  }
+}
+
+const isTagSelected = (tag: Tag) => {
+  return selectedTags.value.some(t => t.name === tag.name)
 }
 
 const addTag = async () => {
@@ -186,7 +199,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-screen-xl mx-auto px-4 py-6">
+  <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <!-- Loading State -->
     <div v-if="isLoading" class="flex justify-center items-center h-64">
       <div class="loading loading-spinner loading-lg"></div>
@@ -198,9 +211,9 @@ onMounted(() => {
     </div>
 
     <!-- Video Player and Info -->
-    <div v-else-if="currentVideo">
+    <div v-else-if="currentVideo" class="lg:flex lg:gap-x-8">
       <!-- Video Player -->
-      <div class="w-full">
+      <div class="lg:w-2/3">
         <video
             id="previewVideo"
             controls
@@ -212,7 +225,7 @@ onMounted(() => {
       </div>
 
       <!-- Video Info -->
-      <div class="mt-6">
+      <div class="lg:w-1/3 mt-6 lg:mt-0">
         <!-- Title -->
         <h1 class="text-2xl font-bold mb-2">
           {{ currentVideo.name }}
@@ -252,68 +265,47 @@ onMounted(() => {
           No description available.
         </div>
       </div>
+    </div>
 
-      <!-- Recommended Videos Grid -->
-      <div class="mt-8">
-        <h2 class="text-lg font-semibold mb-4">Recommended Videos</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div
-              v-for="video in visibleRecommendedVideos"
-              :key="video.fullPath"
-              class="flex flex-col gap-2 hover:bg-base-300 p-2 rounded-lg cursor-pointer"
-              @click="goToVideo(video.fullPath)"
-          >
-            <img
-                v-if="hasThumbnail(video.name)"
-                :src="getThumbnailUrl(video.fullPath)"
-                alt="Thumbnail"
-                class="w-full h-auto rounded"
-                style="aspect-ratio: 16 / 9;"
-            />
-            <div v-else class="w-full h-32 bg-gray-200 flex items-center justify-center rounded">
-              <span class="text-gray-500 text-xs">No Thumbnail</span>
-            </div>
-            <div class="flex flex-col">
-              <p class="font-medium line-clamp-2">{{ video.name }}</p>
-              <span class="text-sm text-gray-500">
-                {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
-              </span>
-            </div>
+    <!-- Recommended Videos Grid -->
+    <div class="mt-8">
+      <h2 class="text-lg font-semibold mb-4">Recommended Videos</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div
+            v-for="video in visibleRecommendedVideos"
+            :key="video.fullPath"
+            class="flex flex-col gap-2 hover:bg-base-300 p-2 rounded-lg cursor-pointer"
+            @click="goToVideo(video.fullPath)"
+        >
+          <img
+              v-if="hasThumbnail(video.name)"
+              :src="getThumbnailUrl(video.fullPath)"
+              alt="Thumbnail"
+              class="w-full h-auto rounded"
+              style="aspect-ratio: 16 / 9;"
+          />
+          <div v-else class="w-full h-32 bg-gray-200 flex items-center justify-center rounded">
+            <span class="text-gray-500 text-xs">No Thumbnail</span>
+          </div>
+          <div class="flex flex-col">
+            <p class="font-medium line-clamp-2">{{ video.name }}</p>
+            <span class="text-sm text-gray-500">
+              {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
+            </span>
           </div>
         </div>
-        <div v-if="visibleVideosCount < recommendedVideos.length" class="text-center mt-6">
-          <button @click="loadMore" class="btn btn-primary">Load More</button>
-        </div>
       </div>
+      <div v-if="visibleVideosCount < recommendedVideos.length" class="text-center mt-6">
+        <button @click="loadMore" class="btn btn-primary">Load More</button>
+      </div>
+    </div>
 
-      <!-- Tag Modal -->
-      <div v-if="showTagModal" class="modal modal-open">
+    <!-- Tag Modal -->
+    <div v-if="showTagModal" class="modal modal-open">
         <div class="modal-box">
           <h3 class="font-bold text-lg">Add Tag to Video</h3>
 
-          <div v-if="!showNewTagForm">
-            <div class="form-control mt-4">
-              <label class="label">
-                <span class="label-text">Select Tags</span>
-              </label>
-              <select
-                  v-model="selectedTags"
-                  multiple
-                  class="select select-bordered w-full"
-              >
-                <option v-for="tag in predefinedTags" :key="tag.name" :value="tag">
-                  {{ tag.name }}
-                </option>
-              </select>
-            </div>
-            <div class="modal-action">
-              <button class="btn btn-primary" @click="addTag">Add Tags</button>
-              <button class="btn btn-ghost" @click="showNewTagForm = true">Create New Tag</button>
-              <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
-            </div>
-          </div>
-
-          <div v-else>
+          <div v-if="showNewTagForm">
             <div class="form-control mt-4">
               <label class="label">
                 <span class="label-text">Tag Name</span>
@@ -337,14 +329,36 @@ onMounted(() => {
             </div>
             <div class="modal-action">
               <button class="btn btn-primary" @click="addTag">Add Tag</button>
-              <button class="btn btn-ghost" @click="showNewTagForm = false">Back to Predefined</button>
+              <button class="btn btn-ghost" @click="showNewTagForm = false">Select Predefined Tags</button>
+              <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+            </div>
+          </div>
+
+          <div v-else>
+            <div class="form-control mt-4">
+              <label class="label">
+                <span class="label-text">Select Tags</span>
+              </label>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+                <div
+                    v-for="tag in predefinedTags"
+                    :key="tag.name"
+                    class="p-2 rounded-lg cursor-pointer text-center"
+                    :style="{ backgroundColor: tag.color, border: isTagSelected(tag) ? '2px solid black' : 'none' }"
+                    @click="toggleTagSelection(tag)"
+                >
+                  {{ tag.name }}
+                </div>
+              </div>
+            </div>
+            <div class="modal-action">
+              <button class="btn btn-primary" @click="addTag">Add Tags</button>
+              <button class="btn btn-ghost" @click="showNewTagForm = true">Create New Tag</button>
               <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
             </div>
           </div>
         </div>
       </div>
-    </div>
-
     <!-- Not Found State -->
     <div v-else class="text-center py-12">
       <p class="text-xl text-gray-500">Video not found.</p>

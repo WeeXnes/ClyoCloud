@@ -10,7 +10,7 @@ const showTagModal = ref(false)
 const selectedVideoPath = ref('')
 const selectedTags = ref<Tag[]>([])
 const predefinedTags = ref<Tag[]>([])
-const showNewTagForm = ref(false)
+const showNewTagForm = ref(true)
 const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 
@@ -90,7 +90,7 @@ const goToVideo = (fullPath: string) => {
 const openTagModal = (fullPath: string) => {
   selectedVideoPath.value = fullPath
   selectedTags.value = []
-  showNewTagForm.value = false
+  showNewTagForm.value = true
   newTagName.value = ''
   newTagColor.value = '#4B5EAA'
   showTagModal.value = true
@@ -98,6 +98,19 @@ const openTagModal = (fullPath: string) => {
 
 const closeTagModal = () => {
   showTagModal.value = false
+}
+
+const toggleTagSelection = (tag: Tag) => {
+  const index = selectedTags.value.findIndex(t => t.name === tag.name)
+  if (index > -1) {
+    selectedTags.value.splice(index, 1)
+  } else {
+    selectedTags.value.push(tag)
+  }
+}
+
+const isTagSelected = (tag: Tag) => {
+  return selectedTags.value.some(t => t.name === tag.name)
 }
 
 const addTag = async () => {
@@ -183,7 +196,7 @@ function prevPage() {
 </script>
 
 <template>
-  <div class="container mx-auto p-4">
+  <div class="container mx-auto p-4 sm:p-6 lg:p-8">
     <!-- Search Bar -->
     <div class="mb-6">
       <input
@@ -205,7 +218,7 @@ function prevPage() {
     </div>
 
     <!-- Video Grid -->
-    <div v-else-if="paginatedVideos.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div v-else-if="paginatedVideos.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       <div
           v-for="video in paginatedVideos"
           :key="video.fullPath"
@@ -224,8 +237,8 @@ function prevPage() {
             <span class="text-gray-500">No Thumbnail</span>
           </div>
         </figure>
-        <div class="card-body">
-          <h2 class="card-title text-lg line-clamp-2">{{ video.name }}</h2>
+        <div class="card-body p-4">
+          <h2 class="card-title text-base line-clamp-2">{{ video.name }}</h2>
           <p class="text-sm text-gray-500">
             {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
           </p>
@@ -280,29 +293,7 @@ function prevPage() {
       <div class="modal-box">
         <h3 class="font-bold text-lg">Add Tag to Video</h3>
 
-        <div v-if="!showNewTagForm">
-          <div class="form-control mt-4">
-            <label class="label">
-              <span class="label-text">Select Tags</span>
-            </label>
-            <select
-                v-model="selectedTags"
-                multiple
-                class="select select-bordered w-full"
-            >
-              <option v-for="tag in predefinedTags" :key="tag.name" :value="tag">
-                {{ tag.name }}
-              </option>
-            </select>
-          </div>
-          <div class="modal-action">
-            <button class="btn btn-primary" @click="addTag">Add Tags</button>
-            <button class="btn btn-ghost" @click="showNewTagForm = true">Create New Tag</button>
-            <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
-          </div>
-        </div>
-
-        <div v-else>
+        <div v-if="showNewTagForm">
           <div class="form-control mt-4">
             <label class="label">
               <span class="label-text">Tag Name</span>
@@ -326,7 +317,31 @@ function prevPage() {
           </div>
           <div class="modal-action">
             <button class="btn btn-primary" @click="addTag">Add Tag</button>
-            <button class="btn btn-ghost" @click="showNewTagForm = false">Back to Predefined</button>
+            <button class="btn btn-ghost" @click="showNewTagForm = false">Select Predefined Tags</button>
+            <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+          </div>
+        </div>
+
+        <div v-else>
+          <div class="form-control mt-4">
+            <label class="label">
+              <span class="label-text">Select Tags</span>
+            </label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+              <div
+                  v-for="tag in predefinedTags"
+                  :key="tag.name"
+                  class="p-2 rounded-lg cursor-pointer text-center"
+                  :style="{ backgroundColor: tag.color, border: isTagSelected(tag) ? '2px solid black' : 'none' }"
+                  @click="toggleTagSelection(tag)"
+              >
+                {{ tag.name }}
+              </div>
+            </div>
+          </div>
+          <div class="modal-action">
+            <button class="btn btn-primary" @click="addTag">Add Tags</button>
+            <button class="btn btn-ghost" @click="showNewTagForm = true">Create New Tag</button>
             <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
           </div>
         </div>
