@@ -343,7 +343,7 @@ onMounted(() => {
                       v-for="tag in predefinedTags"
                       :key="tag.name"
                       class="p-2 rounded-lg cursor-pointer text-center"
-                      :style="{ backgroundColor: tag.color, border: isTagSelected(tag) ? '2px solid black' : 'none' }"
+                      :style="{ backgroundColor: tag.color, border: isTagSelected(tag) ? '2px solid #D1D5DB' : '2px solid ' + tag.color }"
                       @click="toggleTagSelection(tag)"
                   >
                     {{ tag.name }}
