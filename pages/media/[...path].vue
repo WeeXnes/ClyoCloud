@@ -309,7 +309,7 @@ onMounted(() => {
       </div>
     </div>
     <div class="drawer-side">
-      <label for="sidebar-drawer" class="drawer-overlay"></label>
+      
       <div class="bg-base-200 w-64 h-full p-4">
         <h2 class="text-lg font-semibold mb-4">Sidebar Content</h2>
         <p>Replace this with your sidebar navigation or content.</p>
