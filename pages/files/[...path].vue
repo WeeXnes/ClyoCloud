@@ -345,8 +345,14 @@ const getStaticUrl = (file: File) => {
     return `${baseUrl}${endpoint}/${joinedPath}/${encodeURIComponent(file.name)}`
 }
 
-const copyFileLinkStatic = (file: File) => {
-  console.log(getStaticUrl(file))
+const copyFileLinkStatic = async (file: File) => {
+  try {
+    await navigator.clipboard.writeText(getStaticUrl(file));
+    // No notification as per user's request
+  } catch (err) {
+    console.error('Failed to copy: ', err);
+    // No notification as per user's request
+  }
 }
 
 const downloadFile = (file: File) => {
