@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import type { Video, FileMeta } from '~/types/File'
+import type { Video, FileMeta, Tag } from '~/types/File'
 
 const route = useRoute()
 const videos = ref<Video[]>([])
@@ -8,8 +8,11 @@ const currentVideo = ref<Video | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const showTagModal = ref(false)
-const tagName = ref('')
-const tagColor = ref('#4B5EAA') // Default to DaisyUI primary blue
+const selectedTags = ref<Tag[]>([])
+const predefinedTags = ref<Tag[]>([])
+const showNewTagForm = ref(false)
+const newTagName = ref('')
+const newTagColor = ref('#4B5EAA')
 
 const getStreamUrl = () => {
   const url = useRequestURL()
@@ -49,6 +52,20 @@ async function fetchVideos() {
   }
 }
 
+async function fetchPredefinedTags() {
+  try {
+    const response = await fetch('/api/tags', {
+      credentials: 'include',
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tags: ${response.statusText}`)
+    }
+    predefinedTags.value = await response.json()
+  } catch (err) {
+    console.error('Error fetching tags:', err)
+  }
+}
+
 function formatFileSize(size: number): string {
   const units = ['B', 'KB', 'MB', 'GB']
   let value = size
@@ -75,27 +92,39 @@ const goToVideo = (fullPath: string) => {
 }
 
 const openTagModal = () => {
-  tagName.value = ''
-  tagColor.value = '#4B5EAA'
+  selectedTags.value = []
+  showNewTagForm.value = false
+  newTagName.value = ''
+  newTagColor.value = '#4B5EAA'
   showTagModal.value = true
 }
 
 const closeTagModal = () => {
   showTagModal.value = false
-  tagName.value = ''
-  tagColor.value = '#4B5EAA'
 }
 
 const addTag = async () => {
-  const tags = tagName.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-  if (tags.length === 0) {
-    alert('Tag name is required');
+  let tagsToAdd: Tag[] = []
+  if (showNewTagForm.value) {
+    if (!newTagName.value.trim()) {
+      alert('Tag name is required');
+      return;
+    }
+    tagsToAdd.push({ name: newTagName.value, color: newTagColor.value })
+  } else {
+    tagsToAdd = selectedTags.value
+  }
+
+  if (tagsToAdd.length === 0) {
+    alert('Please select or create at least one tag.');
     return;
   }
+
   if (!currentVideo.value) {
     alert('No video selected');
     return;
   }
+
   try {
     const response = await fetch('/api/video-tag', {
       method: 'POST',
@@ -105,8 +134,7 @@ const addTag = async () => {
       credentials: 'include',
       body: JSON.stringify({
         fullPath: currentVideo.value.fullPath,
-        tags: tags,
-        tagColor: tagColor.value,
+        tags: tagsToAdd,
       }),
     });
     if (!response.ok) {
@@ -153,6 +181,7 @@ const loadMore = () => {
 
 onMounted(() => {
   fetchVideos();
+  fetchPredefinedTags();
 });
 </script>
 
@@ -261,30 +290,56 @@ onMounted(() => {
       <div v-if="showTagModal" class="modal modal-open">
         <div class="modal-box">
           <h3 class="font-bold text-lg">Add Tag to Video</h3>
-          <div class="form-control mt-4">
-            <label class="label">
-              <span class="label-text">Tag Name</span>
-            </label>
-            <input
-                v-model="tagName"
-                type="text"
-                placeholder="Enter tag name"
-                class="input input-bordered w-full"
-            />
+
+          <div v-if="!showNewTagForm">
+            <div class="form-control mt-4">
+              <label class="label">
+                <span class="label-text">Select Tags</span>
+              </label>
+              <select
+                  v-model="selectedTags"
+                  multiple
+                  class="select select-bordered w-full"
+              >
+                <option v-for="tag in predefinedTags" :key="tag.name" :value="tag">
+                  {{ tag.name }}
+                </option>
+              </select>
+            </div>
+            <div class="modal-action">
+              <button class="btn btn-primary" @click="addTag">Add Tags</button>
+              <button class="btn btn-ghost" @click="showNewTagForm = true">Create New Tag</button>
+              <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+            </div>
           </div>
-          <div class="form-control mt-4">
-            <label class="label">
-              <span class="label-text">Tag Color</span>
-            </label>
-            <input
-                v-model="tagColor"
-                type="color"
-                class="input input-bordered w-full"
-            />
-          </div>
-          <div class="modal-action">
-            <button class="btn btn-primary" @click="addTag">Add Tag</button>
-            <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+
+          <div v-else>
+            <div class="form-control mt-4">
+              <label class="label">
+                <span class="label-text">Tag Name</span>
+              </label>
+              <input
+                  v-model="newTagName"
+                  type="text"
+                  placeholder="Enter tag name"
+                  class="input input-bordered w-full"
+              />
+            </div>
+            <div class="form-control mt-4">
+              <label class="label">
+                <span class="label-text">Tag Color</span>
+              </label>
+              <input
+                  v-model="newTagColor"
+                  type="color"
+                  class="input input-bordered w-full"
+              />
+            </div>
+            <div class="modal-action">
+              <button class="btn btn-primary" @click="addTag">Add Tag</button>
+              <button class="btn btn-ghost" @click="showNewTagForm = false">Back to Predefined</button>
+              <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+            </div>
           </div>
         </div>
       </div>

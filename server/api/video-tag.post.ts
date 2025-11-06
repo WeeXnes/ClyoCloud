@@ -1,7 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
-import type { FileMeta } from '~/types/File'
+import type { FileMeta, Tag } from '~/types/File'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -16,12 +16,12 @@ export default defineEventHandler(async (event) => {
         const config = useRuntimeConfig()
         const userStoragePath = path.join(config.storagePath, event.context.user.name)
         const body = await readBody(event)
-        const { fullPath, tags, tagColor } = body
+        const { fullPath, tags } = body
 
-        if (!fullPath || !tags || !Array.isArray(tags) || tags.length === 0 || !tagColor) {
+        if (!fullPath || !tags || !Array.isArray(tags) || tags.length === 0) {
             throw createError({
                 statusCode: 400,
-                statusMessage: 'Missing required fields: fullPath, tags (array), tagColor',
+                statusMessage: 'Missing required fields: fullPath, tags (array)',
             })
         }
 
@@ -53,8 +53,10 @@ export default defineEventHandler(async (event) => {
         }
 
         // Add new tags
-        for (const tagName of tags) {
-            meta.tags.push({ name: tagName, color: tagColor })
+        for (const tag of tags) {
+            if(tag.name && tag.color) {
+                meta.tags.push({ name: tag.name, color: tag.color })
+            }
         }
 
         // Write updated .cloudinfo file
