@@ -10,7 +10,7 @@ const error = ref<string | null>(null)
 const showTagModal = ref(false)
 const selectedTags = ref<Tag[]>([])
 const predefinedTags = ref<Tag[]>([])
-whyconst showNewTagForm = ref(true)
+const showNewTagForm = ref(true)
 const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 
@@ -211,9 +211,9 @@ onMounted(() => {
     </div>
 
     <!-- Video Player and Info -->
-    <div v-else-if="currentVideo" class="lg:flex lg:gap-x-8">
+    <div v-else-if="currentVideo">
       <!-- Video Player -->
-      <div class="lg:w-2/3">
+      <div>
         <video
             id="previewVideo"
             controls
@@ -225,7 +225,7 @@ onMounted(() => {
       </div>
 
       <!-- Video Info -->
-      <div class="lg:w-1/3 mt-6 lg:mt-0">
+      <div class="mt-6">
         <!-- Title -->
         <h1 class="text-2xl font-bold mb-2">
           {{ currentVideo.name }}
