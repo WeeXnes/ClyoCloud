@@ -87,13 +87,14 @@ const closeTagModal = () => {
 }
 
 const addTag = async () => {
-  if (!tagName.value.trim()) {
-    alert('Tag name is required')
-    return
+  const tags = tagName.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+  if (tags.length === 0) {
+    alert('Tag name is required');
+    return;
   }
   if (!currentVideo.value) {
-    alert('No video selected')
-    return
+    alert('No video selected');
+    return;
   }
   try {
     const response = await fetch('/api/video-tag', {
@@ -104,20 +105,20 @@ const addTag = async () => {
       credentials: 'include',
       body: JSON.stringify({
         fullPath: currentVideo.value.fullPath,
-        tagName: tagName.value.trim(),
+        tags: tags,
         tagColor: tagColor.value,
       }),
-    })
+    });
     if (!response.ok) {
-      throw new Error(`Failed to add tag: ${response.statusText}`)
+      throw new Error(`Failed to add tags`);
     }
-    await fetchVideos() // Refresh video list
-    closeTagModal()
+    await fetchVideos(); // Refresh video list
+    closeTagModal();
   } catch (err) {
-    console.error('Error adding tag:', err)
-    alert('Failed to add tag. Please try again.')
+    console.error('Error adding tags:', err);
+    alert('Failed to add tags. Please try again.');
   }
-}
+};
 
 const recommendedVideos = computed(() => {
   if (!currentVideo.value) {

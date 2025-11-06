@@ -16,12 +16,12 @@ export default defineEventHandler(async (event) => {
         const config = useRuntimeConfig()
         const userStoragePath = path.join(config.storagePath, event.context.user.name)
         const body = await readBody(event)
-        const { fullPath, tagName, tagColor } = body
+        const { fullPath, tags, tagColor } = body
 
-        if (!fullPath || !tagName || !tagColor) {
+        if (!fullPath || !tags || !Array.isArray(tags) || tags.length === 0 || !tagColor) {
             throw createError({
                 statusCode: 400,
-                statusMessage: 'Missing required fields: fullPath, tagName, tagColor',
+                statusMessage: 'Missing required fields: fullPath, tags (array), tagColor',
             })
         }
 
@@ -52,8 +52,10 @@ export default defineEventHandler(async (event) => {
             meta = { tags: [] }
         }
 
-        // Add new tag
-        meta.tags.push({ name: tagName, color: tagColor })
+        // Add new tags
+        for (const tagName of tags) {
+            meta.tags.push({ name: tagName, color: tagColor })
+        }
 
         // Write updated .cloudinfo file
         await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')
