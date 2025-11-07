@@ -1,0 +1,12 @@
+{
+  "tags": [
+    {
+      "name": "Example Tag 1",
+      "color": "#556B2F"
+    },
+    {
+      "name": "Example Tag 2",
+      "color": "#5C3317"
+    }
+  ]
+}
