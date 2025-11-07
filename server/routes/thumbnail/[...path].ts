@@ -1,4 +1,4 @@
-import { createReadStream } from 'fs'
+import fs, { createReadStream } from 'fs'
 import { stat } from 'fs/promises'
 import { defineEventHandler, getRouterParam, setHeader, createError } from 'h3'
 import mime from 'mime-types'
@@ -67,7 +67,8 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        await execAsync(`mkdir -p "${path.dirname(requestedThumbnail)}"`)
+        await fs.promises.mkdir(path.dirname(requestedThumbnail), { recursive: true });
+
 
         if (supportedImageTypes.includes(contentType)) {
             let needsResize = true
