@@ -81,10 +81,14 @@ const getThumbnailUrl = (fullPath: string) => {
   return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
 }
 
-const goToVideo = (fullPath: string) => {
+const getVideoUrl = (fullPath: string) => {
   const segments = fullPath.split('/')
   const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
-  navigateTo(`/media/${encodedPath}`)
+  return `/media/${encodedPath}`
+}
+
+const goToVideo = (fullPath: string) => {
+  navigateTo(getVideoUrl(fullPath))
 }
 
 const openTagModal = (fullPath: string) => {
@@ -219,11 +223,12 @@ function prevPage() {
 
     <!-- Video Grid -->
     <div v-else-if="paginatedVideos.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      <div
+      <a
           v-for="video in paginatedVideos"
           :key="video.fullPath"
           class="card bg-base-100 shadow-xl cursor-pointer hover:bg-base-300"
-          @click="goToVideo(video.fullPath)"
+          :href="getVideoUrl(video.fullPath)"
+          @click.prevent="goToVideo(video.fullPath)"
       >
         <figure>
           <img
@@ -261,7 +266,7 @@ function prevPage() {
             </button>
           </div>
         </div>
-      </div>
+      </a>
     </div>
 
     <!-- Pagination Controls -->

@@ -85,10 +85,14 @@ function formatDate(timestamp: number): string {
   })
 }
 
-const goToVideo = (fullPath: string) => {
+const getVideoUrl = (fullPath: string) => {
   const segments = fullPath.split('/')
   const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
-  navigateTo(`/media/${encodedPath}`)
+  return `/media/${encodedPath}`
+}
+
+const goToVideo = (fullPath: string) => {
+  navigateTo(getVideoUrl(fullPath))
 }
 
 const openTagModal = () => {
@@ -270,11 +274,12 @@ onMounted(() => {
         <div class="mt-8">
           <h2 class="text-lg font-semibold mb-4">Recommended Videos</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <div
+            <a
                 v-for="video in visibleRecommendedVideos"
                 :key="video.fullPath"
                 class="flex flex-col gap-2 hover:bg-base-300 p-2 rounded-lg cursor-pointer"
-                @click="goToVideo(video.fullPath)"
+                :href="getVideoUrl(video.fullPath)"
+                @click.prevent="goToVideo(video.fullPath)"
             >
               <img
                   v-if="hasThumbnail(video.name)"
@@ -292,7 +297,7 @@ onMounted(() => {
                   {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
                 </span>
               </div>
-            </div>
+            </a>
           </div>
           <div v-if="visibleVideosCount < recommendedVideos.length" class="text-center mt-6">
             <button @click="loadMore" class="btn btn-primary">Load More</button>
