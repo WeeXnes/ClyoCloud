@@ -120,8 +120,7 @@ export default defineEventHandler(async (event) => {
             }
 
             const seekTime = duration * 0.1
-            const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vf scale=320:180 -frames:v 1 -pix_fmt yuvj420p "${requestedThumbnail}" -y`
-
+            const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vframes 1 -filter_complex "[0:v]scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -frames:v 1 -q:v 2 -y "${requestedThumbnail}"`
             try {
                 await execAsync(ffmpegCommand)
                 console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
