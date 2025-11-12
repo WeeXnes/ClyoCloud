@@ -187,6 +187,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Image Viewer Modal -->
+    <input type="checkbox" id="image-viewer-modal" class="modal-toggle" v-model="showImageViewerModal" />
+    <div class="modal image-viewer-modal" @click="closeImageViewer">
+      <div class="modal-box-image" @click.stop>
+        <img :src="selectedImageUrl" alt="Full size image" class="max-h-full max-w-full">
+        <label class="btn btn-sm btn-circle absolute right-2 top-2" @click="closeImageViewer">✕</label>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -198,6 +207,8 @@ import type { File } from '~/types/File'
 const files = ref<File[]>([])
 const selectedFile = ref<File | null>(null)
 const showFileInfoModal = ref(false)
+const showImageViewerModal = ref(false)
+const selectedImageUrl = ref('')
 const selectedFileForUpload = ref<File | null>(null)
 const isUploading = ref(false)
 const uploadError = ref('')
@@ -315,6 +326,11 @@ const isVideoFile = (filename: string) => {
   return ['mp4', 'webm'].includes(ext)
 }
 
+const isImageFile = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)
+}
+
 const getThumbnailUrl = (filename: string) => {
   const url = useRequestURL()
   const baseUrl = url.origin
@@ -326,6 +342,9 @@ const getThumbnailUrl = (filename: string) => {
 const onFileClick = (file: File) => {
   if (file.isFolder) {
     window.location.href = `${window.location.pathname.replace(/\/$/, '')}/${encodeURIComponent(file.name)}`
+  } else if (isImageFile(file.name)) {
+    selectedImageUrl.value = getStaticUrl(file)
+    showImageViewerModal.value = true
   } else {
     selectedFile.value = file
     showFileInfoModal.value = true
@@ -367,6 +386,11 @@ const closeFileModal = () => {
   }
   selectedFile.value = null
 }
+
+const closeImageViewer = () => {
+  showImageViewerModal.value = false
+  selectedImageUrl.value = ''
+}
 </script>
 
 <style scoped>
@@ -396,5 +420,22 @@ img, video {
 
 .progress {
   height: 1rem;
+}
+
+.image-viewer-modal {
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-box-image {
+  position: relative;
+  width: 90vw;
+  height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
 }
 </style>
