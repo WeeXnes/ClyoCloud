@@ -45,8 +45,8 @@
     <br>
 
     <!-- File grid/list -->
-    <div :class="isGridView ? 'grid gap-4 justify-center' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4'" :style="isGridView ? 'grid-template-columns: repeat(auto-fit, minmax(240px, 240px));' : ''">
-      <div v-for="file in files" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md w-[240px]' : 'card bg-base-100 shadow-md'">
+    <div :class="isGridView ? 'grid gap-4 justify-center grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4'">
+      <div v-for="file in files" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md' : 'card bg-base-100 shadow-md'">
         <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick(file)">
           <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden">
             <template v-if="file.isFolder">
