@@ -10,7 +10,8 @@ export default defineEventHandler(async (event) => {
         return
     }
 
-    const protectedRoutes = ['/stream/', '/file/', '/thumbnail/', '/media/', '/api/files', '/api/upload', '/api/videos', '/api/video-tag']
+    const protectedRoutes = ['/stream/', '/file/', '/thumbnail/', '/media/', '/api/files', // Covers GET for listing and DELETE for deletion
+        '/api/upload', '/api/videos', '/api/video-tag']
     if (!protectedRoutes.some((route) => url.startsWith(route.toLowerCase()))) {
         return
     }

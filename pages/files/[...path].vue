@@ -69,7 +69,7 @@
                 <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793A3.987 3.987 0 0114 8.414V7.414l.793-.793zM3 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-3.586l1.586-1.586A2 2 0 0015 3H3zm10 10H5V5h8v8z" />
               </svg>
             </button>
-            <button class="btn btn-ghost btn-xs lg:btn-sm" @click.stop>
+            <button class="btn btn-ghost btn-xs lg:btn-sm" @click.stop="deleteFile(file)">
               <svg class="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
               </svg>
@@ -97,7 +97,7 @@
                 <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793A3.987 3.987 0 0114 8.414V7.414l.793-.793zM3 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-3.586l1.586-1.586A2 2 0 0015 3H3zm10 10H5V5h8v8z" />
               </svg>
             </button>
-            <button class="btn btn-ghost btn-xs lg:btn-sm" @click.stop>
+            <button class="btn btn-ghost btn-xs lg:btn-sm" @click.stop="deleteFile(file)">
               <svg class="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
               </svg>
@@ -181,6 +181,7 @@
           </div>
         </div>
         <div class="modal-action">
+          <label class="btn btn-sm btn-error" @click="deleteFile(selectedFile)">Delete</label>
           <label class="btn btn-sm" @click="downloadFile(selectedFile)">Download</label>
           <label class="btn btn-sm" @click="copyFileLinkStatic(selectedFile)">Copy Link</label>
           <label for="file-info-modal" class="btn btn-sm" @click="closeFileModal">Close</label>
@@ -193,8 +194,8 @@
     <div class="modal image-viewer-modal" @click="closeImageViewer">
       <div class="modal-box-image" @click.stop>
         <img :src="selectedImageUrl" alt="Full size image" class="max-h-full max-w-full">
-        <label class="btn btn-sm btn-circle absolute right-2 top-2" @click="closeImageViewer">✕</label>
       </div>
+      <label class="btn btn-sm btn-circle absolute right-2 top-2" @click="closeImageViewer">✕</label>
     </div>
   </div>
 </template>
@@ -247,6 +248,43 @@ const handleFileSelect = (event: Event) => {
     selectedFileForUpload.value = input.files[0]
   } else {
     uploadError.value = 'No file selected'
+  }
+}
+
+const deleteFile = async (file: File) => {
+  if (!file) return;
+  if (!confirm(`Are you sure you want to delete "${file.name}"?`)) {
+    return
+  }
+
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const filePath = folderPath ? `${folderPath}/${file.name}` : file.name
+
+    const response = await fetch('/api/files', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ path: filePath }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Failed to delete file')
+    }
+
+    // Refresh file list
+    await fetchFiles()
+    if (showFileInfoModal.value) {
+      showFileInfoModal.value = false;
+    }
+    // Maybe show a notification
+  } catch (error) {
+    console.error('Error deleting file:', error)
+    alert(error.message) // Or use a notification
   }
 }
 
