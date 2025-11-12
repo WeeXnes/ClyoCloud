@@ -91,7 +91,7 @@ export default defineEventHandler(async (event) => {
                 return createReadStream(requestedFile)
             }
 
-            const ffmpegCommand = `ffmpeg -i "${requestedFile}" -vf "scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:(ow-iw)/2:(oh-ih)/2" "${requestedThumbnail}" -y`
+            const ffmpegCommand = `ffmpeg -i "${requestedFile}" -filter_complex "[0:v]scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -y "${requestedThumbnail}"`
             try {
                 await execAsync(ffmpegCommand)
                 console.log(`Image thumbnail generated successfully: ${requestedThumbnail}`)
