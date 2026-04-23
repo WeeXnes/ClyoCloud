@@ -24,6 +24,9 @@ export default defineEventHandler(async (event) => {
   setHeader(event, 'Content-Disposition', `attachment; filename="${path.basename(fullPath || 'archive')}.zip"`);
   
   archive.pipe(event.node.res);
-  archive.directory(fullPath, false);
+  archive.glob('**/*', {
+    cwd: fullPath,
+    ignore: ['**/*.cloudinfo']
+  });
   await archive.finalize();
 });
