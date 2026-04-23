@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     try {
         const form = new IncomingForm({
             maxFileSize,
-            multiples: false,
+            multiples: true,
             keepExtensions: true,
         })
 
@@ -27,44 +27,45 @@ export default defineEventHandler(async (event) => {
         })
 
         const folderPath = Array.isArray(fields.path) ? fields.path[0] : fields.path || ''
-        const fileData = files.file && Array.isArray(files.file) ? files.file[0] : files.file
+        const uploadedFiles = Array.isArray(files.files) ? files.files : files.files ? [files.files] : []
 
-        if (!fileData || !fileData.originalFilename) {
-            console.error('File field missing or no filename provided')
+        if (uploadedFiles.length === 0) {
+            console.error('Files field missing or empty')
             throw createError({
                 statusCode: 400,
-                statusMessage: 'File is required',
+                statusMessage: 'At least one file is required',
             })
         }
 
         const decodedPath = decodeURIComponent(folderPath)
-        const decodedFilename = decodeURIComponent(fileData.originalFilename)
         const resolvedDir = resolve(join(userStoragePath, decodedPath))
-        const resolvedPath = resolve(join(resolvedDir, decodedFilename))
 
-        // Security check to prevent directory traversal
+        // Security check
         if (!resolvedDir.startsWith(resolve(userStoragePath))) {
-            console.error(`Access denied: Resolved path ${resolvedDir} is outside user directory ${userStoragePath}`)
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied: Path outside user directory',
             })
         }
 
-        console.log(`Creating directory if needed: ${resolvedDir}`)
         await mkdir(resolvedDir, { recursive: true })
 
-        console.log(`Saving file to: ${resolvedPath}`)
-        const writeStream = createWriteStream(resolvedPath)
-        await new Promise((resolve: any, reject) => {
-            const readStream = createReadStream(fileData.filepath)
-            readStream.pipe(writeStream)
-            writeStream.on('finish', resolve)
-            writeStream.on('error', reject)
-            readStream.on('error', reject)
-        })
+        for (const fileData of uploadedFiles) {
+            const decodedFilename = decodeURIComponent(fileData.originalFilename || 'unnamed_file')
+            const resolvedPath = resolve(join(resolvedDir, decodedFilename))
 
-        return { message: 'File uploaded successfully' }
+            console.log(`Saving file to: ${resolvedPath}`)
+            const writeStream = createWriteStream(resolvedPath)
+            await new Promise((resolve: any, reject) => {
+                const readStream = createReadStream(fileData.filepath)
+                readStream.pipe(writeStream)
+                writeStream.on('finish', resolve)
+                writeStream.on('error', reject)
+                readStream.on('error', reject)
+            })
+        }
+
+        return { message: 'Files uploaded successfully' }
     } catch (error: any) {
         console.error('Error uploading file:', error)
         throw createError({

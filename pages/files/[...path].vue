@@ -11,6 +11,9 @@
         <h2 class="text-lg lg:text-xl font-semibold">My Files</h2>
       </div>
       <div class="flex items-center gap-4">
+        <button v-if="useRoute().params.path" class="btn btn-sm" @click="downloadFolder">
+          Download Folder
+        </button>
         <label class="flex items-center gap-2">
           <span class="text-sm">List</span>
           <input type="checkbox" class="toggle toggle-primary" v-model="isGridView"/>
@@ -116,7 +119,7 @@
           <label class="label">
             <span class="label-text">Select File</span>
           </label>
-          <input type="file" @change="handleFileSelect" class="file-input file-input-bordered w-full" />
+          <input type="file" multiple @change="handleFileSelect" class="file-input file-input-bordered w-full" />
         </div>
         <div v-if="isUploading" class="mt-2">
           <progress class="progress progress-primary w-full" :value="uploadProgress" max="100"></progress>
@@ -210,7 +213,7 @@ const selectedFile = ref<File | null>(null)
 const showFileInfoModal = ref(false)
 const showImageViewerModal = ref(false)
 const selectedImageUrl = ref('')
-const selectedFileForUpload = ref<File | null>(null)
+const selectedFilesForUpload = ref<FileList | null>(null)
 const isUploading = ref(false)
 const uploadError = ref('')
 const uploadSuccess = ref(false)
@@ -245,7 +248,7 @@ const fetchFiles = async () => {
 const handleFileSelect = (event: Event) => {
   const input = event.target as HTMLInputElement
   if (input.files && input.files.length > 0) {
-    selectedFileForUpload.value = input.files[0]
+    selectedFilesForUpload.value = input.files
   } else {
     uploadError.value = 'No file selected'
   }
@@ -289,7 +292,7 @@ const deleteFile = async (file: File) => {
 }
 
 const uploadFile = async () => {
-  if (!selectedFileForUpload.value) {
+  if (!selectedFilesForUpload.value) {
     uploadError.value = 'No file selected'
     return
   }
@@ -300,7 +303,9 @@ const uploadFile = async () => {
   uploadProgress.value = 0
 
   const formData = new FormData()
-  formData.append('file', selectedFileForUpload.value)
+  for (let i = 0; i < selectedFilesForUpload.value.length; i++) {
+    formData.append('files', selectedFilesForUpload.value[i])
+  }
   const route = useRoute()
   const pathParam = route.params.path
   const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
@@ -322,7 +327,7 @@ const uploadFile = async () => {
     xhr.onload = async () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         uploadSuccess.value = true
-        selectedFileForUpload.value = null
+        selectedFilesForUpload.value = null
         await fetchFiles() // Refresh file list
       } else {
         let errorMessage = 'Failed to upload file'
@@ -352,6 +357,13 @@ const uploadFile = async () => {
     isUploading.value = false
     uploadProgress.value = 0
   }
+}
+
+const downloadFolder = () => {
+  const route = useRoute()
+  const pathParam = route.params.path
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  window.location.href = `/api/zip?path=${encodeURIComponent(folderPath)}`
 }
 
 const hasThumbnail = (filename: string) => {
