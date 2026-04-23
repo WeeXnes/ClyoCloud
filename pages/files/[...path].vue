@@ -48,7 +48,11 @@
     <br>
 
     <!-- File grid/list -->
-    <div :class="isGridView ? 'grid gap-4 justify-center grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4'">
+    <div 
+      @dragover.prevent 
+      @drop.prevent="handleDrop"
+      :class="isGridView ? 'grid gap-4 justify-center grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4'"
+    >
       <div v-for="file in files" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md' : 'card bg-base-100 shadow-md'">
         <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick(file)">
           <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden">
@@ -219,11 +223,37 @@ const uploadError = ref('')
 const uploadSuccess = ref(false)
 const uploadProgress = ref(0)
 
-const isGridViewCookie = useCookie<boolean>('isGridView', { default: () => false })
-const isGridView = ref(isGridViewCookie.value)
-watch(isGridView, (newVal) => {
-  isGridViewCookie.value = newVal
+const sortOption = ref<'name' | 'size' | 'date'>('name')
+const selectedFiles = ref<Set<string>>(new Set())
+const editingName = ref<string | null>(null)
+const newName = ref('')
+
+const sortedFiles = computed(() => {
+  return [...files.value].sort((a, b) => {
+    if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1
+    if (sortOption.value === 'size') return b.size - a.size
+    if (sortOption.value === 'date') return b.lastModified - a.lastModified
+    return a.name.localeCompare(b.name)
+  })
 })
+
+const toggleSelection = (fileName: string) => {
+  if (selectedFiles.value.has(fileName)) {
+    selectedFiles.value.delete(fileName)
+  } else {
+    selectedFiles.value.add(fileName)
+  }
+}
+
+const startRename = (file: File) => {
+  editingName.value = file.name
+  newName.value = file.name
+}
+
+const saveRename = async (oldName: string) => {
+  // Implement renaming logic here (API call)
+  editingName.value = null
+}
 
 onMounted(async () => {
   await fetchFiles()
@@ -359,11 +389,11 @@ const uploadFile = async () => {
   }
 }
 
-const downloadFolder = () => {
-  const route = useRoute()
-  const pathParam = route.params.path
-  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
-  window.location.href = `/api/zip?path=${encodeURIComponent(folderPath)}`
+const handleDrop = (event: DragEvent) => {
+  if (event.dataTransfer?.files) {
+    selectedFilesForUpload.value = event.dataTransfer.files
+    uploadFile()
+  }
 }
 
 const hasThumbnail = (filename: string) => {
@@ -391,7 +421,11 @@ const getThumbnailUrl = (filename: string) => {
 
 const onFileClick = (file: File) => {
   if (file.isFolder) {
-    window.location.href = `${window.location.pathname.replace(/\/$/, '')}/${encodeURIComponent(file.name)}`
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const newPath = folderPath ? `${folderPath}/${encodeURIComponent(file.name)}` : encodeURIComponent(file.name)
+    navigateTo(`/files/${newPath}`)
   } else if (isImageFile(file.name)) {
     selectedImageUrl.value = getStaticUrl(file)
     showImageViewerModal.value = true
