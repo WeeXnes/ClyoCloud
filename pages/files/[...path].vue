@@ -34,10 +34,14 @@
     </div>
 
     <!-- Bulk actions -->
-    <div v-if="selectedFiles.size > 0" class="flex gap-2 mb-4 p-2 bg-base-100 shadow rounded">
+    <div v-if="selectedFiles.size > 0" class="flex flex-wrap gap-2 mb-4 p-2 bg-base-100 shadow rounded items-center">
+      <button class="btn btn-sm" @click="toggleSelectAll">
+        {{ selectedFiles.size === sortedFiles.length ? 'Deselect All' : 'Select All' }}
+      </button>
       <button class="btn btn-sm btn-error" @click="bulkDelete">Delete Selected</button>
       <button class="btn btn-sm" @click="bulkDownload">Download Selected</button>
-      <span class="text-sm self-center">{{ selectedFiles.size }} selected</span>
+      <button class="btn btn-sm btn-secondary" @click="openBulkTagModal">Add Tags</button>
+      <span class="text-sm self-center ml-auto">{{ selectedFiles.size }} selected</span>
     </div>
 
     <div class="flex items-center gap-1 text-sm text-base-content/70 mb-2">
@@ -197,18 +201,83 @@
       </div>
       <label class="btn btn-sm btn-circle absolute right-2 top-2" @click="closeImageViewer">✕</label>
     </div>
+    <!-- Tag Modal -->
+    <div v-if="showTagModal" class="modal modal-open">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg">Add Tags to Selected Files</h3>
+
+        <div v-if="showNewTagForm">
+          <div class="form-control mt-4">
+            <label class="label">
+              <span class="label-text">Tag Name</span>
+            </label>
+            <input
+                v-model="newTagName"
+                type="text"
+                placeholder="Enter tag name"
+                class="input input-bordered w-full"
+            />
+          </div>
+          <div class="form-control mt-4">
+            <label class="label">
+              <span class="label-text">Tag Color</span>
+            </label>
+            <input
+                v-model="newTagColor"
+                type="color"
+                class="input input-bordered w-full"
+            />
+          </div>
+          <div class="modal-action">
+            <button class="btn btn-primary" @click="bulkAddTags">Add Tag</button>
+            <button class="btn btn-ghost" @click="showNewTagForm = false">Select Predefined Tags</button>
+            <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+          </div>
+        </div>
+
+        <div v-else>
+          <div class="form-control mt-4">
+            <label class="label">
+              <span class="label-text">Select Tags</span>
+            </label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+              <div
+                  v-for="tag in predefinedTags"
+                  :key="tag.name"
+                  class="p-2 rounded-lg cursor-pointer text-center"
+                  :style="{ backgroundColor: tag.color, border: isTagSelected(tag) ? '2px solid #D1D5DB' : '2px solid ' + tag.color }"
+                  @click="toggleTagSelection(tag)"
+              >
+                {{ tag.name }}
+              </div>
+            </div>
+          </div>
+          <div class="modal-action">
+            <button class="btn btn-primary" @click="bulkAddTags">Add Tags</button>
+            <button class="btn btn-ghost" @click="showNewTagForm = true">Create New Tag</button>
+            <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { getIconForExtension } from '~/core/fileIcons'
-import type { File } from '~/types/File'
+import type { File, Tag } from '~/types/File'
 
 const files = ref<File[]>([])
 const selectedFile = ref<File | null>(null)
 const showFileInfoModal = ref(false)
 const showImageViewerModal = ref(false)
+const showTagModal = ref(false)
+const selectedTags = ref<Tag[]>([])
+const predefinedTags = ref<Tag[]>([])
+const showNewTagForm = ref(true)
+const newTagName = ref('')
+const newTagColor = ref('#4B5EAA')
 const selectedImageUrl = ref('')
 const selectedFilesForUpload = ref<FileList | null>(null)
 const isUploading = ref(false)
@@ -309,8 +378,99 @@ watch(isGridView, (newVal) => {
   isGridViewCookie.value = newVal
 })
 
+
+const openBulkTagModal = () => {
+  selectedTags.value = []
+  showNewTagForm.value = true
+  newTagName.value = ''
+  newTagColor.value = '#4B5EAA'
+  showTagModal.value = true
+}
+
+const closeTagModal = () => {
+  showTagModal.value = false
+}
+
+const toggleTagSelection = (tag: Tag) => {
+  const index = selectedTags.value.findIndex(t => t.name === tag.name)
+  if (index > -1) {
+    selectedTags.value.splice(index, 1)
+  } else {
+    selectedTags.value.push(tag)
+  }
+}
+
+const isTagSelected = (tag: Tag) => {
+  return selectedTags.value.some(t => t.name === tag.name)
+}
+
+const fetchPredefinedTags = async () => {
+  try {
+    const response = await fetch('/api/tags', { credentials: 'include' })
+    if (!response.ok) throw new Error(`Failed to fetch tags: ${response.statusText}`)
+    predefinedTags.value = await response.json()
+  } catch (err) {
+    console.error('Error fetching tags:', err)
+  }
+}
+
+const bulkAddTags = async () => {
+  let tagsToAdd: Tag[] = []
+  if (showNewTagForm.value) {
+    if (!newTagName.value.trim()) {
+      alert('Tag name is required')
+      return
+    }
+    tagsToAdd.push({ name: newTagName.value, color: newTagColor.value })
+  } else {
+    tagsToAdd = selectedTags.value
+  }
+
+  if (tagsToAdd.length === 0) {
+    alert('Please select or create at least one tag.')
+    return
+  }
+
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+
+    for (const name of selectedFiles.value) {
+      const filePath = folderPath ? `${folderPath}/${name}` : name
+      const response = await fetch('/api/video-tag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullPath: filePath,
+          tags: tagsToAdd,
+        }),
+      })
+      if (!response.ok) throw new Error(`Failed to add tags for ${name}`)
+    }
+
+    alert('Tags added successfully')
+    await fetchFiles()
+    closeTagModal()
+  } catch (err) {
+    console.error('Error adding tags:', err)
+    alert('Failed to add tags. Please try again.')
+  }
+}
+
+const toggleSelectAll = () => {
+  if (selectedFiles.value.size === sortedFiles.value.length) {
+    selectedFiles.value.clear()
+  } else {
+    for (const file of sortedFiles.value) {
+      selectedFiles.value.add(file.name)
+    }
+  }
+}
+
 onMounted(async () => {
   await fetchFiles()
+  await fetchPredefinedTags()
 })
 
 watch(() => useRoute().params.path, async () => {
