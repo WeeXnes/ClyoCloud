@@ -77,7 +77,7 @@
           <div class="flex-1 flex justify-between items-center overflow-hidden">
             <div class="min-w-0 flex-1">
               <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
-              <h3 v-else class="card-title text-sm truncate">{{ file.name }}</h3>
+              <h3 v-else class="card-title text-sm truncate block">{{ file.name }}</h3>
               <p class="text-xs text-base-content/70 truncate">{{ (file.size / 1024 / 1024).toFixed(2) }} MB • {{ new Date(file.lastModified).toLocaleDateString() }}</p>
             </div>
             <div class="ml-2 shrink-0">
