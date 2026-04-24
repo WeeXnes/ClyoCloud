@@ -20,10 +20,10 @@ import {NotificationType} from "~/types/Notification";
 
 
 const classMap = {
-  [NotificationType.INFO]: "bg-blue-500 text-white",
-  [NotificationType.SUCCESS]: "bg-green-500 text-white",
-  [NotificationType.ERROR]: "bg-red-500 text-white",
-  [NotificationType.WARNING]: "bg-yellow-500 text-black",
+  [NotificationType.INFO]: "alert-info",
+  [NotificationType.SUCCESS]: "alert-success",
+  [NotificationType.ERROR]: "alert-error",
+  [NotificationType.WARNING]: "alert-warning",
 };
 
 </script>
