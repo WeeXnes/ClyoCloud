@@ -71,7 +71,7 @@
       <div v-for="file in sortedFiles" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md relative' : 'card bg-base-100 shadow-md'">
         
         <!-- Grid View -->
-        <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick($event, file)" @contextmenu.prevent="startRename(file)">
+        <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick($event, file)" @contextmenu.prevent="handleContextMenu($event, file)">
           <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden relative" data-is-thumbnail="true">
             <template v-if="file.isFolder">
               <Icon name="vscode-icons:default-folder" class="w-12 h-12" />
@@ -94,7 +94,7 @@
         </div>
 
         <!-- List View -->
-        <div v-else class="card-body flex flex-row items-center gap-4 p-4 cursor-pointer" @click="onFileClick($event, file)" @contextmenu.prevent="startRename(file)">
+        <div v-else class="card-body flex flex-row items-center gap-4 p-4 cursor-pointer" @click="onFileClick($event, file)" @contextmenu.prevent="handleContextMenu($event, file)">
           <input type="checkbox" class="checkbox" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
           <div class="text-3xl">
             <Icon class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
@@ -111,6 +111,21 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div v-if="showContextMenu" 
+         class="fixed bg-base-100 shadow-xl rounded-box border border-base-300 z-[10000] py-1 min-w-[160px]"
+         :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }"
+         @click.stop>
+      <ul class="menu menu-compact p-0">
+        <li><a @click="handleContextAction('open')"><Icon name="mdi:open-in-new" class="w-4 h-4" /> Open</a></li>
+        <li><a @click="handleContextAction('rename')"><Icon name="mdi:pencil" class="w-4 h-4" /> Rename</a></li>
+        <li><a @click="handleContextAction('info')"><Icon name="mdi:information" class="w-4 h-4" /> Information</a></li>
+        <li><a @click="handleContextAction('download')"><Icon name="mdi:download" class="w-4 h-4" /> Download</a></li>
+        <div class="divider my-0"></div>
+        <li><a @click="handleContextAction('delete')" class="text-error"><Icon name="mdi:delete" class="w-4 h-4" /> Delete</a></li>
+      </ul>
     </div>
 
     <!-- Upload Modal -->
@@ -307,6 +322,11 @@ const selectedFiles = ref<Set<string>>(new Set())
 const editingName = ref<string | null>(null)
 const newName = ref('')
 
+const showContextMenu = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const contextMenuFile = ref<File | null>(null)
+
 const promptCreateFolder = async () => {
   const name = prompt('Enter folder name:')
   if (!name) return
@@ -493,9 +513,76 @@ const toggleSelectAll = () => {
   }
 }
 
+const saveRename = async (oldName: string) => {
+  if (!newName.value || newName.value === oldName) {
+    editingName.value = null
+    return
+  }
+
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const oldPath = folderPath ? `${folderPath}/${oldName}` : oldName
+
+    const response = await fetch('/api/rename', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldPath, newName: newName.value }),
+    })
+
+    if (!response.ok) throw new Error('Failed to rename')
+    
+    createNotification('Renamed successfully', NotificationType.SUCCESS)
+    await fetchFiles()
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to rename', NotificationType.ERROR)
+  } finally {
+    editingName.value = null
+  }
+}
+
+const handleContextMenu = (event: MouseEvent, file: File) => {
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuFile.value = file
+  showContextMenu.value = true
+}
+
+const handleContextAction = (action: string) => {
+  const file = contextMenuFile.value
+  if (!file) return
+
+  showContextMenu.value = false
+
+  switch (action) {
+    case 'open':
+      onFileClick(new MouseEvent('click'), file)
+      break
+    case 'rename':
+      startRename(file)
+      break
+    case 'info':
+      selectedFile.value = file
+      showFileInfoModal.value = true
+      break
+    case 'download':
+      downloadFile(file)
+      break
+    case 'delete':
+      deleteFile(file)
+      break
+  }
+}
+
 onMounted(async () => {
   await fetchFiles()
   await fetchPredefinedTags()
+  
+  window.addEventListener('click', () => {
+    showContextMenu.value = false
+  })
 })
 
 watch(() => useRoute().params.path, async () => {
@@ -808,6 +895,11 @@ img, video {
 
 .progress {
   height: 1rem;
+}
+
+.menu-compact li a {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 .image-viewer-modal {
