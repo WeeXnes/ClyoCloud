@@ -544,19 +544,33 @@ img, video {
 }
 
 .image-viewer-modal {
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex !important;
   align-items: center;
   justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  cursor: pointer;
 }
 
 .modal-box-image {
   position: relative;
-  width: 90vw;
-  height: 90vh;
+  max-width: 90vw;
+  max-height: 90vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: transparent;
+  cursor: default;
+}
+
+.modal-box-image img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
 }
 </style>
