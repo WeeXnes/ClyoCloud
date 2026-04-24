@@ -56,47 +56,47 @@
     </div>
     <br>
 
-    <!-- File grid/list -->
     <div 
       @dragover.prevent 
       @drop.prevent="handleDrop"
       :class="isGridView ? 'grid gap-4 justify-center grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'flex flex-col gap-2'"
     >
-      <div v-for="file in sortedFiles" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md relative' : 'card bg-base-100 shadow-md relative'">
-        <input type="checkbox" class="checkbox absolute top-2 left-2 z-10" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
+      <div v-for="file in sortedFiles" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md relative' : 'card bg-base-100 shadow-md'">
+        
+        <!-- Grid View -->
         <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick(file)" @contextmenu.prevent="startRename(file)">
+          <input type="checkbox" class="checkbox absolute bottom-2 right-2 z-10" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
           <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden">
             <template v-if="file.isFolder">
-              <button class="text-blue-600 hover:underline flex flex-col items-center">
-                <Icon name="vscode-icons:default-folder" class="w-12 h-12" />
-              </button>
+              <Icon name="vscode-icons:default-folder" class="w-12 h-12" />
             </template>
             <template v-else>
-              <img v-if="hasThumbnail(file.name)" :src="getThumbnailUrl(file.name)" class="w-full h-full object-cover rounded-lg" alt="Thumbnail" style="aspect-ratio: 16 / 9;" />
+              <img v-if="hasThumbnail(file.name)" :src="getThumbnailUrl(file.name)" class="w-full h-full object-cover rounded-lg" alt="Thumbnail" />
               <Icon v-else class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20" v-bind:name="getIconForExtension(file.name)" />
             </template>
           </div>
           <div class="flex-1">
             <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
-            <h3 v-else class="card-title text-sm lg:text-base truncate">{{ file.name }}</h3>
-            <p class="text-xs lg:text-sm text-base-content/70">{{ (file.size / 1024 / 1024).toFixed(2) }} MB • {{ new Date(file.lastModified).toLocaleDateString() }}</p>
+            <h3 v-else class="card-title text-sm truncate">{{ file.name }}</h3>
+            <p class="text-xs text-base-content/70">{{ (file.size / 1024 / 1024).toFixed(2) }} MB • {{ new Date(file.lastModified).toLocaleDateString() }}</p>
           </div>
         </div>
+
+        <!-- List View -->
         <div v-else class="card-body flex flex-row items-center gap-4 p-4 cursor-pointer" @click="onFileClick(file)" @contextmenu.prevent="startRename(file)">
-          <div class="text-3xl ml-8">
-            <Icon
-                class="w-6 h-6"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)"
-            />
+          <input type="checkbox" class="checkbox" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
+          <div class="text-3xl">
+            <Icon class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
           </div>
-          <div class="flex-1">
-            <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
-            <h3 v-else class="card-title text-sm lg:text-base truncate">{{ file.name.length > 20 ? file.name.slice(0, 17) + '…' : file.name }}</h3>
-            <p class="text-xs lg:text-sm text-base-content/70">
-              {{ !file.isFolder ? (file.size / 1024 / 1024).toFixed(2) + ' MB • ' : '' }}{{ new Date(file.lastModified).toLocaleDateString() }}
-            </p>
+          <div class="flex-grow flex items-center justify-between">
+            <div class="flex-grow">
+              <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
+              <h3 v-else class="card-title text-sm lg:text-base">{{ file.name }}</h3>
+            </div>
+            <div class="flex items-center gap-4 text-xs lg:text-sm text-base-content/70 ml-4 whitespace-nowrap">
+              <span v-if="!file.isFolder">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
+              <span>{{ new Date(file.lastModified).toLocaleDateString() }}</span>
+            </div>
           </div>
         </div>
       </div>
