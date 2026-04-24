@@ -122,6 +122,7 @@
         <li><a @click="handleContextAction('open')"><Icon name="mdi:open-in-new" class="w-4 h-4" /> Open</a></li>
         <li v-if="contextMenuFile && isVideoFile(contextMenuFile.name)"><a @click="handleContextAction('media')"><Icon name="material-symbols:video-library-rounded" class="w-4 h-4" /> Show in Media Tab</a></li>
         <li><a @click="handleContextAction('rename')"><Icon name="mdi:pencil" class="w-4 h-4" /> Rename</a></li>
+        <li><a @click="handleContextAction('description')"><Icon name="mdi:text-box-edit-outline" class="w-4 h-4" /> Edit Description</a></li>
         <li><a @click="handleContextAction('info')"><Icon name="mdi:information" class="w-4 h-4" /> Information</a></li>
         <li><a @click="handleContextAction('download')"><Icon name="mdi:download" class="w-4 h-4" /> Download</a></li>
         <div class="divider my-0"></div>
@@ -182,6 +183,35 @@
                     class="badge badge-sm text-white inline-block ml-2"
                     :style="{ backgroundColor: tag.color }"> {{ tag.name }} </span>
             </p>
+            <div class="divider"></div>
+            <div>
+              <span class="font-medium block mb-2">Description</span>
+              <div v-if="isEditingDescription" class="space-y-2">
+                <textarea
+                    v-model="editableDescription"
+                    class="textarea textarea-bordered w-full h-24"
+                    placeholder="Enter description..."
+                ></textarea>
+                <div class="flex justify-end gap-2">
+                  <button class="btn btn-ghost btn-xs" @click="isEditingDescription = false">Cancel</button>
+                  <button class="btn btn-primary btn-xs" @click="saveDescription">Save</button>
+                </div>
+              </div>
+              <div v-else>
+                <div v-if="selectedFile.meta.description" class="bg-base-300 p-3 rounded-lg text-sm whitespace-pre-line group relative min-h-[3rem]">
+                  {{ selectedFile.meta.description }}
+                  <button 
+                    class="btn btn-circle btn-ghost btn-xs absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    @click="startEditDescription"
+                  >
+                    <Icon name="mdi:pencil" class="w-3 h-3" />
+                  </button>
+                </div>
+                <button v-else class="btn btn-ghost btn-xs w-full justify-start italic text-base-content/50" @click="startEditDescription">
+                  <Icon name="mdi:plus" class="w-3 h-3 mr-1" /> Add description...
+                </button>
+              </div>
+            </div>
             <div class="divider"></div>
             <div class="form-control">
               <label class="label cursor-pointer justify-start gap-4">
@@ -317,6 +347,43 @@ const isUploading = ref(false)
 const uploadError = ref('')
 const uploadSuccess = ref(false)
 const uploadProgress = ref(0)
+
+const isEditingDescription = ref(false)
+const editableDescription = ref('')
+
+const startEditDescription = () => {
+  editableDescription.value = (selectedFile.value?.meta.description || '') as string
+  isEditingDescription.value = true
+}
+
+const saveDescription = async () => {
+  if (!selectedFile.value) return
+
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const filePath = folderPath ? `${folderPath}/${selectedFile.value.name}` : selectedFile.value.name
+
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: filePath,
+        description: editableDescription.value,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to update description')
+
+    selectedFile.value.meta.description = editableDescription.value
+    isEditingDescription.value = false
+    createNotification('Description updated', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update description', NotificationType.ERROR)
+  }
+}
 
 const sortOption = ref<'name' | 'size' | 'date'>('name')
 const selectedFiles = ref<Set<string>>(new Set())
@@ -577,6 +644,12 @@ const handleContextAction = (action: string) => {
     case 'rename':
       startRename(file)
       break
+    case 'description':
+      selectedFile.value = file
+      showFileInfoModal.value = true
+      // Need a small delay or use nextTick to ensure modal is open before starting edit
+      setTimeout(startEditDescription, 100)
+      break
     case 'info':
       selectedFile.value = file
       showFileInfoModal.value = true
@@ -826,6 +899,7 @@ const closeFileModal = () => {
   }
   selectedFile.value = null
   showFileInfoModal.value = false
+  isEditingDescription.value = false
 }
 
 const closeImageViewer = () => {
