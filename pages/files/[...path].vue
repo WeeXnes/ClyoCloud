@@ -99,13 +99,13 @@
           <div class="text-3xl">
             <Icon class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
           </div>
-          <div class="flex-grow flex items-center justify-between">
-            <div class="flex-grow">
+          <div class="flex-grow flex items-center justify-between min-w-0">
+            <div class="flex-grow min-w-0 mr-2">
               <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
-              <h3 v-else class="card-title text-sm lg:text-base">{{ file.name }}</h3>
+              <h3 v-else class="card-title text-sm lg:text-base truncate">{{ file.name }}</h3>
             </div>
-            <div class="flex items-center gap-4 text-xs lg:text-sm text-base-content/70 ml-4 whitespace-nowrap">
-              <span v-if="!file.isFolder">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
+            <div class="flex items-center gap-2 text-xs lg:text-sm text-base-content/70 flex-shrink-0">
+              <span v-if="!file.isFolder" class="hidden sm:inline">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
               <span>{{ new Date(file.lastModified).toLocaleDateString() }}</span>
             </div>
           </div>
