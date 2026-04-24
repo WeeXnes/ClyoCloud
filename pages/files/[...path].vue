@@ -74,13 +74,15 @@
               <Icon v-else class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20" v-bind:name="getIconForExtension(file.name)" />
             </template>
           </div>
-          <div class="flex-1 flex justify-between items-center">
-            <div>
+          <div class="flex-1 flex justify-between items-center overflow-hidden">
+            <div class="min-w-0 flex-1">
               <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
               <h3 v-else class="card-title text-sm truncate">{{ file.name }}</h3>
-              <p class="text-xs text-base-content/70">{{ (file.size / 1024 / 1024).toFixed(2) }} MB • {{ new Date(file.lastModified).toLocaleDateString() }}</p>
+              <p class="text-xs text-base-content/70 truncate">{{ (file.size / 1024 / 1024).toFixed(2) }} MB • {{ new Date(file.lastModified).toLocaleDateString() }}</p>
             </div>
-            <input type="checkbox" class="checkbox" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
+            <div class="ml-2 shrink-0">
+              <input type="checkbox" class="checkbox" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
+            </div>
           </div>
         </div>
 
