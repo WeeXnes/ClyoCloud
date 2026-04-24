@@ -64,14 +64,14 @@
       <div v-for="file in sortedFiles" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md relative' : 'card bg-base-100 shadow-md'">
         
         <!-- Grid View -->
-        <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick(file)" @contextmenu.prevent="startRename(file)">
-          <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden relative">
+        <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick($event, file)" @contextmenu.prevent="startRename(file)">
+          <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden relative" data-is-thumbnail="true">
             <template v-if="file.isFolder">
               <Icon name="vscode-icons:default-folder" class="w-12 h-12" />
             </template>
             <template v-else>
-              <img v-if="hasThumbnail(file.name)" :src="getThumbnailUrl(file.name)" class="w-full h-full object-cover rounded-lg" alt="Thumbnail" />
-              <Icon v-else class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20" v-bind:name="getIconForExtension(file.name)" />
+              <img v-if="hasThumbnail(file.name)" :src="getThumbnailUrl(file.name)" class="w-full h-full object-cover rounded-lg" alt="Thumbnail" data-is-thumbnail="true" />
+              <Icon v-else class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20" v-bind:name="getIconForExtension(file.name)" data-is-thumbnail="true" />
             </template>
           </div>
           <div class="flex-1 flex justify-between items-center overflow-hidden">
@@ -87,7 +87,7 @@
         </div>
 
         <!-- List View -->
-        <div v-else class="card-body flex flex-row items-center gap-4 p-4 cursor-pointer" @click="onFileClick(file)" @contextmenu.prevent="startRename(file)">
+        <div v-else class="card-body flex flex-row items-center gap-4 p-4 cursor-pointer" @click="onFileClick($event, file)" @contextmenu.prevent="startRename(file)">
           <input type="checkbox" class="checkbox" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
           <div class="text-3xl">
             <Icon class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
@@ -454,14 +454,17 @@ const getThumbnailUrl = (filename: string) => {
   return `${baseUrl}/thumbnail/${joinedPath}/${encodeURIComponent(filename)}`
 }
 
-const onFileClick = (file: File) => {
+const onFileClick = (event: Event, file: File) => {
+  const target = event.target as HTMLElement
+  const isThumbnail = target.dataset.isThumbnail === 'true'
+
   if (file.isFolder) {
     const route = useRoute()
     const pathParam = route.params.path
     const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
     const newPath = folderPath ? `${folderPath}/${encodeURIComponent(file.name)}` : encodeURIComponent(file.name)
     navigateTo(`/files/${newPath}`)
-  } else if (isImageFile(file.name)) {
+  } else if (isImageFile(file.name) && isThumbnail) {
     selectedImageUrl.value = getStaticUrl(file)
     showImageViewerModal.value = true
   } else {
