@@ -250,7 +250,9 @@ const downloadFolder = () => {
 }
 
 const bulkDelete = async () => {
-  if (!confirm(`Are you sure you want to delete ${selectedFiles.size} files?`)) return
+  if (selectedFiles.value.size === 0) return
+  if (!confirm(`Are you sure you want to delete ${selectedFiles.value.size} file(s)?`)) return
+
   for (const name of selectedFiles.value) {
     const file = files.value.find(f => f.name === name)
     if (file) {
@@ -258,6 +260,7 @@ const bulkDelete = async () => {
       const pathParam = route.params.path
       const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
       const filePath = folderPath ? `${folderPath}/${file.name}` : file.name
+
       await fetch('/api/files', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
