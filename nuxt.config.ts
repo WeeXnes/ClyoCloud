@@ -25,7 +25,7 @@ export default defineNuxtConfig({
             process.env.TAGS_FILE_PATH ||
             path.join(os.homedir(), '.clyo', 'tags.json'),
 
-        maxFileSize: 500 * 1024 * 1024,
+        maxFileSize: 100 * 1024  * 1024 * 1024,
         jwtSecret: 'jei0ghjesi0ogj8ie0jg8093jg8390',
     },
     router: {
