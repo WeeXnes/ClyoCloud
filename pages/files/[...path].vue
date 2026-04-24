@@ -855,6 +855,8 @@ const onFileClick = (event: Event, file: File) => {
     showImageViewerModal.value = true
   } else {
     selectedFile.value = file
+    isEditingDescription.value = false
+    editableDescription.value = ''
     showFileInfoModal.value = true
   }
 }
