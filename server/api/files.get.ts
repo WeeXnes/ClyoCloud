@@ -31,8 +31,9 @@ export default defineEventHandler(async (event): Promise<File[]> => {
                 const stats = await fs.stat(filePath)
                 const extension = path.extname(name)
 
-                const cloudInfoFileName = `${name}.cloudinfo`
+                const cloudInfoFileName = `${name.substring(0, 100)}.cloudinfo`
                 const cloudInfoPath = path.join(fullPath, cloudInfoFileName)
+
                 let meta: FileMeta
 
                 try {
