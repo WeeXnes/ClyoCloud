@@ -5,7 +5,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
     const user = useState<{ name: string } | null>('user', () => null)
 
-    if (to.path === '/login') return
+    if (to.path === '/login' || to.path.startsWith('/p/')) return
 
     if (!token.value) {
         return navigateTo('/login')
