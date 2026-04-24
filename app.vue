@@ -1,6 +1,7 @@
 <!-- app.vue -->
 <template>
   <div class="min-h-screen bg-base-200" data-theme="onedev">
+    <NotificationManager />
     <div v-if="user" class="drawer lg:drawer-open">
       <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
       <div class="drawer-content flex flex-col">

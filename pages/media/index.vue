@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import type { Video, FileMeta, Tag } from '~/types/File'
+import { createNotification } from '~/core/notificationManager'
+import { NotificationType } from '~/types/Notification'
 
 const videos = ref<Video[]>([])
 const isLoading = ref(true)
@@ -121,7 +123,7 @@ const addTag = async () => {
   let tagsToAdd: Tag[] = []
   if (showNewTagForm.value) {
     if (!newTagName.value.trim()) {
-      alert('Tag name is required');
+      createNotification('Tag name is required', NotificationType.WARNING)
       return;
     }
     tagsToAdd.push({ name: newTagName.value, color: newTagColor.value })
@@ -130,7 +132,7 @@ const addTag = async () => {
   }
 
   if (tagsToAdd.length === 0) {
-    alert('Please select or create at least one tag.');
+    createNotification('Please select or create at least one tag', NotificationType.WARNING)
     return;
   }
 
@@ -149,11 +151,12 @@ const addTag = async () => {
     if (!response.ok) {
       throw new Error(`Failed to add tags`);
     }
+    createNotification('Tags added successfully', NotificationType.SUCCESS)
     await fetchVideos(); // Refresh video list
     closeTagModal();
   } catch (err) {
     console.error('Error adding tags:', err);
-    alert('Failed to add tags. Please try again.');
+    createNotification('Failed to add tags', NotificationType.ERROR)
   }
 };
 

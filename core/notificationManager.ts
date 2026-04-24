@@ -1,5 +1,6 @@
-import type {Notification} from "~/types/Notification";
-import {NotificationType} from "~/types/Notification";
+import { reactive } from 'vue'
+import type { Notification } from "~/types/Notification";
+import { NotificationType } from "~/types/Notification";
 
 export const ToastNotify = reactive({
     notifications: [] as Notification[],

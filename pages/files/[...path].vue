@@ -281,6 +281,8 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { getIconForExtension } from '~/core/fileIcons'
 import type { File, Tag } from '~/types/File'
+import { createNotification } from '~/core/notificationManager'
+import { NotificationType } from '~/types/Notification'
 
 const files = ref<File[]>([])
 const selectedFile = ref<File | null>(null)
@@ -320,9 +322,10 @@ const promptCreateFolder = async () => {
     })
     if (!response.ok) throw new Error('Failed to create folder')
     await fetchFiles()
+    createNotification('Folder created successfully', NotificationType.SUCCESS)
   } catch (err) {
     console.error(err)
-    alert('Failed to create folder')
+    createNotification('Failed to create folder', NotificationType.ERROR)
   }
 }
 
@@ -432,7 +435,7 @@ const bulkAddTags = async () => {
   let tagsToAdd: Tag[] = []
   if (showNewTagForm.value) {
     if (!newTagName.value.trim()) {
-      alert('Tag name is required')
+      createNotification('Tag name is required', NotificationType.WARNING)
       return
     }
     tagsToAdd.push({ name: newTagName.value, color: newTagColor.value })
@@ -441,7 +444,7 @@ const bulkAddTags = async () => {
   }
 
   if (tagsToAdd.length === 0) {
-    alert('Please select or create at least one tag.')
+    createNotification('Please select or create at least one tag', NotificationType.WARNING)
     return
   }
 
@@ -463,12 +466,12 @@ const bulkAddTags = async () => {
       if (!response.ok) throw new Error(`Failed to add tags for ${name}`)
     }
 
-    alert('Tags added successfully')
+    createNotification('Tags added successfully', NotificationType.SUCCESS)
     await fetchFiles()
     closeTagModal()
   } catch (err) {
     console.error('Error adding tags:', err)
-    alert('Failed to add tags. Please try again.')
+    createNotification('Failed to add tags', NotificationType.ERROR)
   }
 }
 
@@ -546,10 +549,10 @@ const deleteFile = async (file: File) => {
     if (showFileInfoModal.value) {
       showFileInfoModal.value = false;
     }
-    // Maybe show a notification
-  } catch (error) {
+    createNotification('File deleted successfully', NotificationType.SUCCESS)
+  } catch (error: any) {
     console.error('Error deleting file:', error)
-    alert(error.message) // Or use a notification
+    createNotification(error.message || 'Failed to delete file', NotificationType.ERROR)
   }
 }
 
@@ -591,6 +594,7 @@ const uploadFile = async () => {
         uploadSuccess.value = true
         selectedFilesForUpload.value = null
         await fetchFiles() // Refresh file list
+        createNotification('Files uploaded successfully', NotificationType.SUCCESS)
       } else {
         let errorMessage = 'Failed to upload file'
         try {
@@ -600,6 +604,7 @@ const uploadFile = async () => {
           errorMessage = xhr.responseText || errorMessage
         }
         uploadError.value = errorMessage
+        createNotification(errorMessage, NotificationType.ERROR)
       }
       isUploading.value = false
       uploadProgress.value = 0
@@ -608,14 +613,16 @@ const uploadFile = async () => {
     // Handle errors
     xhr.onerror = () => {
       uploadError.value = 'Upload failed due to a network error'
+      createNotification(uploadError.value, NotificationType.ERROR)
       isUploading.value = false
       uploadProgress.value = 0
     }
 
     xhr.send(formData)
-  } catch (error) {
+  } catch (error: any) {
     uploadError.value = error.message || 'Upload failed'
     console.error('Upload error:', error)
+    createNotification(uploadError.value, NotificationType.ERROR)
     isUploading.value = false
     uploadProgress.value = 0
   }
@@ -735,9 +742,11 @@ const togglePublicAccess = async (event: Event) => {
     const fileInList = files.value.find(f => f.name === selectedFile.value?.name)
     if (fileInList) fileInList.meta.isPublic = isPublic
     
+    createNotification(`Public access ${isPublic ? 'enabled' : 'disabled'}`, NotificationType.INFO)
+    
   } catch (err) {
     console.error(err)
-    alert('Failed to update public access')
+    createNotification('Failed to update public access', NotificationType.ERROR)
     // Reset toggle state
     ;(event.target as HTMLInputElement).checked = !isPublic
   }
@@ -760,9 +769,10 @@ const copyPublicLink = async () => {
   
   try {
     await navigator.clipboard.writeText(publicUrl)
-    alert('Public link copied to clipboard!')
+    createNotification('Public link copied to clipboard!', NotificationType.SUCCESS)
   } catch (err) {
     console.error('Failed to copy: ', err)
+    createNotification('Failed to copy link', NotificationType.ERROR)
   }
 }
 </script>

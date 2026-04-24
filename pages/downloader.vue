@@ -22,6 +22,9 @@
 </template>
 
 <script setup lang="ts">
+import { createNotification } from '~/core/notificationManager'
+import { NotificationType } from '~/types/Notification'
+
 const downloadUrl = ref('');
 
 async function downloadMedia() {
@@ -31,10 +34,11 @@ async function downloadMedia() {
       method: 'POST',
       body: { url: downloadUrl.value }
     });
-    alert('Download started: ' + res.message);
+    createNotification('Download started: ' + res.message, NotificationType.SUCCESS);
+    downloadUrl.value = '';
   } catch (err: any) {
     const msg = err.data?.message || err.message || 'Unknown error';
-    alert('Failed to start download: ' + msg);
+    createNotification('Failed to start download: ' + msg, NotificationType.ERROR);
   }
 }
 </script>
