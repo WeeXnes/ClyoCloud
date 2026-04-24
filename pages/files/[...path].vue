@@ -290,6 +290,10 @@ onMounted(async () => {
   await fetchFiles()
 })
 
+watch(() => useRoute().params.path, async () => {
+  await fetchFiles()
+})
+
 const fetchFiles = async () => {
   const route = useRoute()
   const pathParam = route.params.path
