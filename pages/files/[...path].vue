@@ -483,13 +483,17 @@ const bulkAddTags = async () => {
     const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
 
     for (const name of selectedFiles.value) {
+      const file = files.value.find(f => f.name === name)
+      const currentTags = file?.meta.tags || []
+      const updatedTags = [...currentTags, ...tagsToAdd]
       const filePath = folderPath ? `${folderPath}/${name}` : name
-      const response = await fetch('/api/video-tag', {
+      
+      const response = await fetch('/api/file-meta', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fullPath: filePath,
-          tags: tagsToAdd,
+          tags: updatedTags,
         }),
       })
       if (!response.ok) throw new Error(`Failed to add tags for ${name}`)
@@ -839,7 +843,7 @@ const togglePublicAccess = async (event: Event) => {
     const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
     const filePath = folderPath ? `${folderPath}/${selectedFile.value.name}` : selectedFile.value.name
 
-    const response = await fetch('/api/file-visibility', {
+    const response = await fetch('/api/file-meta', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fullPath: filePath, isPublic }),

@@ -177,7 +177,9 @@ const addTag = async () => {
   }
 
   try {
-    const response = await fetch('/api/video-tag', {
+    const updatedTags = [...(currentVideo.value.meta.tags || []), ...tagsToAdd]
+    
+    const response = await fetch('/api/file-meta', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -185,7 +187,7 @@ const addTag = async () => {
       credentials: 'include',
       body: JSON.stringify({
         fullPath: currentVideo.value.fullPath,
-        tags: tagsToAdd,
+        tags: updatedTags,
       }),
     });
     if (!response.ok) {
@@ -309,7 +311,7 @@ onMounted(() => {
           <div v-else>
             <div
                 v-if="currentVideo.meta.description"
-                class="bg-gray-100 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-line group relative"
+                class="bg-base-300 p-4 rounded-lg text-sm text-base-content/80 whitespace-pre-line group relative"
             >
               {{ currentVideo.meta.description }}
               <button 
@@ -319,7 +321,7 @@ onMounted(() => {
                 <Icon name="mdi:pencil" class="w-4 h-4" />
               </button>
             </div>
-            <div v-else class="bg-base-300 p-4 rounded-lg text-sm text-gray-700 flex justify-between items-center">
+            <div v-else class="bg-base-300 p-4 rounded-lg text-sm text-base-content/70 flex justify-between items-center">
               <span>No description available.</span>
               <button class="btn btn-ghost btn-xs" @click="startEditDescription">
                 <Icon name="mdi:plus" class="w-4 h-4 mr-1" /> Add Description

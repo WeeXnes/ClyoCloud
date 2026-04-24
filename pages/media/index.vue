@@ -137,7 +137,11 @@ const addTag = async () => {
   }
 
   try {
-    const response = await fetch('/api/video-tag', {
+    const video = videos.value.find(v => v.fullPath === selectedVideoPath.value)
+    const currentTags = video?.meta.tags || []
+    const updatedTags = [...currentTags, ...tagsToAdd]
+
+    const response = await fetch('/api/file-meta', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -145,7 +149,7 @@ const addTag = async () => {
       credentials: 'include',
       body: JSON.stringify({
         fullPath: selectedVideoPath.value,
-        tags: tagsToAdd,
+        tags: updatedTags,
       }),
     });
     if (!response.ok) {
