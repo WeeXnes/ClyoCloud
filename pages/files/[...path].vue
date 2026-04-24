@@ -11,6 +11,11 @@
         <h2 class="text-lg lg:text-xl font-semibold">My Files</h2>
       </div>
       <div class="flex items-center gap-4">
+        <select v-model="sortOption" class="select select-sm select-bordered">
+          <option value="name">Name</option>
+          <option value="size">Size</option>
+          <option value="date">Date</option>
+        </select>
         <button v-if="useRoute().params.path" class="btn btn-sm" @click="downloadFolder">
           Download Folder
         </button>
@@ -20,12 +25,16 @@
           <span class="text-sm">Grid</span>
         </label>
         <label for="upload-modal" class="btn btn-primary btn-sm lg:btn-md">
-          <svg class="w-4 h-4 lg:w-5 lg:h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
-          </svg>
           Upload
         </label>
       </div>
+    </div>
+
+    <!-- Bulk actions -->
+    <div v-if="selectedFiles.size > 0" class="flex gap-2 mb-4 p-2 bg-base-100 shadow rounded">
+      <button class="btn btn-sm btn-error" @click="bulkDelete">Delete Selected</button>
+      <button class="btn btn-sm" @click="bulkDownload">Download Selected</button>
+      <span class="text-sm self-center">{{ selectedFiles.size }} selected</span>
     </div>
 
     <div class="flex items-center gap-1 text-sm text-base-content/70 mb-2">
@@ -51,10 +60,11 @@
     <div 
       @dragover.prevent 
       @drop.prevent="handleDrop"
-      :class="isGridView ? 'grid gap-4 justify-center grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4'"
+      :class="isGridView ? 'grid gap-4 justify-center grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'flex flex-col gap-2'"
     >
-      <div v-for="file in files" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md' : 'card bg-base-100 shadow-md'">
-        <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick(file)">
+      <div v-for="file in sortedFiles" :key="file.name" :class="isGridView ? 'card bg-base-100 shadow-md relative' : 'card bg-base-100 shadow-md relative'">
+        <input type="checkbox" class="checkbox absolute top-2 left-2 z-10" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
+        <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick(file)" @contextmenu.prevent="startRename(file)">
           <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden">
             <template v-if="file.isFolder">
               <button class="text-blue-600 hover:underline flex flex-col items-center">
@@ -67,24 +77,13 @@
             </template>
           </div>
           <div class="flex-1">
-            <h3 class="card-title text-sm lg:text-base truncate">{{ file.name }}</h3>
+            <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
+            <h3 v-else class="card-title text-sm lg:text-base truncate">{{ file.name }}</h3>
             <p class="text-xs lg:text-sm text-base-content/70">{{ (file.size / 1024 / 1024).toFixed(2) }} MB • {{ new Date(file.lastModified).toLocaleDateString() }}</p>
           </div>
-          <div class="card-actions justify-end">
-            <button class="btn btn-ghost btn-xs lg:btn-sm" @click.stop>
-              <svg class="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793A3.987 3.987 0 0114 8.414V7.414l.793-.793zM3 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-3.586l1.586-1.586A2 2 0 0015 3H3zm10 10H5V5h8v8z" />
-              </svg>
-            </button>
-            <button class="btn btn-ghost btn-xs lg:btn-sm" @click.stop="deleteFile(file)">
-              <svg class="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-              </svg>
-            </button>
-          </div>
         </div>
-        <div v-else class="card-body flex flex-row items-center gap-4 p-4 cursor-pointer" @click="onFileClick(file)">
-          <div class="text-3xl">
+        <div v-else class="card-body flex flex-row items-center gap-4 p-4 cursor-pointer" @click="onFileClick(file)" @contextmenu.prevent="startRename(file)">
+          <div class="text-3xl ml-8">
             <Icon
                 class="w-6 h-6"
                 fill="currentColor"
@@ -93,22 +92,11 @@
             />
           </div>
           <div class="flex-1">
-            <h3 class="card-title text-sm lg:text-base truncate">{{ file.name.length > 20 ? file.name.slice(0, 17) + '…' : file.name }}</h3>
+            <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
+            <h3 v-else class="card-title text-sm lg:text-base truncate">{{ file.name.length > 20 ? file.name.slice(0, 17) + '…' : file.name }}</h3>
             <p class="text-xs lg:text-sm text-base-content/70">
               {{ !file.isFolder ? (file.size / 1024 / 1024).toFixed(2) + ' MB • ' : '' }}{{ new Date(file.lastModified).toLocaleDateString() }}
             </p>
-          </div>
-          <div class="card-actions justify-end">
-            <button class="btn btn-ghost btn-xs lg:btn-sm" @click.stop>
-              <svg class="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793A3.987 3.987 0 0114 8.414V7.414l.793-.793zM3 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-3.586l1.586-1.586A2 2 0 0015 3H3zm10 10H5V5h8v8z" />
-              </svg>
-            </button>
-            <button class="btn btn-ghost btn-xs lg:btn-sm" @click.stop="deleteFile(file)">
-              <svg class="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-              </svg>
-            </button>
           </div>
         </div>
       </div>
@@ -250,10 +238,60 @@ const startRename = (file: File) => {
   newName.value = file.name
 }
 
-const saveRename = async (oldName: string) => {
-  // Implement renaming logic here (API call)
-  editingName.value = null
+const downloadFolder = () => {
+  const route = useRoute()
+  const pathParam = route.params.path
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  window.location.href = `/api/zip?path=${encodeURIComponent(folderPath)}`
 }
+
+const bulkDelete = async () => {
+  if (!confirm(`Are you sure you want to delete ${selectedFiles.size} files?`)) return
+  for (const name of selectedFiles.value) {
+    const file = files.value.find(f => f.name === name)
+    if (file) {
+      const route = useRoute()
+      const pathParam = route.params.path
+      const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+      const filePath = folderPath ? `${folderPath}/${file.name}` : file.name
+      await fetch('/api/files', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: filePath }),
+      })
+    }
+  }
+  selectedFiles.value.clear()
+  await fetchFiles()
+}
+
+const bulkDownload = async () => {
+  const route = useRoute()
+  const pathParam = route.params.path
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  const response = await fetch('/api/bulk-download', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ files: Array.from(selectedFiles.value), path: folderPath })
+  })
+  if (response.ok) {
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'files.zip'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  } else {
+    alert('Failed to download files')
+  }
+}
+
+const isGridViewCookie = useCookie<boolean>('isGridView', { default: () => false })
+const isGridView = ref(isGridViewCookie.value)
+watch(isGridView, (newVal) => {
+  isGridViewCookie.value = newVal
+})
 
 onMounted(async () => {
   await fetchFiles()

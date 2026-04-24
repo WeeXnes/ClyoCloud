@@ -6,11 +6,11 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const query = getQuery(event);
   const folderPath = query.path ? decodeURIComponent(query.path as string) : '';
-  const userStoragePath = path.join(config.storagePath, event.context.user.name);
-  const fullPath = path.join(userStoragePath, folderPath);
+  const userStoragePath = path.resolve(config.storagePath, event.context.user.name);
+  const fullPath = path.resolve(userStoragePath, folderPath);
 
   // Security check to ensure the path is within the user's directory
-  if (!fullPath.startsWith(path.resolve(userStoragePath))) {
+  if (!fullPath.startsWith(userStoragePath)) {
     throw createError({ statusCode: 403, message: 'Access denied' });
   }
 
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   const archive = archiver('zip', { zlib: { level: 9 } });
   
   setHeader(event, 'Content-Type', 'application/zip');
-  setHeader(event, 'Content-Disposition', `attachment; filename="${path.basename(fullPath || 'archive')}.zip"`);
+  setHeader(event, 'Content-Disposition', `attachment; filename="${path.basename(fullPath === userStoragePath ? 'root' : fullPath)}.zip"`);
   
   archive.pipe(event.node.res);
   archive.glob('**/*', {
