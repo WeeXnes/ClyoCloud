@@ -360,22 +360,29 @@ const downloadFolder = () => {
 
 const bulkDelete = async () => {
   if (selectedFiles.value.size === 0) return
-  if (!confirm(`Are you sure you want to delete ${selectedFiles.value.size} file(s)?`)) return
+  const count = selectedFiles.value.size
+  if (!confirm(`Are you sure you want to delete ${count} file(s)?`)) return
 
-  for (const name of selectedFiles.value) {
-    const file = files.value.find(f => f.name === name)
-    if (file) {
-      const route = useRoute()
-      const pathParam = route.params.path
-      const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
-      const filePath = folderPath ? `${folderPath}/${file.name}` : file.name
+  try {
+    for (const name of selectedFiles.value) {
+      const file = files.value.find(f => f.name === name)
+      if (file) {
+        const route = useRoute()
+        const pathParam = route.params.path
+        const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+        const filePath = folderPath ? `${folderPath}/${file.name}` : file.name
 
-      await fetch('/api/files', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: filePath }),
-      })
+        await fetch('/api/files', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: filePath }),
+        })
+      }
     }
+    createNotification(`${count} file(s) deleted successfully`, NotificationType.SUCCESS)
+  } catch (err) {
+    console.error('Error in bulk delete:', err)
+    createNotification('Failed to delete some files', NotificationType.ERROR)
   }
   selectedFiles.value.clear()
   await fetchFiles()
