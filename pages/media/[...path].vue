@@ -16,6 +16,38 @@ const showNewTagForm = ref(true)
 const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 
+const isEditingDescription = ref(false)
+const editableDescription = ref('')
+
+const startEditDescription = () => {
+  editableDescription.value = currentVideo.value?.meta.description || ''
+  isEditingDescription.value = true
+}
+
+const saveDescription = async () => {
+  if (!currentVideo.value) return
+
+  try {
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: currentVideo.value.fullPath,
+        description: editableDescription.value,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to update description')
+
+    currentVideo.value.meta.description = editableDescription.value
+    isEditingDescription.value = false
+    createNotification('Description updated', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update description', NotificationType.ERROR)
+  }
+}
+
 const getStreamUrl = () => {
   const url = useRequestURL()
   const baseUrl = url.origin
@@ -263,14 +295,36 @@ onMounted(() => {
           </div>
 
           <!-- Description -->
-          <div
-              v-if="currentVideo.meta.description"
-              class="bg-gray-100 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-line"
-          >
-            {{ currentVideo.meta.description }}
+          <div v-if="isEditingDescription" class="space-y-2">
+            <textarea
+                v-model="editableDescription"
+                class="textarea textarea-bordered w-full h-32"
+                placeholder="Enter description..."
+            ></textarea>
+            <div class="flex justify-end gap-2">
+              <button class="btn btn-ghost btn-sm" @click="isEditingDescription = false">Cancel</button>
+              <button class="btn btn-primary btn-sm" @click="saveDescription">Save Description</button>
+            </div>
           </div>
-          <div v-else class="bg-base-300 p-4 rounded-lg text-sm text-gray-700">
-            No description available.
+          <div v-else>
+            <div
+                v-if="currentVideo.meta.description"
+                class="bg-gray-100 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-line group relative"
+            >
+              {{ currentVideo.meta.description }}
+              <button 
+                class="btn btn-circle btn-ghost btn-xs absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                @click="startEditDescription"
+              >
+                <Icon name="mdi:pencil" class="w-4 h-4" />
+              </button>
+            </div>
+            <div v-else class="bg-base-300 p-4 rounded-lg text-sm text-gray-700 flex justify-between items-center">
+              <span>No description available.</span>
+              <button class="btn btn-ghost btn-xs" @click="startEditDescription">
+                <Icon name="mdi:plus" class="w-4 h-4 mr-1" /> Add Description
+              </button>
+            </div>
           </div>
         </div>
         <!-- Recommended Videos Grid -->
