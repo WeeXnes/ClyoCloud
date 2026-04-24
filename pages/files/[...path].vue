@@ -793,7 +793,15 @@ const copyFileLinkStatic = async (file: File) => {
 }
 
 const downloadFile = (file: File) => {
-  window.location.href = getStaticUrl(file)
+  if (file.isFolder) {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const parentFolderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const folderPath = parentFolderPath ? `${parentFolderPath}/${file.name}` : file.name
+    window.location.href = `/api/zip?path=${encodeURIComponent(folderPath)}`
+  } else {
+    window.location.href = getStaticUrl(file)
+  }
 }
 
 const closeFileModal = () => {
