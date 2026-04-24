@@ -265,26 +265,12 @@ const bulkDelete = async () => {
   await fetchFiles()
 }
 
-const bulkDownload = async () => {
+const bulkDownload = () => {
   const route = useRoute()
   const pathParam = route.params.path
   const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
-  const response = await fetch('/api/bulk-download', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ files: Array.from(selectedFiles.value), path: folderPath })
-  })
-  if (response.ok) {
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'files.zip'
-    a.click()
-    window.URL.revokeObjectURL(url)
-  } else {
-    alert('Failed to download files')
-  }
+  const filesQuery = Array.from(selectedFiles.value).join(',')
+  window.location.href = `/api/bulk-download?files=${encodeURIComponent(filesQuery)}&path=${encodeURIComponent(folderPath)}`
 }
 
 const isGridViewCookie = useCookie<boolean>('isGridView', { default: () => false })
