@@ -13,6 +13,7 @@ export interface File {
 export interface FileMeta {
     tags: Tag[];
     description?: string;
+    isPublic?: boolean;
 }
 
 export interface Tag {

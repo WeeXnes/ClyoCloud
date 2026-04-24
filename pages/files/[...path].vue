@@ -166,6 +166,20 @@
                     class="badge badge-sm text-white inline-block ml-2"
                     :style="{ backgroundColor: tag.color }"> {{ tag.name }} </span>
             </p>
+            <div class="divider"></div>
+            <div class="form-control">
+              <label class="label cursor-pointer justify-start gap-4">
+                <span class="font-medium">Public Access</span>
+                <input type="checkbox" class="toggle toggle-success toggle-sm" :checked="selectedFile.meta.isPublic" @change="togglePublicAccess" />
+              </label>
+            </div>
+            <div v-if="selectedFile.meta.isPublic" class="mt-2">
+              <button class="btn btn-sm btn-outline btn-success w-full" @click="copyPublicLink">
+                <Icon name="mdi:share-variant" class="w-4 h-4 mr-1" />
+                Copy Public Link
+              </button>
+            </div>
+            <div class="divider"></div>
             <p v-if="isVideoFile(selectedFile.name) && !selectedFile.isFolder">
               <span class="font-medium">Preview:</span>
               <video
@@ -696,6 +710,60 @@ const closeFileModal = () => {
 const closeImageViewer = () => {
   showImageViewerModal.value = false
   selectedImageUrl.value = ''
+}
+
+const togglePublicAccess = async (event: Event) => {
+  if (!selectedFile.value) return
+  const isPublic = (event.target as HTMLInputElement).checked
+  
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const filePath = folderPath ? `${folderPath}/${selectedFile.value.name}` : selectedFile.value.name
+
+    const response = await fetch('/api/file-visibility', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullPath: filePath, isPublic }),
+    })
+    
+    if (!response.ok) throw new Error('Failed to update visibility')
+    
+    selectedFile.value.meta.isPublic = isPublic
+    // Update the file in the list as well
+    const fileInList = files.value.find(f => f.name === selectedFile.value?.name)
+    if (fileInList) fileInList.meta.isPublic = isPublic
+    
+  } catch (err) {
+    console.error(err)
+    alert('Failed to update public access')
+    // Reset toggle state
+    ;(event.target as HTMLInputElement).checked = !isPublic
+  }
+}
+
+const copyPublicLink = async () => {
+  if (!selectedFile.value) return
+  
+  const user = useState<any>('user')
+  const username = user.value?.name
+  if (!username) return
+
+  const route = useRoute()
+  const pathParam = route.params.path
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  const filePath = folderPath ? `${folderPath}/${selectedFile.value.name}` : selectedFile.value.name
+  
+  const url = useRequestURL()
+  const publicUrl = `${url.origin}/p/${username}/${encodeURIComponent(filePath)}`
+  
+  try {
+    await navigator.clipboard.writeText(publicUrl)
+    alert('Public link copied to clipboard!')
+  } catch (err) {
+    console.error('Failed to copy: ', err)
+  }
 }
 </script>
 

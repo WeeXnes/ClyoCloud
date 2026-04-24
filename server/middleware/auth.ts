@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
     const url = getRequestURL(event).pathname.toLowerCase()
     console.log('API request to:', url)
 
-    const publicPaths = ['/api/login', '/api/logout', '/login']
+    const publicPaths = ['/api/login', '/api/logout', '/login', '/p/', '/api/public/']
     if (publicPaths.some((path) => url.startsWith(path.toLowerCase()))) {
         return
     }
