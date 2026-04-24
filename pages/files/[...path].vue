@@ -65,8 +65,7 @@
         
         <!-- Grid View -->
         <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick(file)" @contextmenu.prevent="startRename(file)">
-          <input type="checkbox" class="checkbox absolute bottom-2 right-2 z-10" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
-          <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden">
+          <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden relative">
             <template v-if="file.isFolder">
               <Icon name="vscode-icons:default-folder" class="w-12 h-12" />
             </template>
@@ -75,10 +74,13 @@
               <Icon v-else class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20" v-bind:name="getIconForExtension(file.name)" />
             </template>
           </div>
-          <div class="flex-1">
-            <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
-            <h3 v-else class="card-title text-sm truncate">{{ file.name }}</h3>
-            <p class="text-xs text-base-content/70">{{ (file.size / 1024 / 1024).toFixed(2) }} MB • {{ new Date(file.lastModified).toLocaleDateString() }}</p>
+          <div class="flex-1 flex justify-between items-center">
+            <div>
+              <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
+              <h3 v-else class="card-title text-sm truncate">{{ file.name }}</h3>
+              <p class="text-xs text-base-content/70">{{ (file.size / 1024 / 1024).toFixed(2) }} MB • {{ new Date(file.lastModified).toLocaleDateString() }}</p>
+            </div>
+            <input type="checkbox" class="checkbox" :checked="selectedFiles.has(file.name)" @change="toggleSelection(file.name)" @click.stop />
           </div>
         </div>
 
