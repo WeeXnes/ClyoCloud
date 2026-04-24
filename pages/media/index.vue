@@ -201,6 +201,15 @@ function prevPage() {
 
 <template>
   <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+    <div class="flex items-center gap-2 mb-6">
+      <label for="sidebar-drawer" class="btn btn-ghost btn-circle lg:hidden">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+        </svg>
+      </label>
+      <h2 class="text-lg lg:text-xl font-semibold">Media</h2>
+    </div>
+
     <!-- Search Bar -->
     <div class="mb-6">
       <input

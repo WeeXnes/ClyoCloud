@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Header and breadcrumb sections -->
-    <div class="flex justify-between items-center mb-4 lg:mb-6">
+    <div class="flex flex-wrap justify-between items-center mb-4 lg:mb-6 gap-2">
       <div class="flex items-center gap-2">
         <label for="sidebar-drawer" class="btn btn-ghost btn-circle lg:hidden">
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -10,7 +10,7 @@
         </label>
         <h2 class="text-lg lg:text-xl font-semibold">My Files</h2>
       </div>
-      <div class="flex items-center gap-4">
+      <div class="flex flex-wrap items-center gap-2 lg:gap-4">
         <select v-model="sortOption" class="select select-sm select-bordered">
           <option value="name">Name</option>
           <option value="size">Size</option>
