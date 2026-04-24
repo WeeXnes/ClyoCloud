@@ -1,114 +1,78 @@
 # ClyoCloud
 
-ClyoCloud is a modern, open-source file sharing platform built with Nuxt.js and Tailwind CSS. It provides a simple and intuitive interface for uploading, managing, and sharing files.
+ClyoCloud is a personal, self-hosted cloud storage and media management application built for privacy and efficiency. It allows you to store, organize, stream, and share your files effortlessly from your own hardware.
 
+## Features
 
-## Technologies Used
+- **Personal Cloud Storage**: Host your files securely on your own server.
+- **Media Management**: Automatic thumbnail generation, metadata tagging, and description management for your media collection.
+- **Video Streaming**: Built-in, range-aware video streaming with support for seamless playback.
+- **Sharing**: Easily mark files as public to generate shareable, unauthenticated links.
+- **Intuitive UI**: A clean, responsive interface inspired by modern cloud storage services.
+- **File Organization**: Bulk operations, folder creation, and folder zipping for efficient management.
+- **Integrated Feedback**: Real-time notifications for all file operations.
 
-*   **Core Framework:** [Nuxt 3](https://nuxt.com/)
-*   **Backend Engine:** [Nitro](https://nitro.unjs.io/) (Nuxt's built-in server)
-*   **UI:** [Tailwind CSS](https://tailwindcss.com/) with the [DaisyUI](https://daisyui.com/) component library
-*   **Icons:** [Nuxt Icon](https://nuxt.com/modules/icon)
-*   **Authentication:** [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) & [bcryptjs](https://github.com/dcodeIO/bcrypt.js)
-*   **File Handling:** [formidable](https://github.com/node-formidable/formidable) for uploads
-*   **Language:** [TypeScript](https://www.typescriptlang.org/)
-*   **Styling:** [Sass](https://sass-lang.com/)
+## Technologies
+
+- **Frontend**: Nuxt 3 (Vue 3 Composition API), Tailwind CSS, DaisyUI.
+- **Backend**: Nitro (H3/Node.js).
+- **Media Processing**: ffmpeg/ffprobe for thumbnail generation.
+- **Metadata**: Lightweight, sidecar-based (`.cloudinfo`) JSON metadata storage.
 
 ## Getting Started
 
-Follow these steps to set up and run the project locally.
-
 ### Prerequisites
 
-*   Node.js (LTS version recommended)
-*   npm (Node Package Manager) or Yarn
-
-### Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://code.weexnes.dev/clyocloud
-    cd clyocloud
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-    or
-    ```bash
-    yarn install
-    ```
+- Node.js (v18+)
+- ffmpeg (required for thumbnail generation)
 
 ### Configuration
 
-Create a `.env` file in the root directory of the project and add the following environment variables:
+ClyoCloud uses environment variables to manage your setup. Create a `.env` file in the project root:
 
-```
+```bash
 STORAGE_PATH=/path/to/your/storage
 THUMBNAIL_PATH=/path/to/your/thumbnails
+JWT_SECRET=your_secure_random_string
 ```
 
-**Note:** The `maxFileSize` is set in `nuxt.config.ts` and is currently configured to 500MB.
+### Installation
 
-### Running the Development Server
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd ClyoCloud
+   ```
 
-```bash
-npm run dev
-```
-or
-```bash
-yarn dev
-```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-This will start the development server at `http://localhost:3000`.
+3. Run in development mode:
+   ```bash
+   npm run dev
+   ```
 
-### Building for Production
+4. Build and run in production:
+   ```bash
+   npm run build
+   node .output/server/index.mjs
+   ```
 
-To build the application for production:
+## Key Capabilities
 
-```bash
-npm run build
-```
-or
-```bash
-yarn build
-```
+### Public Sharing
+Easily share files without requiring recipients to have an account. Simply open a file's information modal, toggle "Public Access", and share the generated link.
 
-To preview the production build locally:
+### Media Enhancements
+Manage your media library with tags and descriptions. All metadata is stored as sidecar JSON files, making your data portable and easy to manage.
 
-```bash
-npm run preview
-```
-or
-```bash
-yarn preview
-```
+### File Operations
+- **Bulk Actions**: Delete or download multiple items at once.
+- **Renaming**: Context-menu driven renaming for files and folders.
+- **Drag & Drop**: Intuitive drag-and-drop file uploading.
 
-## Project Structure
+---
 
-```
-.
-├── app.vue                 # Main Vue application entry
-├── nuxt.config.ts          # Nuxt.js configuration
-├── package.json            # Project dependencies and scripts
-├── tailwind.config.js      # Tailwind CSS configuration
-├── components/             # Vue components
-├── core/                   # Core utilities and global configurations
-├── middleware/             # Nuxt middleware
-├── pages/                  # Vue pages/routes
-├── public/                 # Static assets
-├── server/                 # Backend API routes, models, and plugins
-│   ├── api/                # API endpoints
-│   ├── models/             # Data models
-│   ├── plugins/            # Server-side plugins
-│   └── routes/             # Server-side routes
-└── types/                  # TypeScript types
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a pull request or open an issue.
-
-## License
-
-This project is licensed under the **MIT License**.
+*ClyoCloud is designed to be a lightweight, privacy-focused alternative to mainstream cloud storage providers.*
