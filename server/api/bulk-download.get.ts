@@ -5,7 +5,6 @@ import path from 'path';
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const query = getQuery(event);
-  // Expecting a comma-separated list of filenames in the query
   const fileNames = query.files ? decodeURIComponent(query.files as string).split(',') : [];
   const folderPath = query.path ? decodeURIComponent(query.path as string) : '';
   const userStoragePath = path.resolve(config.storagePath, event.context.user.name);
@@ -21,26 +20,26 @@ export default defineEventHandler(async (event) => {
   }
 
   const archive = archiver('zip', { zlib: { level: 9 } });
-  
+
   setHeader(event, 'Content-Type', 'application/zip');
-  setHeader(event, 'Content-Disposition', 'attachment; filename="files.zip"');
-  
+  setHeader(event, 'Content-Disposition', `attachment; filename="files.zip"`);
+
   archive.pipe(event.node.res);
 
+  // Correct strategy: Use archive.directory for folders (maintains structure) 
+  // and archive.file for files, and filter .cloudinfo.
   for (const name of fileNames) {
-    const filePath = path.join(fullPath, name);
-    if (fs.existsSync(filePath)) {
-      if (fs.lstatSync(filePath).isDirectory()) {
-        archive.glob('**/*', {
-          cwd: filePath,
-          prefix: name,
-          ignore: ['**/*.cloudinfo']
-        });
-      } else if (!name.endsWith('.cloudinfo')) {
-        archive.file(filePath, { name });
+      const filePath = path.join(fullPath, name);
+      if (fs.existsSync(filePath)) {
+          if (fs.lstatSync(filePath).isDirectory()) {
+              archive.directory(filePath, name, {
+                  filter: (path) => !path.endsWith('.cloudinfo')
+              });
+          } else if (!name.endsWith('.cloudinfo')) {
+              archive.file(filePath, { name });
+          }
       }
-    }
   }
-
+  
   await archive.finalize();
 });
