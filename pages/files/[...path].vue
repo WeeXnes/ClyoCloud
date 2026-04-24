@@ -185,7 +185,7 @@
             </p>
           </div>
         </div>
-        <div class="modal-action">
+        <div class="modal-action flex-wrap justify-center">
           <label class="btn btn-sm btn-error" @click="deleteFile(selectedFile)">Delete</label>
           <label class="btn btn-sm" @click="downloadFile(selectedFile)">Download</label>
           <label class="btn btn-sm" @click="copyFileLinkStatic(selectedFile)">Copy Link</label>
