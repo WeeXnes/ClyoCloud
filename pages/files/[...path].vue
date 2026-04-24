@@ -283,6 +283,7 @@ import { getIconForExtension } from '~/core/fileIcons'
 import type { File, Tag } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
+import { copyToClipboard } from '~/core/clipboard'
 
 const files = ref<File[]>([])
 const selectedFile = ref<File | null>(null)
@@ -698,12 +699,9 @@ const getStaticUrl = (file: File) => {
 }
 
 const copyFileLinkStatic = async (file: File) => {
-  try {
-    await navigator.clipboard.writeText(getStaticUrl(file));
-    // No notification as per user's request
-  } catch (err) {
-    console.error('Failed to copy: ', err);
-    // No notification as per user's request
+  const success = await copyToClipboard(getStaticUrl(file));
+  if (!success) {
+    console.error('Failed to copy link');
   }
 }
 
@@ -774,11 +772,10 @@ const copyPublicLink = async () => {
   const url = useRequestURL()
   const publicUrl = `${url.origin}/p/${username}/${encodeURIComponent(filePath)}`
   
-  try {
-    await navigator.clipboard.writeText(publicUrl)
+  const success = await copyToClipboard(publicUrl)
+  if (success) {
     createNotification('Public link copied to clipboard!', NotificationType.SUCCESS)
-  } catch (err) {
-    console.error('Failed to copy: ', err)
+  } else {
     createNotification('Failed to copy link', NotificationType.ERROR)
   }
 }
