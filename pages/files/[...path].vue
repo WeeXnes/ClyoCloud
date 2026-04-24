@@ -120,6 +120,7 @@
          @click.stop>
       <ul class="menu menu-compact p-0">
         <li><a @click="handleContextAction('open')"><Icon name="mdi:open-in-new" class="w-4 h-4" /> Open</a></li>
+        <li v-if="contextMenuFile && isVideoFile(contextMenuFile.name)"><a @click="handleContextAction('media')"><Icon name="material-symbols:video-library-rounded" class="w-4 h-4" /> Show in Media Tab</a></li>
         <li><a @click="handleContextAction('rename')"><Icon name="mdi:pencil" class="w-4 h-4" /> Rename</a></li>
         <li><a @click="handleContextAction('info')"><Icon name="mdi:information" class="w-4 h-4" /> Information</a></li>
         <li><a @click="handleContextAction('download')"><Icon name="mdi:download" class="w-4 h-4" /> Download</a></li>
@@ -559,6 +560,15 @@ const handleContextAction = (action: string) => {
   switch (action) {
     case 'open':
       onFileClick(new MouseEvent('click'), file)
+      break
+    case 'media':
+      const route = useRoute()
+      const pathParam = route.params.path
+      const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+      const fullPath = folderPath ? `${folderPath}/${file.name}` : file.name
+      const segments = fullPath.split('/')
+      const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
+      navigateTo(`/media/${encodedPath}`)
       break
     case 'rename':
       startRename(file)
