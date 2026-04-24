@@ -131,9 +131,8 @@
     </div>
 
     <!-- File Info Modal -->
-    <input type="checkbox" id="file-info-modal" class="modal-toggle" v-model="showFileInfoModal" />
-    <div class="modal">
-      <div class="modal-box w-11/12 max-w-md">
+    <div class="modal" :class="{ 'modal-open': showFileInfoModal }" @click="showFileInfoModal = false">
+      <div class="modal-box w-11/12 max-w-md" @click.stop>
         <h3 class="font-bold text-lg">File Information</h3>
         <div v-if="selectedFile" class="py-4">
           <div class="flex items-center gap-4 mb-4">
@@ -183,14 +182,13 @@
           <label class="btn btn-sm btn-error" @click="deleteFile(selectedFile)">Delete</label>
           <label class="btn btn-sm" @click="downloadFile(selectedFile)">Download</label>
           <label class="btn btn-sm" @click="copyFileLinkStatic(selectedFile)">Copy Link</label>
-          <label for="file-info-modal" class="btn btn-sm" @click="closeFileModal">Close</label>
+          <label class="btn btn-sm" @click="closeFileModal">Close</label>
         </div>
       </div>
     </div>
 
     <!-- Image Viewer Modal -->
-    <input type="checkbox" id="image-viewer-modal" class="modal-toggle" v-model="showImageViewerModal" />
-    <div class="modal image-viewer-modal" @click="closeImageViewer">
+    <div class="modal image-viewer-modal" :class="{ 'modal-open': showImageViewerModal }" @click="closeImageViewer">
       <div class="modal-box-image" @click.stop>
         <img :src="selectedImageUrl" alt="Full size image" class="max-h-full max-w-full">
       </div>
@@ -507,6 +505,7 @@ const closeFileModal = () => {
     videoEl.currentTime = 0
   }
   selectedFile.value = null
+  showFileInfoModal.value = false
 }
 
 const closeImageViewer = () => {
