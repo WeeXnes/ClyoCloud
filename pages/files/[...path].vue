@@ -16,6 +16,9 @@
           <option value="size">Size</option>
           <option value="date">Date</option>
         </select>
+        <button class="btn btn-sm" @click="promptCreateFolder">
+          New Folder
+        </button>
         <button v-if="useRoute().params.path" class="btn btn-sm" @click="downloadFolder">
           Download Folder
         </button>
@@ -217,6 +220,28 @@ const sortOption = ref<'name' | 'size' | 'date'>('name')
 const selectedFiles = ref<Set<string>>(new Set())
 const editingName = ref<string | null>(null)
 const newName = ref('')
+
+const promptCreateFolder = async () => {
+  const name = prompt('Enter folder name:')
+  if (!name) return
+
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+
+    const response = await fetch('/api/folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, path: folderPath }),
+    })
+    if (!response.ok) throw new Error('Failed to create folder')
+    await fetchFiles()
+  } catch (err) {
+    console.error(err)
+    alert('Failed to create folder')
+  }
+}
 
 const sortedFiles = computed(() => {
   return [...files.value].sort((a, b) => {
