@@ -249,18 +249,22 @@ watch(() => route.params.path, () => {
 
 <template>
   <div class="min-h-screen bg-base-200/30">
-    <div class="max-w-[1800px] mx-auto px-4 py-4 sm:px-6 lg:px-8">
-      <!-- Back Button & Breadcrumbs -->
-      <div class="flex items-center gap-4 mb-6">
-        <NuxtLink to="/media" class="btn btn-ghost btn-circle shadow-sm bg-base-100">
-          <Icon name="mdi:arrow-left" class="w-6 h-6" />
-        </NuxtLink>
-        <div class="hidden sm:block">
-           <div class="text-xs font-medium text-base-content/40 uppercase tracking-widest mb-0.5">Media Library</div>
-           <div class="text-sm font-bold truncate max-w-[300px]">{{ currentVideo?.name }}</div>
+    <!-- Edge-to-Edge Header area (modern and clean) -->
+    <header class="bg-base-100/50 backdrop-blur-md border-b border-base-content/5 mb-6">
+      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
+        <div class="max-w-[1800px] mx-auto flex items-center gap-4">
+          <NuxtLink to="/media" class="btn btn-ghost btn-circle shadow-sm bg-base-100">
+            <Icon name="mdi:arrow-left" class="w-6 h-6" />
+          </NuxtLink>
+          <div class="hidden sm:block">
+             <div class="text-xs font-medium text-base-content/40 uppercase tracking-widest mb-0.5">Media Library</div>
+             <div class="text-sm font-bold truncate max-w-[300px]">{{ currentVideo?.name }}</div>
+          </div>
         </div>
       </div>
+    </header>
 
+    <div class="max-w-[1800px] mx-auto px-4 pb-8 sm:px-6 lg:px-8">
       <!-- Main Content Layout -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         

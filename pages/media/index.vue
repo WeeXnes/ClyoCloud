@@ -132,9 +132,9 @@ function prevPage() {
 
 <template>
   <div class="min-h-screen bg-base-200/50">
-    <!-- Sticky Header -->
+    <!-- Edge-to-Edge Sticky Header -->
     <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
-      <div class="max-w-[1600px] mx-auto px-4 py-4 sm:px-6 lg:px-8">
+      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <label for="sidebar-drawer" class="btn btn-ghost btn-circle lg:hidden">

@@ -5,7 +5,7 @@
     <div v-if="user" class="drawer lg:drawer-open">
       <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
       <div class="drawer-content flex flex-col">
-        <div class="flex-1 p-4 lg:p-6">
+        <div class="flex-1">
           <NuxtPage />
         </div>
       </div>

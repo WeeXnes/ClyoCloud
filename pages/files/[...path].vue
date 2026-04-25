@@ -663,9 +663,9 @@ const copyPublicLinkForFile = async (file: File) => {
 
 <template>
   <div class="min-h-screen bg-base-200/50">
-    <!-- Sticky Header -->
+    <!-- Edge-to-Edge Sticky Header -->
     <header class="sticky top-0 z-40 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
-      <div class="max-w-[1600px] mx-auto px-4 py-3 sm:px-6 lg:px-8">
+      <div class="w-full px-4 py-3 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           
           <!-- Title and Breadcrumbs -->
@@ -746,7 +746,7 @@ const copyPublicLinkForFile = async (file: File) => {
                  </button>
                </div>
 
-               <label for="upload-modal" class="btn btn-sm btn-primary px-5 shadow-lg shadow-primary/20">
+               <label class="btn btn-sm btn-primary px-5 shadow-lg shadow-primary/20" for="upload-modal">
                  Upload
                </label>
              </div>
@@ -796,7 +796,7 @@ const copyPublicLinkForFile = async (file: File) => {
         v-else-if="sortedFiles.length"
         @dragover.prevent 
         @drop.prevent="handleDrop"
-        :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-2'"
+        :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-3'"
       >
         <div 
           v-for="file in sortedFiles" 
@@ -871,25 +871,29 @@ const copyPublicLinkForFile = async (file: File) => {
             </div>
           </div>
 
-          <!-- List Item -->
+          <!-- Modernized List Item (Oriented on old view) -->
           <div v-else 
-               class="flex items-center gap-4 p-3 bg-base-100 rounded-xl border border-base-content/5 hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer group/row ring-primary/30"
+               class="flex items-center gap-4 p-4 bg-base-100 rounded-xl border border-base-content/5 hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer group/row ring-primary/30"
                :class="{ 'ring-1 bg-primary/5 border-primary/20': selectedFiles.has(file.name) }"
                @click="onFileClick($event, file)" 
                @contextmenu.prevent="handleContextMenu($event, file)"
           >
+            <!-- Checkbox -->
             <input type="checkbox" 
-                   class="checkbox checkbox-sm checkbox-primary" 
+                   class="checkbox checkbox-sm checkbox-primary shrink-0" 
                    :checked="selectedFiles.has(file.name)" 
                    @change="toggleSelection(file.name)" 
                    @click.stop />
             
+            <!-- Icon -->
             <div class="shrink-0">
-              <Icon class="w-8 h-8" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
+              <Icon class="w-6 h-6" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
             </div>
 
-            <div class="flex-grow min-w-0 grid grid-cols-12 items-center gap-4">
-              <div class="col-span-12 sm:col-span-6 min-w-0">
+            <!-- Content Area -->
+            <div class="flex-grow flex items-center justify-between min-w-0">
+              <!-- Name & Editing -->
+              <div class="flex-grow min-w-0 mr-4">
                 <input v-if="editingName === file.name" 
                        v-model="newName" 
                        class="input input-sm input-bordered w-full" 
@@ -899,15 +903,19 @@ const copyPublicLinkForFile = async (file: File) => {
                 <h3 v-else class="text-sm font-bold truncate group-hover/row:text-primary transition-colors">{{ file.name }}</h3>
               </div>
               
-              <div class="hidden sm:flex col-span-6 items-center justify-end gap-6 text-[11px] font-bold text-base-content/40 uppercase tracking-widest">
-                <Icon v-if="file.meta.isPublic" 
-                      name="mdi:share-variant" 
-                      class="w-4 h-4 text-success cursor-pointer hover:scale-125 transition-transform" 
-                      title="Copy Shared Link"
-                      @click.stop="copyPublicLinkForFile(file)" />
-                <span v-if="!file.isFolder" class="w-20 text-right">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
-                <span v-else class="w-20 text-right">Folder</span>
-                <span class="w-24 text-right">{{ new Date(file.lastModified).toLocaleDateString() }}</span>
+              <!-- Metadata Group -->
+              <div class="flex items-center gap-6 text-[11px] font-bold text-base-content/40 uppercase tracking-widest shrink-0">
+                <div v-if="file.meta.isPublic" 
+                     class="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 text-success hover:bg-success hover:text-white transition-all"
+                     title="Copy Shared Link"
+                     @click.stop="copyPublicLinkForFile(file)">
+                  <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
+                </div>
+                
+                <span v-if="!file.isFolder" class="hidden sm:inline w-20 text-right">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
+                <span v-else class="hidden sm:inline w-20 text-right">Folder</span>
+                
+                <span class="hidden md:inline w-24 text-right">{{ new Date(file.lastModified).toLocaleDateString() }}</span>
               </div>
             </div>
           </div>
@@ -921,7 +929,7 @@ const copyPublicLinkForFile = async (file: File) => {
         </div>
         <h3 class="text-2xl font-black tracking-tight">Empty folder</h3>
         <p class="text-base-content/50 max-w-xs mt-2 font-medium">This space is waiting for your content. Drop files here or use the upload button.</p>
-        <label for="upload-modal" class="btn btn-primary mt-8 px-8 rounded-full shadow-lg shadow-primary/20">
+        <label class="btn btn-primary mt-8 px-8 rounded-full shadow-lg shadow-primary/20" for="upload-modal">
           Upload Files
         </label>
       </div>
