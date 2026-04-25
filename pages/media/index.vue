@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import type { Video, FileMeta, Tag } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
+import { copyToClipboard } from '~/core/clipboard'
 
 const videos = ref<Video[]>([])
 const isLoading = ref(true)
@@ -164,6 +165,22 @@ const addTag = async () => {
   }
 };
 
+const copyPublicLinkForVideo = async (fullPath: string) => {
+  const user = useState<any>('user')
+  const username = user.value?.name
+  if (!username) return
+
+  const url = useRequestURL()
+  const publicUrl = `${url.origin}/p/${username}/${encodeURIComponent(fullPath)}`
+  
+  const success = await copyToClipboard(publicUrl)
+  if (success) {
+    createNotification('Public link copied to clipboard!', NotificationType.SUCCESS)
+  } else {
+    createNotification('Failed to copy link', NotificationType.ERROR)
+  }
+}
+
 watch(searchQuery, () => {
   currentPage.value = 1
 })
@@ -247,7 +264,10 @@ function prevPage() {
           @click.prevent="goToVideo(video.fullPath)"
       >
         <figure class="relative">
-          <div v-if="video.meta.isPublic" class="absolute top-2 right-2 z-10 bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-sm" title="Shared">
+          <div v-if="video.meta.isPublic" 
+               class="absolute top-2 right-2 z-10 bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-sm hover:scale-110 active:scale-95 transition-transform" 
+               title="Copy Shared Link"
+               @click.stop="copyPublicLinkForVideo(video.fullPath)">
             <Icon name="mdi:share-variant" class="w-4 h-4" />
           </div>
           <img

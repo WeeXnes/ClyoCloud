@@ -90,7 +90,10 @@
         <!-- Grid View -->
         <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick($event, file)" @contextmenu.prevent="handleContextMenu($event, file)">
           <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden relative" data-is-thumbnail="true">
-            <div v-if="file.meta.isPublic" class="absolute top-2 right-2 z-10 bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-sm" title="Shared">
+            <div v-if="file.meta.isPublic" 
+                 class="absolute top-2 right-2 z-10 bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-sm hover:scale-110 active:scale-95 transition-transform" 
+                 title="Copy Shared Link"
+                 @click.stop="copyPublicLinkForFile(file)">
               <Icon name="mdi:share-variant" class="w-4 h-4" />
             </div>
             <template v-if="file.isFolder">
@@ -125,7 +128,11 @@
               <h3 v-else class="card-title text-sm lg:text-base truncate">{{ file.name }}</h3>
             </div>
             <div class="flex items-center gap-2 text-xs lg:text-sm text-base-content/70 flex-shrink-0">
-              <Icon v-if="file.meta.isPublic" name="mdi:share-variant" class="w-4 h-4 text-success mr-1" title="Shared" />
+              <Icon v-if="file.meta.isPublic" 
+                    name="mdi:share-variant" 
+                    class="w-4 h-4 text-success mr-1 cursor-pointer hover:scale-110 active:scale-95 transition-transform" 
+                    title="Copy Shared Link"
+                    @click.stop="copyPublicLinkForFile(file)" />
               <span v-if="!file.isFolder" class="hidden sm:inline">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
               <span>{{ new Date(file.lastModified).toLocaleDateString() }}</span>
             </div>
@@ -977,7 +984,10 @@ const togglePublicAccess = async (event: Event) => {
 
 const copyPublicLink = async () => {
   if (!selectedFile.value) return
-  
+  await copyPublicLinkForFile(selectedFile.value)
+}
+
+const copyPublicLinkForFile = async (file: File) => {
   const user = useState<any>('user')
   const username = user.value?.name
   if (!username) return
@@ -985,7 +995,7 @@ const copyPublicLink = async () => {
   const route = useRoute()
   const pathParam = route.params.path
   const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
-  const filePath = folderPath ? `${folderPath}/${selectedFile.value.name}` : selectedFile.value.name
+  const filePath = folderPath ? `${folderPath}/${file.name}` : file.name
   
   const url = useRequestURL()
   const publicUrl = `${url.origin}/p/${username}/${encodeURIComponent(filePath)}`
