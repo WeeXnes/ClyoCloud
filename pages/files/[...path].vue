@@ -236,7 +236,17 @@ const bulkAddTags = async () => {
     const pathParam = route.params.path
     const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
 
-    for (const name of selectedFiles.value) {
+    // Determine target files: either currently selected in bulk, or the single file from modal
+    const targetFileNames = selectedFiles.value.size > 0 
+      ? Array.from(selectedFiles.value) 
+      : (selectedFile.value ? [selectedFile.value.name] : [])
+
+    if (targetFileNames.length === 0) {
+      createNotification('No file selected', NotificationType.ERROR)
+      return
+    }
+
+    for (const name of targetFileNames) {
       const file = files.value.find(f => f.name === name)
       const currentTags = file?.meta.tags || []
       const updatedTags = [...currentTags, ...tagsToAdd]
@@ -251,6 +261,11 @@ const bulkAddTags = async () => {
         }),
       })
       if (!response.ok) throw new Error(`Failed to add tags for ${name}`)
+      
+      // Update local state if it's the currently selected file in modal
+      if (selectedFile.value && name === selectedFile.value.name) {
+        selectedFile.value.meta.tags = updatedTags
+      }
     }
 
     createNotification('Tags added successfully', NotificationType.SUCCESS)
@@ -993,13 +1008,21 @@ const copyPublicLinkForFile = async (file: File) => {
             </div>
           </div>
 
-          <div v-if="selectedFile.meta.tags.length">
+          <div v-if="selectedFile.meta.tags.length || true">
              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-3">Tags</span>
-             <div class="flex flex-wrap gap-2">
+             <div class="flex flex-wrap gap-2 items-center">
                 <span v-for="tag in selectedFile.meta.tags"
                       :key="tag.name"
                       class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm"
                       :style="{ backgroundColor: tag.color }"> {{ tag.name }} </span>
+                
+                <button
+                  class="btn btn-ghost btn-xs bg-base-200/50 hover:bg-base-content/10 border border-base-content/5 rounded-full px-3 transition-all"
+                  @click="showTagModal = true"
+                >
+                  <Icon name="mdi:tag-plus-outline" class="w-4 h-4 mr-1 text-primary" /> 
+                  <span class="font-bold text-[10px] uppercase tracking-wide">Add Tag</span>
+                </button>
              </div>
           </div>
 

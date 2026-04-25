@@ -117,15 +117,59 @@ const totalPages = computed(() => {
   return Math.ceil(filteredVideos.value.length / videosPerPage)
 })
 
+const displayedPages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  const delta = 2
+  const pages = []
+
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) pages.push(i)
+    return pages
+  }
+
+  // Always show first page
+  pages.push(1)
+
+  if (current > delta + 2) {
+    pages.push('...')
+  }
+
+  const start = Math.max(2, current - delta)
+  const end = Math.min(total - 1, current + delta)
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+
+  if (current < total - (delta + 1)) {
+    pages.push('...')
+  }
+
+  // Always show last page
+  pages.push(total)
+
+  return pages
+})
+
 function nextPage() {
   if (currentPage.value < totalPages.value) {
     currentPage.value++
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
 
 function prevPage() {
   if (currentPage.value > 1) {
     currentPage.value--
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+function setPage(page: number | string) {
+  if (typeof page === 'number') {
+    currentPage.value = page
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
 </script>
@@ -271,11 +315,14 @@ function prevPage() {
         
         <div class="join hidden sm:flex">
           <button 
-            v-for="page in totalPages" 
-            :key="page"
+            v-for="(page, idx) in displayedPages" 
+            :key="idx"
             class="join-item btn btn-sm"
-            :class="{ 'btn-active btn-primary': currentPage === page }"
-            @click="currentPage = page"
+            :class="{ 
+              'btn-active btn-primary': currentPage === page,
+              'btn-disabled': page === '...'
+            }"
+            @click="setPage(page)"
           >
             {{ page }}
           </button>
