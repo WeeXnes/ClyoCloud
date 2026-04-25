@@ -110,130 +110,215 @@ async function logout() {
 </script>
 
 <template>
-  <div class="container mx-auto p-4 lg:p-6 max-w-4xl">
-    <div class="flex items-center gap-2 mb-6">
-      <label for="sidebar-drawer" class="btn btn-ghost btn-circle lg:hidden">
-        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-        </svg>
-      </label>
-      <h2 class="text-2xl font-bold">Settings</h2>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <!-- Change Password Section -->
-      <section class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h3 class="card-title mb-4">Change Password</h3>
-          <div class="form-control w-full">
-            <label class="label">
-              <span class="label-text">New Password</span>
-            </label>
-            <input 
-              v-model="newPassword" 
-              type="password" 
-              placeholder="Min 6 characters" 
-              class="input input-bordered w-full" 
-            />
-          </div>
-          <div class="form-control w-full mt-2">
-            <label class="label">
-              <span class="label-text">Confirm Password</span>
-            </label>
-            <input 
-              v-model="confirmPassword" 
-              type="password" 
-              class="input input-bordered w-full" 
-            />
-          </div>
-          <div class="card-actions mt-6">
-            <button 
-              class="btn btn-primary w-full" 
-              @click="changePassword" 
-              :disabled="isChangingPassword"
-            >
-              <span v-if="isChangingPassword" class="loading loading-spinner"></span>
-              Update Password
-            </button>
+  <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
+    <!-- Edge-to-Edge Sticky Header -->
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-3">
+          <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
+            <Icon name="mdi:menu" class="w-5 h-5" />
+          </label>
+          <div>
+            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
+              <Icon name="mdi:cog-outline" class="text-primary w-6 h-6" />
+              Settings
+            </h1>
+            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Configuration & Identity</p>
           </div>
         </div>
-      </section>
+      </div>
+    </header>
 
-      <!-- Manage Tags Section -->
-      <section class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h3 class="card-title mb-4">Predefined Tags</h3>
-          
-          <div class="flex flex-wrap gap-2 mb-6 min-h-[40px] p-2 bg-base-200 rounded-lg">
-            <div 
-              v-for="(tag, index) in tags" 
-              :key="tag.name" 
-              class="badge badge-lg gap-2 text-white border-none h-auto py-1"
-              :style="{ backgroundColor: tag.color }"
-            >
-              {{ tag.name }}
-              <button @click="removeTag(index)" class="hover:text-base-300">
-                <Icon name="ic:baseline-close" class="w-4 h-4" />
+    <main class="w-full max-w-[1200px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Account Security -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="flex items-center gap-3 px-2">
+             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+               <Icon name="mdi:shield-lock-outline" class="text-primary w-5 h-5" />
+             </div>
+             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Security</h2>
+          </div>
+
+          <section class="bg-base-100 rounded-[2rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+             <div class="p-8 sm:p-10">
+               <h3 class="text-lg font-black tracking-tight mb-6">Update Password</h3>
+               
+               <div class="space-y-4">
+                 <div class="form-control">
+                   <label class="label py-1">
+                     <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">New Secret Key</span>
+                   </label>
+                   <input 
+                     v-model="newPassword" 
+                     type="password" 
+                     placeholder="Min. 6 characters" 
+                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                   />
+                 </div>
+                 
+                 <div class="form-control">
+                   <label class="label py-1">
+                     <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Confirm Secret Key</span>
+                   </label>
+                   <input 
+                     v-model="confirmPassword" 
+                     type="password" 
+                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                   />
+                 </div>
+
+                 <div class="pt-6">
+                   <button 
+                     class="btn btn-primary btn-block h-12 rounded-xl shadow-lg shadow-primary/20 gap-2" 
+                     @click="changePassword" 
+                     :disabled="isChangingPassword"
+                   >
+                     <Icon v-if="!isChangingPassword" name="mdi:check-circle-outline" class="w-4 h-4" />
+                     <span v-else class="loading loading-spinner loading-xs"></span>
+                     Update Credentials
+                   </button>
+                 </div>
+               </div>
+             </div>
+          </section>
+
+          <!-- Quick Actions / Danger Zone -->
+          <section class="bg-error/5 rounded-[2rem] border border-error/10 p-8 sm:p-10">
+            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-error/60 mb-6">Session Control</h3>
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div class="text-center sm:text-left">
+                <p class="text-sm font-black tracking-tight">Logout everywhere</p>
+                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Disconnect from this device</p>
+              </div>
+              <button class="btn btn-error btn-outline h-12 px-8 rounded-xl border-2 font-black uppercase text-[11px] tracking-widest" @click="logout">
+                Sign Out
               </button>
             </div>
-            <p v-if="tags.length === 0" class="text-sm text-base-content/50 self-center mx-auto">No tags defined</p>
-          </div>
-
-          <div class="divider">Add New Tag</div>
-
-          <div class="form-control w-full">
-            <label class="label">
-              <span class="label-text">Tag Name</span>
-            </label>
-            <input 
-              v-model="newTagName" 
-              type="text" 
-              placeholder="Tag name" 
-              class="input input-bordered w-full" 
-            />
-          </div>
-          <div class="form-control w-full mt-2">
-            <label class="label">
-              <span class="label-text">Tag Color</span>
-            </label>
-            <div class="flex gap-2">
-              <input 
-                v-model="newTagColor" 
-                type="color" 
-                class="input input-bordered w-16 h-12 p-1" 
-              />
-              <input 
-                v-model="newTagColor" 
-                type="text" 
-                class="input input-bordered flex-1" 
-              />
-            </div>
-          </div>
-          <div class="card-actions mt-6">
-            <button 
-              class="btn btn-secondary w-full" 
-              @click="addTag" 
-              :disabled="isSavingTags"
-            >
-              Add Tag
-            </button>
-          </div>
+          </section>
         </div>
-      </section>
-    </div>
 
-    <!-- Danger Zone -->
-    <section class="card bg-base-100 shadow-xl mt-8 border border-error/20">
-      <div class="card-body flex flex-col md:flex-row justify-between items-center gap-4">
-        <div>
-          <h3 class="card-title text-error">Logout</h3>
-          <p class="text-sm text-base-content/70">Sign out of your account on this device.</p>
+        <!-- Metadata & Tags -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="flex items-center gap-3 px-2">
+             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+               <Icon name="mdi:tag-multiple-outline" class="text-primary w-5 h-5" />
+             </div>
+             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Organization</h2>
+          </div>
+
+          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+             <div class="p-8 sm:p-10">
+               <div class="flex items-center justify-between mb-8">
+                 <div>
+                   <h3 class="text-lg font-black tracking-tight">Predefined Tags</h3>
+                   <p class="text-xs font-medium text-base-content/40">Standard labels for your library</p>
+                 </div>
+                 <div class="bg-base-200/50 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-base-content/40 border border-base-content/5">
+                   {{ tags.length }} Active
+                 </div>
+               </div>
+               
+               <div class="flex flex-wrap gap-2.5 mb-10 p-6 bg-base-200/50 rounded-[1.5rem] border border-base-content/5 min-h-[100px] items-start content-start">
+                 <transition-group name="list">
+                   <div 
+                     v-for="(tag, index) in tags" 
+                     :key="tag.name" 
+                     class="flex items-center gap-2 pl-3.5 pr-1.5 py-1.5 rounded-full text-white font-black text-[10px] uppercase tracking-wider shadow-sm ring-1 ring-white/10"
+                     :style="{ backgroundColor: tag.color }"
+                   >
+                     {{ tag.name }}
+                     <button @click="removeTag(index)" class="w-5 h-5 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors">
+                       <Icon name="mdi:close" class="w-3 h-3" />
+                     </button>
+                   </div>
+                 </transition-group>
+                 <div v-if="tags.length === 0" class="w-full h-full flex flex-col items-center justify-center py-4 gap-2 opacity-30">
+                    <Icon name="mdi:tag-off-outline" class="w-8 h-8" />
+                    <p class="text-[10px] font-black uppercase tracking-widest text-center">No standard tags established</p>
+                 </div>
+               </div>
+
+               <div class="relative py-4 mb-6">
+                 <div class="absolute inset-0 flex items-center">
+                   <div class="w-full border-t border-base-content/5"></div>
+                 </div>
+                 <div class="relative flex justify-center">
+                   <span class="bg-base-100 px-4 text-[9px] font-black uppercase tracking-[0.3em] text-base-content/20">Establish New Identity</span>
+                 </div>
+               </div>
+
+               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <div class="form-control">
+                   <label class="label py-1">
+                     <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Identity Label</span>
+                   </label>
+                   <input 
+                     v-model="newTagName" 
+                     type="text" 
+                     placeholder="e.g. Archives" 
+                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                   />
+                 </div>
+                 <div class="form-control">
+                   <label class="label py-1">
+                     <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Visual Chroma</span>
+                   </label>
+                   <div class="flex gap-3">
+                     <input 
+                       v-model="newTagColor" 
+                       type="color" 
+                       class="w-12 h-12 rounded-xl cursor-pointer border-none bg-base-200/50" 
+                     />
+                     <input 
+                       v-model="newTagColor" 
+                       type="text" 
+                       class="input input-bordered flex-1 bg-base-200/50 focus:bg-base-100 transition-all font-mono text-[11px] font-bold h-12 rounded-xl border-base-content/10" 
+                     />
+                   </div>
+                 </div>
+               </div>
+               
+               <div class="mt-8">
+                 <button 
+                   class="btn btn-secondary btn-block h-14 rounded-2xl shadow-lg gap-2 text-white" 
+                   @click="addTag" 
+                   :disabled="isSavingTags"
+                 >
+                   <Icon name="mdi:tag-plus" class="w-5 h-5" />
+                   <span class="font-black tracking-tight uppercase text-xs">Establish Tag</span>
+                 </button>
+               </div>
+             </div>
+          </section>
         </div>
-        <button class="btn btn-error" @click="logout">
-          <Icon name="material-symbols:logout" class="w-5 h-5" />
-          Log Out
-        </button>
       </div>
-    </section>
+      
+      <!-- System Info -->
+      <footer class="pt-8 opacity-20 flex flex-col items-center gap-2">
+         <div class="w-12 h-px bg-base-content"></div>
+         <p class="text-[9px] font-black uppercase tracking-[0.4em]">ClyoCloud v2.4.0 • Core Terminal</p>
+      </footer>
+    </main>
   </div>
 </template>
+
+<style scoped>
+.list-enter-active, .list-leave-active {
+  transition: all 0.3s ease;
+}
+.list-enter-from, .list-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+	border: none;
+  border-radius: 12px;
+}
+</style>
