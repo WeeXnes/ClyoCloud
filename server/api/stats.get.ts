@@ -1,6 +1,7 @@
 import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
+import os from 'node:os'
 
 async function getDirSize(dirPath: string): Promise<number> {
     const files = await fs.readdir(dirPath, { withFileTypes: true })
@@ -38,10 +39,20 @@ export default defineEventHandler(async (event) => {
         const totalSize = stats.blocks * stats.bsize
         const freeSize = stats.bfree * stats.bsize
 
+        // Get RAM stats
+        const totalRam = os.totalmem()
+        const freeRam = os.freemem()
+        const usedRam = totalRam - freeRam
+
         return {
             used: usedSize,
             total: totalSize,
             free: freeSize,
+            ram: {
+                total: totalRam,
+                used: usedRam,
+                free: freeRam
+            },
             username: event.context.user.name
         }
     } catch (error) {

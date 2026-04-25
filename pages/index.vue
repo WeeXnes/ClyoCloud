@@ -5,6 +5,11 @@ interface Stats {
   used: number
   total: number
   free: number
+  ram: {
+    total: number
+    used: number
+    free: number
+  }
   username: string
 }
 
@@ -36,6 +41,11 @@ const formatSize = (bytes: number) => {
 const storagePercentage = computed(() => {
   if (!stats.value) return 0
   return Math.min(100, Math.round((stats.value.used / stats.value.total) * 100))
+})
+
+const ramPercentage = computed(() => {
+  if (!stats.value?.ram) return 0
+  return Math.min(100, Math.round((stats.value.ram.used / stats.value.ram.total) * 100))
 })
 
 onMounted(fetchStats)
@@ -139,7 +149,7 @@ onMounted(fetchStats)
           </div>
         </div>
 
-        <!-- Quick Terminal -->
+        <!-- Quick Terminal & RAM -->
         <div class="lg:col-span-5 flex flex-col gap-6">
           <div class="flex items-center gap-3 px-2">
              <div class="w-8 h-8 rounded-lg bg-base-content/5 flex items-center justify-center">
@@ -182,14 +192,38 @@ onMounted(fetchStats)
              </NuxtLink>
           </div>
 
-          <div class="bg-primary/5 rounded-[2rem] p-8 border border-primary/10 flex flex-col justify-center">
-             <div class="flex items-center gap-4 mb-4">
-                <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                   <Icon name="mdi:shield-check" class="text-white w-5 h-5" />
+          <!-- RAM Usage Section (Replacing Security Check) -->
+          <div class="bg-base-100 rounded-[2.5rem] p-8 border border-base-content/5 shadow-xl shadow-base-content/5 flex flex-col gap-6">
+             <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                     <Icon name="mdi:memory" class="text-primary w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 class="font-black text-sm uppercase tracking-tight">Memory Load</h4>
+                    <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">System RAM</p>
+                  </div>
                 </div>
-                <h4 class="font-black text-sm uppercase tracking-tight">Security Check</h4>
+                <div v-if="!isLoading" class="text-right">
+                  <span class="text-lg font-black tracking-tight">{{ ramPercentage }}%</span>
+                </div>
              </div>
-             <p class="text-xs font-bold text-primary/60 leading-relaxed uppercase tracking-wider">Your data is encrypted with military-grade 256-bit AES protection. All nodes are reporting nominal status.</p>
+
+             <div v-if="isLoading" class="space-y-2">
+                <div class="h-2 w-full bg-base-200 animate-pulse rounded-full"></div>
+             </div>
+             <div v-else class="space-y-4">
+                <div class="overflow-hidden h-2.5 text-xs flex rounded-full bg-base-200">
+                  <div 
+                    :style="{ width: ramPercentage + '%' }" 
+                    class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-1000 ease-out"
+                  ></div>
+                </div>
+                <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] text-base-content/30">
+                   <span>Used: {{ formatSize(stats?.ram.used || 0) }}</span>
+                   <span>Total: {{ formatSize(stats?.ram.total || 0) }}</span>
+                </div>
+             </div>
           </div>
         </div>
       </div>
