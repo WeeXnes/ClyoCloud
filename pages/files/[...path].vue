@@ -90,7 +90,7 @@
         <!-- Grid View -->
         <div v-if="isGridView" class="card-body p-4 flex flex-col gap-4 cursor-pointer" @click="onFileClick($event, file)" @contextmenu.prevent="handleContextMenu($event, file)">
           <div class="w-full h-[135px] bg-base-200 rounded-lg flex items-center justify-center overflow-hidden relative" data-is-thumbnail="true">
-            <div v-if="file.meta.isPublic" class="absolute top-2 right-2 z-10 bg-success text-success-content p-1 rounded-full shadow-sm" title="Shared">
+            <div v-if="file.meta.isPublic" class="absolute top-2 right-2 z-10 bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-sm" title="Shared">
               <Icon name="mdi:share-variant" class="w-4 h-4" />
             </div>
             <template v-if="file.isFolder">
@@ -120,14 +120,12 @@
             <Icon class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
           </div>
           <div class="flex-grow flex items-center justify-between min-w-0">
-            <div class="flex-grow min-w-0 mr-2 flex items-center gap-2">
+            <div class="flex-grow min-w-0 mr-2">
               <input v-if="editingName === file.name" v-model="newName" class="input input-sm w-full" @keyup.enter="saveRename(file.name)" @blur="saveRename(file.name)" @click.stop />
-              <template v-else>
-                <h3 class="card-title text-sm lg:text-base truncate">{{ file.name }}</h3>
-                <Icon v-if="file.meta.isPublic" name="mdi:share-variant" class="w-4 h-4 text-success shrink-0" title="Shared" />
-              </template>
+              <h3 v-else class="card-title text-sm lg:text-base truncate">{{ file.name }}</h3>
             </div>
             <div class="flex items-center gap-2 text-xs lg:text-sm text-base-content/70 flex-shrink-0">
+              <Icon v-if="file.meta.isPublic" name="mdi:share-variant" class="w-4 h-4 text-success mr-1" title="Shared" />
               <span v-if="!file.isFolder" class="hidden sm:inline">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
               <span>{{ new Date(file.lastModified).toLocaleDateString() }}</span>
             </div>
