@@ -246,7 +246,10 @@ function prevPage() {
           :href="getVideoUrl(video.fullPath)"
           @click.prevent="goToVideo(video.fullPath)"
       >
-        <figure>
+        <figure class="relative">
+          <div v-if="video.meta.isPublic" class="absolute top-2 right-2 z-10 bg-success text-success-content p-1 rounded-full shadow-sm" title="Shared">
+            <Icon name="mdi:share-variant" class="w-4 h-4" />
+          </div>
           <img
               v-if="hasThumbnail(video.name)"
               :src="getThumbnailUrl(video.fullPath)"
