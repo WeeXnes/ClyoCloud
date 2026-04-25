@@ -47,6 +47,7 @@ export default defineEventHandler(async (event) => {
             size: stats.size,
             lastModified: stats.mtime.getTime(),
             type: path.extname(fullPath),
+            isFolder: stats.isDirectory(),
             meta,
             username // Useful for frontend to construct links
         }

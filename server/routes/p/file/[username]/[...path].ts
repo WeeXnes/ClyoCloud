@@ -4,6 +4,7 @@ import { defineEventHandler, getRouterParam, setHeader, createError } from 'h3'
 import mime from 'mime-types'
 import path, { join, resolve } from 'path'
 import { isFilePublic } from '~/server/utils/publicCheck'
+import archiver from 'archiver'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -39,6 +40,23 @@ export default defineEventHandler(async (event) => {
 
     try {
         const stats = await stat(resolvedPath)
+        
+        if (stats.isDirectory()) {
+            const archive = archiver('zip', { zlib: { level: 9 } });
+            const fileName = `${path.basename(resolvedPath)}.zip`;
+            
+            setHeader(event, 'Content-Type', 'application/zip');
+            setHeader(event, 'Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+            
+            archive.pipe(event.node.res);
+            archive.glob('**/*', {
+                cwd: resolvedPath,
+                ignore: ['**/*.cloudinfo']
+            });
+            await archive.finalize();
+            return;
+        }
+
         if (!stats.isFile()) {
             throw createError({
                 statusCode: 404,
@@ -63,8 +81,8 @@ export default defineEventHandler(async (event) => {
     } catch (error: any) {
         console.error('Error serving public file:', error)
         throw createError({
-            statusCode: error.statusCode || 404,
-            statusMessage: error.statusMessage || 'File not found',
+            statusCode: error.statusCode || 500,
+            statusMessage: error.statusMessage || 'Internal Server Error',
         })
     }
 })

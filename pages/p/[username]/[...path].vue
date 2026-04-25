@@ -81,11 +81,15 @@ onMounted(fetchFileInfo)
 
       <div class="card-body">
         <div class="flex items-center gap-4">
-          <Icon :name="getIconForExtension(fileInfo.name)" class="w-10 h-10 shrink-0" />
+          <Icon :name="fileInfo.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(fileInfo.name)" class="w-10 h-10 shrink-0" />
           <div class="overflow-hidden">
-            <h2 class="card-title truncate" :title="fileInfo.name">{{ fileInfo.name }}</h2>
+            <h2 class="card-title truncate" :title="fileInfo.isFolder ? `${fileInfo.name}.zip` : fileInfo.name">
+              {{ fileInfo.isFolder ? `${fileInfo.name}.zip` : fileInfo.name }}
+            </h2>
             <p class="text-sm text-base-content/70">
-              {{ (fileInfo.size / 1024 / 1024).toFixed(2) }} MB • 
+              <template v-if="!fileInfo.isFolder">
+                {{ (fileInfo.size / 1024 / 1024).toFixed(2) }} MB • 
+              </template>
               {{ new Date(fileInfo.lastModified).toLocaleDateString() }}
             </p>
           </div>
