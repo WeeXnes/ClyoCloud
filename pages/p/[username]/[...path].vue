@@ -116,8 +116,8 @@ onMounted(fetchFileInfo)
         <div class="p-6 sm:p-8">
           <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
             <div class="flex items-center gap-4 min-w-0">
-              <div class="bg-base-200 p-3.5 rounded-2xl shadow-inner shrink-0 ring-1 ring-base-content/5">
-                <Icon :name="fileInfo.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(fileInfo.name)" class="w-8 h-8" />
+              <div class="bg-base-200 w-16 h-16 rounded-2xl shadow-inner shrink-0 ring-1 ring-base-content/5 flex items-center justify-center">
+                <Icon :name="fileInfo.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(fileInfo.name)" class="w-9 h-9" />
               </div>
               <div class="min-w-0">
                 <h2 class="text-lg font-black tracking-tight truncate leading-tight mb-0.5" :title="fileInfo.isFolder ? `${fileInfo.name}.zip` : fileInfo.name">
