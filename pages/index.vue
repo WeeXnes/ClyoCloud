@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 
 interface Stats {
   used: number
@@ -20,15 +20,17 @@ interface Stats {
 
 const stats = ref<Stats | null>(null)
 const isLoading = ref(true)
+let refreshInterval: any = null
 
-const fetchStats = async () => {
+const fetchStats = async (silent = false) => {
+  if (!silent) isLoading.value = true
   try {
     const data = await $fetch<Stats>('/api/stats')
     stats.value = data
   } catch (err) {
     console.error('Failed to fetch stats:', err)
   } finally {
-    isLoading.value = false
+    if (!silent) isLoading.value = false
   }
 }
 
@@ -59,7 +61,15 @@ const cpuPercentage = computed(() => {
   return Math.min(100, Math.round((stats.value.cpu.load / stats.value.cpu.cores) * 100))
 })
 
-onMounted(fetchStats)
+onMounted(() => {
+  fetchStats()
+  // Refresh every 10 seconds
+  refreshInterval = setInterval(() => fetchStats(true), 10000)
+})
+
+onUnmounted(() => {
+  if (refreshInterval) clearInterval(refreshInterval)
+})
 </script>
 
 <template>
@@ -95,12 +105,12 @@ onMounted(fetchStats)
       </section>
 
       <!-- Stats Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         
         <!-- Main Column (Storage & CPU) -->
         <div class="lg:col-span-7 flex flex-col gap-8">
-          <!-- Storage Card (Reduced Height) -->
-          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col">
+          <!-- Storage Card -->
+          <section class="flex-1 bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col justify-between">
             <div class="flex items-center justify-between mb-8">
               <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -151,8 +161,8 @@ onMounted(fetchStats)
             </div>
           </section>
 
-          <!-- CPU Card (New) -->
-          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col">
+          <!-- CPU Card -->
+          <section class="flex-1 bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col justify-between">
             <div class="flex items-center justify-between mb-8">
               <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center">
@@ -185,10 +195,10 @@ onMounted(fetchStats)
               <div class="flex flex-col gap-1">
                 <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Model Identity</span>
                 <span class="text-sm font-bold truncate max-w-full">{{ stats?.cpu.model }}</span>
-                <div class="flex items-center gap-4 mt-1">
-                  <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">{{ stats?.cpu.cores }} Logical Cores</span>
+                <div class="flex items-center gap-4 mt-1 text-base-content/40">
+                  <span class="text-[10px] font-bold uppercase tracking-widest">{{ stats?.cpu.cores }} Logical Cores</span>
                   <span class="w-1 h-1 rounded-full bg-base-content/20"></span>
-                  <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Load: {{ stats?.cpu.load.toFixed(2) }}</span>
+                  <span class="text-[10px] font-bold uppercase tracking-widest">Load: {{ stats?.cpu.load.toFixed(2) }}</span>
                 </div>
               </div>
             </div>
@@ -197,49 +207,51 @@ onMounted(fetchStats)
 
         <!-- Secondary Column (Quick Terminal & RAM) -->
         <div class="lg:col-span-5 flex flex-col gap-8">
-          <div class="flex items-center gap-3 px-2">
-             <div class="w-8 h-8 rounded-lg bg-base-content/5 flex items-center justify-center">
-               <Icon name="mdi:chevron-right" class="text-base-content/40 w-5 h-5" />
-             </div>
-             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Quick Terminal</h2>
-          </div>
+          <div class="flex flex-col gap-6">
+            <div class="flex items-center gap-3 px-2">
+               <div class="w-8 h-8 rounded-lg bg-base-content/5 flex items-center justify-center">
+                 <Icon name="mdi:chevron-right" class="text-base-content/40 w-5 h-5" />
+               </div>
+               <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Quick Terminal</h2>
+            </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-             <NuxtLink to="/files" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <Icon name="mdi:folder-multiple-outline" class="text-blue-500 w-5 h-5" />
-                </div>
-                <h4 class="font-black text-sm uppercase tracking-tight">Explore Files</h4>
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Manage Storage</p>
-             </NuxtLink>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <NuxtLink to="/files" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Icon name="mdi:folder-multiple-outline" class="text-blue-500 w-5 h-5" />
+                  </div>
+                  <h4 class="font-black text-sm uppercase tracking-tight">Explore Files</h4>
+                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Manage Storage</p>
+               </NuxtLink>
 
-             <NuxtLink to="/media" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <Icon name="mdi:play-box-multiple-outline" class="text-purple-500 w-5 h-5" />
-                </div>
-                <h4 class="font-black text-sm uppercase tracking-tight">Media Library</h4>
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Direct Playback</p>
-             </NuxtLink>
+               <NuxtLink to="/media" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Icon name="mdi:play-box-multiple-outline" class="text-purple-500 w-5 h-5" />
+                  </div>
+                  <h4 class="font-black text-sm uppercase tracking-tight">Media Library</h4>
+                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Direct Playback</p>
+               </NuxtLink>
 
-             <NuxtLink to="/downloader" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <Icon name="mdi:cloud-download-outline" class="text-orange-500 w-5 h-5" />
-                </div>
-                <h4 class="font-black text-sm uppercase tracking-tight">Downloader</h4>
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Remote Ingest</p>
-             </NuxtLink>
+               <NuxtLink to="/downloader" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Icon name="mdi:cloud-download-outline" class="text-orange-500 w-5 h-5" />
+                  </div>
+                  <h4 class="font-black text-sm uppercase tracking-tight">Downloader</h4>
+                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Remote Ingest</p>
+               </NuxtLink>
 
-             <NuxtLink to="/settings" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div class="w-10 h-10 rounded-xl bg-base-content/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <Icon name="mdi:cog-outline" class="text-base-content/40 w-5 h-5" />
-                </div>
-                <h4 class="font-black text-sm uppercase tracking-tight">Preferences</h4>
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Configure Core</p>
-             </NuxtLink>
+               <NuxtLink to="/settings" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div class="w-10 h-10 rounded-xl bg-base-content/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Icon name="mdi:cog-outline" class="text-base-content/40 w-5 h-5" />
+                  </div>
+                  <h4 class="font-black text-sm uppercase tracking-tight">Preferences</h4>
+                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Configure Core</p>
+               </NuxtLink>
+            </div>
           </div>
 
           <!-- Memory Load Section -->
-          <div class="bg-base-100 rounded-[2.5rem] p-8 border border-base-content/5 shadow-xl shadow-base-content/5 flex flex-col gap-6">
+          <div class="flex-1 bg-base-100 rounded-[2.5rem] p-8 border border-base-content/5 shadow-xl shadow-base-content/5 flex flex-col justify-center gap-6">
              <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                   <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
