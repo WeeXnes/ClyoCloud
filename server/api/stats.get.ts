@@ -1,20 +1,35 @@
 import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
-import os from 'node:os'
+import si from 'systeminformation'
+
+// Simple in-memory cache for directory sizes to avoid heavy IO
+const sizeCache = new Map<string, { size: number; timestamp: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 async function getDirSize(dirPath: string): Promise<number> {
-    const files = await fs.readdir(dirPath, { withFileTypes: true })
-    const paths = files.map(async file => {
-        const filePath = path.join(dirPath, file.name)
-        if (file.isDirectory()) return await getDirSize(filePath)
-        if (file.isFile()) {
-            const { size } = await fs.stat(filePath)
-            return size
+    const cached = sizeCache.get(dirPath)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.size
+    }
+
+    let totalSize = 0
+    try {
+        const files = await fs.readdir(dirPath, { withFileTypes: true })
+        for (const file of files) {
+            const filePath = path.join(dirPath, file.name)
+            if (file.isDirectory()) {
+                totalSize += await getDirSize(filePath)
+            } else if (file.isFile()) {
+                const stats = await fs.stat(filePath)
+                totalSize += stats.size
+            }
         }
-        return 0
-    })
-    return (await Promise.all(paths)).reduce((acc, size) => acc + size, 0)
+        sizeCache.set(dirPath, { size: totalSize, timestamp: Date.now() })
+    } catch (err) {
+        console.error(`Error calculating size for ${dirPath}:`, err)
+    }
+    return totalSize
 }
 
 export default defineEventHandler(async (event) => {
@@ -29,40 +44,31 @@ export default defineEventHandler(async (event) => {
         const config = useRuntimeConfig()
         const userStoragePath = path.join(config.storagePath, event.context.user.name)
         
-        // Ensure user directory exists
-        await fs.mkdir(userStoragePath, { recursive: true })
-        
-        const usedSize = await getDirSize(userStoragePath)
-        
-        // Get total disk space where storagePath resides
-        const stats = await fs.statfs(config.storagePath)
-        const totalSize = stats.blocks * stats.bsize
-        const freeSize = stats.bfree * stats.bsize
+        // Parallelize system calls
+        const [dynamicStats, memory, cpuInfo, load, fsStats] = await Promise.all([
+            getDirSize(userStoragePath),
+            si.mem(),
+            si.cpu(),
+            si.currentLoad(),
+            si.fsSize()
+        ])
 
-        // Get RAM stats
-        const totalRam = os.totalmem()
-        const freeRam = os.freemem()
-        const usedRam = totalRam - freeRam
-
-        // Get CPU stats
-        const cpus = os.cpus()
-        const cpuModel = cpus[0].model
-        const cpuCores = cpus.length
-        const loadAvg = os.loadavg()[0] // 1 minute load average
+        // Find the correct partition for storagePath
+        const storageDisk = fsStats.find(f => config.storagePath.startsWith(f.mount)) || fsStats[0]
 
         return {
-            used: usedSize,
-            total: totalSize,
-            free: freeSize,
+            used: dynamicStats,
+            total: storageDisk.size,
+            free: storageDisk.available,
             ram: {
-                total: totalRam,
-                used: usedRam,
-                free: freeRam
+                total: memory.total,
+                used: memory.active, // Active memory is a better representation of "used"
+                free: memory.available
             },
             cpu: {
-                model: cpuModel,
-                cores: cpuCores,
-                load: loadAvg
+                model: `${cpuInfo.manufacturer} ${cpuInfo.brand}`,
+                cores: cpuInfo.cores,
+                load: load.currentLoad // This is already a 0-100 percentage
             },
             username: event.context.user.name
         }

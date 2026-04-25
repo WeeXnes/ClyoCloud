@@ -57,8 +57,7 @@ const ramPercentage = computed(() => {
 
 const cpuPercentage = computed(() => {
   if (!stats.value?.cpu) return 0
-  // Load average as a percentage of available cores
-  return Math.min(100, Math.round((stats.value.cpu.load / stats.value.cpu.cores) * 100))
+  return Math.min(100, Math.round(stats.value.cpu.load))
 })
 
 onMounted(() => {
