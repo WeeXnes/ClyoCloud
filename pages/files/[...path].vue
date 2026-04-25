@@ -873,34 +873,36 @@ const copyPublicLinkForFile = async (file: File) => {
 
           <!-- Modernized List Item (Oriented on old view) -->
           <div v-else 
-               class="flex items-center gap-4 p-4 bg-base-100 rounded-xl border border-base-content/5 hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer group/row ring-primary/30"
+               class="flex items-center gap-4 p-3 bg-base-100 rounded-xl border border-base-content/5 hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer group/row ring-primary/30 min-h-[64px]"
                :class="{ 'ring-1 bg-primary/5 border-primary/20': selectedFiles.has(file.name) }"
                @click="onFileClick($event, file)" 
                @contextmenu.prevent="handleContextMenu($event, file)"
           >
             <!-- Checkbox -->
-            <input type="checkbox" 
-                   class="checkbox checkbox-sm checkbox-primary shrink-0" 
-                   :checked="selectedFiles.has(file.name)" 
-                   @change="toggleSelection(file.name)" 
-                   @click.stop />
+            <div class="flex items-center justify-center shrink-0">
+              <input type="checkbox" 
+                     class="checkbox checkbox-sm checkbox-primary" 
+                     :checked="selectedFiles.has(file.name)" 
+                     @change="toggleSelection(file.name)" 
+                     @click.stop />
+            </div>
             
             <!-- Icon -->
-            <div class="shrink-0">
+            <div class="flex items-center justify-center shrink-0 w-8 h-8">
               <Icon class="w-6 h-6" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
             </div>
 
             <!-- Content Area -->
             <div class="flex-grow flex items-center justify-between min-w-0">
               <!-- Name & Editing -->
-              <div class="flex-grow min-w-0 mr-4">
+              <div class="flex-grow min-w-0 mr-4 flex items-center">
                 <input v-if="editingName === file.name" 
                        v-model="newName" 
                        class="input input-sm input-bordered w-full" 
                        @keyup.enter="saveRename(file.name)" 
                        @blur="saveRename(file.name)" 
                        @click.stop />
-                <h3 v-else class="text-sm font-bold truncate group-hover/row:text-primary transition-colors">{{ file.name }}</h3>
+                <h3 v-else class="text-sm font-bold truncate group-hover/row:text-primary transition-colors m-0 leading-none">{{ file.name }}</h3>
               </div>
               
               <!-- Metadata Group -->
