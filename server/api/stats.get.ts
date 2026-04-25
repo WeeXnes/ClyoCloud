@@ -44,6 +44,12 @@ export default defineEventHandler(async (event) => {
         const freeRam = os.freemem()
         const usedRam = totalRam - freeRam
 
+        // Get CPU stats
+        const cpus = os.cpus()
+        const cpuModel = cpus[0].model
+        const cpuCores = cpus.length
+        const loadAvg = os.loadavg()[0] // 1 minute load average
+
         return {
             used: usedSize,
             total: totalSize,
@@ -52,6 +58,11 @@ export default defineEventHandler(async (event) => {
                 total: totalRam,
                 used: usedRam,
                 free: freeRam
+            },
+            cpu: {
+                model: cpuModel,
+                cores: cpuCores,
+                load: loadAvg
             },
             username: event.context.user.name
         }

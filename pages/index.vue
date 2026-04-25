@@ -10,6 +10,11 @@ interface Stats {
     used: number
     free: number
   }
+  cpu: {
+    model: string
+    cores: number
+    load: number
+  }
   username: string
 }
 
@@ -46,6 +51,12 @@ const storagePercentage = computed(() => {
 const ramPercentage = computed(() => {
   if (!stats.value?.ram) return 0
   return Math.min(100, Math.round((stats.value.ram.used / stats.value.ram.total) * 100))
+})
+
+const cpuPercentage = computed(() => {
+  if (!stats.value?.cpu) return 0
+  // Load average as a percentage of available cores
+  return Math.min(100, Math.round((stats.value.cpu.load / stats.value.cpu.cores) * 100))
 })
 
 onMounted(fetchStats)
@@ -86,10 +97,11 @@ onMounted(fetchStats)
       <!-- Stats Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        <!-- Storage Card -->
-        <div class="lg:col-span-7">
-          <div class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col h-full">
-            <div class="flex items-center justify-between mb-10">
+        <!-- Main Column (Storage & CPU) -->
+        <div class="lg:col-span-7 flex flex-col gap-8">
+          <!-- Storage Card (Reduced Height) -->
+          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col">
+            <div class="flex items-center justify-between mb-8">
               <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <Icon name="mdi:harddisk" class="text-primary w-6 h-6" />
@@ -101,19 +113,18 @@ onMounted(fetchStats)
               </div>
               <div v-if="!isLoading" class="text-right">
                 <span class="text-2xl font-black tracking-tight">{{ storagePercentage }}%</span>
-                <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest">Utilized</p>
               </div>
             </div>
 
-            <div v-if="isLoading" class="space-y-6 flex-grow flex flex-col justify-center">
+            <div v-if="isLoading" class="space-y-4">
                <div class="h-4 w-full bg-base-200 animate-pulse rounded-full"></div>
                <div class="flex justify-between">
-                  <div class="h-4 w-24 bg-base-200 animate-pulse rounded"></div>
-                  <div class="h-4 w-24 bg-base-200 animate-pulse rounded"></div>
+                  <div class="h-3 w-20 bg-base-200 animate-pulse rounded"></div>
+                  <div class="h-3 w-20 bg-base-200 animate-pulse rounded"></div>
                </div>
             </div>
 
-            <div v-else class="space-y-8 flex-grow flex flex-col justify-center">
+            <div v-else class="space-y-6">
               <div class="relative pt-1">
                 <div class="overflow-hidden h-4 text-xs flex rounded-full bg-base-200 shadow-inner">
                   <div 
@@ -125,32 +136,67 @@ onMounted(fetchStats)
 
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-6">
                 <div class="flex flex-col gap-1">
-                  <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Used Space</span>
-                  <span class="text-lg font-bold">{{ formatSize(stats?.used || 0) }}</span>
+                  <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Used</span>
+                  <span class="text-base font-bold">{{ formatSize(stats?.used || 0) }}</span>
                 </div>
                 <div class="flex flex-col gap-1">
                   <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Available</span>
-                  <span class="text-lg font-bold">{{ formatSize(stats?.free || 0) }}</span>
+                  <span class="text-base font-bold">{{ formatSize(stats?.free || 0) }}</span>
                 </div>
                 <div class="flex flex-col gap-1 col-span-2 sm:col-span-1">
-                  <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Total Scale</span>
-                  <span class="text-lg font-bold text-base-content/60">{{ formatSize(stats?.total || 0) }}</span>
+                  <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Total</span>
+                  <span class="text-base font-bold text-base-content/60">{{ formatSize(stats?.total || 0) }}</span>
                 </div>
               </div>
             </div>
+          </section>
 
-            <div class="mt-10 pt-8 border-t border-base-content/5 flex items-center justify-between">
-               <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest">Health Status: Optimal</p>
-               <div class="flex items-center gap-1.5">
-                  <div class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
-                  <span class="text-[10px] font-black uppercase tracking-widest text-success">Active</span>
-               </div>
+          <!-- CPU Card (New) -->
+          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col">
+            <div class="flex items-center justify-between mb-8">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                  <Icon name="mdi:cpu-64-bit" class="text-orange-500 w-6 h-6" />
+                </div>
+                <div>
+                  <h3 class="font-black text-lg tracking-tight">Processor Load</h3>
+                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Computational Power</p>
+                </div>
+              </div>
+              <div v-if="!isLoading" class="text-right">
+                <span class="text-2xl font-black tracking-tight">{{ cpuPercentage }}%</span>
+              </div>
             </div>
-          </div>
+
+            <div v-if="isLoading" class="space-y-4">
+               <div class="h-4 w-full bg-base-200 animate-pulse rounded-full"></div>
+            </div>
+
+            <div v-else class="space-y-6">
+              <div class="relative pt-1">
+                <div class="overflow-hidden h-4 text-xs flex rounded-full bg-base-200 shadow-inner">
+                  <div 
+                    :style="{ width: cpuPercentage + '%' }" 
+                    class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-orange-500 transition-all duration-1000 ease-out"
+                  ></div>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Model Identity</span>
+                <span class="text-sm font-bold truncate max-w-full">{{ stats?.cpu.model }}</span>
+                <div class="flex items-center gap-4 mt-1">
+                  <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">{{ stats?.cpu.cores }} Logical Cores</span>
+                  <span class="w-1 h-1 rounded-full bg-base-content/20"></span>
+                  <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Load: {{ stats?.cpu.load.toFixed(2) }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
 
-        <!-- Quick Terminal & RAM -->
-        <div class="lg:col-span-5 flex flex-col gap-6">
+        <!-- Secondary Column (Quick Terminal & RAM) -->
+        <div class="lg:col-span-5 flex flex-col gap-8">
           <div class="flex items-center gap-3 px-2">
              <div class="w-8 h-8 rounded-lg bg-base-content/5 flex items-center justify-center">
                <Icon name="mdi:chevron-right" class="text-base-content/40 w-5 h-5" />
@@ -192,7 +238,7 @@ onMounted(fetchStats)
              </NuxtLink>
           </div>
 
-          <!-- RAM Usage Section (Replacing Security Check) -->
+          <!-- Memory Load Section -->
           <div class="bg-base-100 rounded-[2.5rem] p-8 border border-base-content/5 shadow-xl shadow-base-content/5 flex flex-col gap-6">
              <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
