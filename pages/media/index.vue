@@ -131,110 +131,171 @@ function prevPage() {
 </script>
 
 <template>
-  <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-    <div class="flex items-center gap-2 mb-6">
-      <label for="sidebar-drawer" class="btn btn-ghost btn-circle lg:hidden">
-        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-        </svg>
-      </label>
-      <h2 class="text-lg lg:text-xl font-semibold">Media</h2>
-    </div>
-
-    <!-- Search Bar -->
-    <div class="mb-6">
-      <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search videos by name or tag..."
-          class="input input-bordered input-primary w-full max-w-md"
-      />
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="isLoading" class="flex justify-center items-center h-64">
-      <div class="loading loading-spinner loading-lg"></div>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="alert alert-error">
-      <span>{{ error }}</span>
-    </div>
-
-    <!-- Video Grid -->
-    <div v-else-if="paginatedVideos.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      <a
-          v-for="video in paginatedVideos"
-          :key="video.fullPath"
-          class="card bg-base-100 shadow-xl cursor-pointer hover:bg-base-300"
-          :href="getVideoUrl(video.fullPath)"
-          @click.prevent="goToVideo(video.fullPath)"
-      >
-        <figure class="relative">
-          <div v-if="video.meta.isPublic" 
-               class="absolute top-2 right-2 z-10 bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-sm hover:scale-110 active:scale-95 transition-transform" 
-               title="Copy Shared Link"
-               @click.stop="copyPublicLinkForVideo(video.fullPath)">
-            <Icon name="mdi:share-variant" class="w-4 h-4" />
+  <div class="min-h-screen bg-base-200/50">
+    <!-- Sticky Header -->
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+      <div class="max-w-[1600px] mx-auto px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle lg:hidden">
+              <Icon name="mdi:menu" class="w-6 h-6" />
+            </label>
+            <div>
+              <h1 class="text-xl font-bold tracking-tight">Media Library</h1>
+              <p class="text-xs text-base-content/60">{{ videos.length }} videos stored</p>
+            </div>
           </div>
-          <img
-              v-if="hasThumbnail(video.name)"
-              :src="getThumbnailUrl(video.fullPath)"
-              class="w-full h-48 object-cover rounded-t-lg"
-              alt="Video thumbnail"
-              style="aspect-ratio: 16 / 9;"
-          />
-          <div v-else class="w-full h-48 bg-gray-200 flex items-center justify-center">
-            <span class="text-gray-500">No Thumbnail</span>
-          </div>
-        </figure>
-        <div class="card-body p-4">
-          <h2 class="card-title text-base line-clamp-2">{{ video.name }}</h2>
-          <p class="text-sm text-gray-500">
-            {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
-          </p>
-          <div class="flex flex-wrap gap-2 mt-2">
-            <span
-                v-for="tag in video.meta.tags"
-                :key="tag.name"
-                class="badge"
-                :style="{ backgroundColor: tag.color }"
-            >
-              {{ tag.name }}
-            </span>
+
+          <div class="relative w-full sm:max-w-xs lg:max-w-md">
+            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <Icon name="mdi:magnify" class="w-5 h-5 text-base-content/40" />
+            </div>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search by name or tags..."
+              class="input input-bordered w-full pl-10 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10"
+            />
           </div>
         </div>
-      </a>
-    </div>
+      </div>
+    </header>
 
-    <!-- Pagination Controls -->
-    <div v-if="totalPages > 1" class="flex justify-center items-center mt-8">
-      <button
+    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div v-for="i in 10" :key="i" class="flex flex-col gap-3">
+          <div class="aspect-video w-full bg-base-300 animate-pulse rounded-xl"></div>
+          <div class="h-4 w-3/4 bg-base-300 animate-pulse rounded"></div>
+          <div class="h-3 w-1/2 bg-base-300 animate-pulse rounded"></div>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="alert alert-error shadow-lg">
+        <Icon name="mdi:alert-circle" class="w-6 h-6" />
+        <span>{{ error }}</span>
+      </div>
+
+      <!-- Video Grid -->
+      <div v-else-if="paginatedVideos.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
+        <div
+          v-for="video in paginatedVideos"
+          :key="video.fullPath"
+          class="group relative flex flex-col gap-3"
+        >
+          <!-- Thumbnail Container -->
+          <div 
+            class="relative aspect-video overflow-hidden rounded-xl bg-base-300 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer group/thumb"
+            @click="goToVideo(video.fullPath)"
+          >
+            <img
+              v-if="hasThumbnail(video.name)"
+              :src="getThumbnailUrl(video.fullPath)"
+              class="h-full w-full object-cover transition-transform duration-500 group-hover/thumb:scale-110"
+              alt=""
+            />
+            <div v-else class="flex h-full w-full items-center justify-center">
+              <Icon name="mdi:video-off-outline" class="w-12 h-12 text-base-content/20" />
+            </div>
+
+            <!-- Overlays -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300 flex items-end p-3">
+               <button class="btn btn-circle btn-sm btn-primary shadow-lg scale-90 group-hover/thumb:scale-100 transition-transform">
+                 <Icon name="mdi:play" class="w-5 h-5" />
+               </button>
+            </div>
+
+            <!-- Shared Indicator (Top Right) -->
+            <div v-if="video.meta.isPublic" 
+                 class="absolute top-2 right-2 z-10 bg-success text-success-content w-8 h-8 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
+                 title="Copy Shared Link"
+                 @click.stop="copyPublicLinkForVideo(video.fullPath)">
+              <Icon name="mdi:share-variant" class="w-4 h-4" />
+            </div>
+          </div>
+
+          <!-- Metadata -->
+          <div class="flex flex-col gap-1 px-1">
+            <h3 
+              class="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors cursor-pointer"
+              @click="goToVideo(video.fullPath)"
+            >
+              {{ video.name }}
+            </h3>
+            
+            <div class="flex items-center gap-2 text-[11px] text-base-content/50 font-medium uppercase tracking-wider">
+              <span>{{ formatFileSize(video.size) }}</span>
+              <span class="w-1 h-1 rounded-full bg-base-content/20"></span>
+              <span>{{ formatDate(video.lastModified) }}</span>
+            </div>
+
+            <!-- Tags -->
+            <div v-if="video.meta.tags?.length" class="flex flex-wrap gap-1 mt-1">
+              <span
+                v-for="tag in video.meta.tags.slice(0, 3)"
+                :key="tag.name"
+                class="badge badge-xs border-none text-[10px] font-bold py-2"
+                :style="{ backgroundColor: tag.color, color: 'white' }"
+              >
+                {{ tag.name }}
+              </span>
+              <span v-if="video.meta.tags.length > 3" class="text-[10px] text-base-content/40 font-bold self-center">
+                +{{ video.meta.tags.length - 3 }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="bg-base-300/50 p-6 rounded-full mb-4">
+          <Icon name="mdi:video-plus-outline" class="w-16 h-16 text-base-content/20" />
+        </div>
+        <h3 class="text-xl font-bold">No videos found</h3>
+        <p class="text-base-content/60 max-w-xs mt-2">Try adjusting your search or upload some new content to get started.</p>
+        <NuxtLink to="/files" class="btn btn-primary mt-6">Upload Videos</NuxtLink>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="flex justify-center items-center mt-16 gap-4">
+        <button
           @click="prevPage"
           :disabled="currentPage === 1"
-          class="btn btn-primary mr-4"
-      >
-        Previous
-      </button>
-      <span class="text-lg">{{ currentPage }} / {{ totalPages }}</span>
-      <button
+          class="btn btn-outline btn-sm sm:btn-md gap-2"
+        >
+          <Icon name="mdi:chevron-left" class="w-5 h-5" />
+          Previous
+        </button>
+        
+        <div class="join hidden sm:flex">
+          <button 
+            v-for="page in totalPages" 
+            :key="page"
+            class="join-item btn btn-sm"
+            :class="{ 'btn-active btn-primary': currentPage === page }"
+            @click="currentPage = page"
+          >
+            {{ page }}
+          </button>
+        </div>
+        <span class="sm:hidden text-sm font-medium">Page {{ currentPage }} / {{ totalPages }}</span>
+
+        <button
           @click="nextPage"
           :disabled="currentPage === totalPages"
-          class="btn btn-primary ml-4"
-      >
-        Next
-      </button>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else class="text-center py-12">
-      <p class="text-xl text-gray-500">No videos found.</p>
-    </div>
+          class="btn btn-outline btn-sm sm:btn-md gap-2"
+        >
+          Next
+          <Icon name="mdi:chevron-right" class="w-5 h-5" />
+        </button>
+      </div>
+    </main>
   </div>
 </template>
 
 <style scoped>
-/* Ensure long titles don't overflow */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;

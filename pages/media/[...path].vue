@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import type { Video, FileMeta, Tag } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
@@ -223,220 +223,355 @@ const recommendedVideos = computed(() => {
       .map(item => item.video);
 });
 
-const visibleVideosCount = ref(30);
+const visibleVideosCount = ref(20);
 
 const visibleRecommendedVideos = computed(() => {
   return recommendedVideos.value.slice(0, visibleVideosCount.value);
 });
 
 const loadMore = () => {
-  visibleVideosCount.value += 30;
+  visibleVideosCount.value += 20;
 };
 
 onMounted(() => {
   fetchVideos();
   fetchPredefinedTags();
 });
+
+// Watch for route changes to refresh the video
+watch(() => route.params.path, () => {
+  const subpath = Array.isArray(route.params.path) ? route.params.path.map(decodeURIComponent).join('/') : decodeURIComponent(route.params.path || '')
+  currentVideo.value = videos.value.find(video => video.fullPath === subpath) || null
+  // Scroll to top when video changes
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+})
 </script>
 
 <template>
-  <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <!-- Loading State -->
-    <div v-if="isLoading" class="flex justify-center items-center h-64">
-      <div class="loading loading-spinner loading-lg"></div>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="alert alert-error">
-      <span>{{ error }}</span>
-    </div>
-
-    <!-- Video Player and Info -->
-    <div v-else>
-      <div v-if="currentVideo">
-        <!-- Video Player -->
-        <div>
-          <video
-              id="previewVideo"
-              controls
-              class="w-full rounded-lg aspect-video bg-black"
-          >
-            <source :src="getStreamUrl()" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+  <div class="min-h-screen bg-base-200/30">
+    <div class="max-w-[1800px] mx-auto px-4 py-4 sm:px-6 lg:px-8">
+      <!-- Back Button & Breadcrumbs -->
+      <div class="flex items-center gap-4 mb-6">
+        <NuxtLink to="/media" class="btn btn-ghost btn-circle shadow-sm bg-base-100">
+          <Icon name="mdi:arrow-left" class="w-6 h-6" />
+        </NuxtLink>
+        <div class="hidden sm:block">
+           <div class="text-xs font-medium text-base-content/40 uppercase tracking-widest mb-0.5">Media Library</div>
+           <div class="text-sm font-bold truncate max-w-[300px]">{{ currentVideo?.name }}</div>
         </div>
+      </div>
 
-        <!-- Video Info -->
-        <div class="mt-6">
-          <!-- Title -->
-          <h1 class="text-2xl font-bold mb-2">
-            {{ currentVideo.name }}
-          </h1>
+      <!-- Main Content Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Player Column -->
+        <div class="lg:col-span-8 xl:col-span-9">
+          <!-- Loading State -->
+          <div v-if="isLoading" class="aspect-video bg-base-300 animate-pulse rounded-2xl shadow-lg"></div>
 
-          <!-- Metadata -->
-          <div class="text-sm text-gray-500 mb-4">
-            {{ formatFileSize(currentVideo.size) }} • {{ formatDate(currentVideo.lastModified) }}
+          <!-- Error State -->
+          <div v-else-if="error" class="alert alert-error shadow-lg rounded-2xl">
+            <Icon name="mdi:alert-circle" class="w-6 h-6" />
+            <span>{{ error }}</span>
           </div>
 
-          <!-- Tags -->
-          <div class="flex flex-wrap gap-2 mb-4 items-center">
-            <span
-                v-for="tag in currentVideo.meta.tags"
-                :key="tag.name"
-                class="badge text-white border-none"
-                :style="{ backgroundColor: tag.color }"
-            >
-              {{ tag.name }}
-            </span>
-            <button
-                class="btn btn-ghost btn-xs bg-base-300 hover:bg-base-content/10"
-                @click="openTagModal"
-            >
-              <Icon name="mdi:tag-plus-outline" class="w-4 h-4 mr-1" /> Add Tag
-            </button>
-          </div>
-
-          <!-- Description -->
-          <div v-if="isEditingDescription" class="space-y-2">
-            <textarea
-                v-model="editableDescription"
-                class="textarea textarea-bordered w-full h-32"
-                placeholder="Enter description..."
-            ></textarea>
-            <div class="flex justify-end gap-2">
-              <button class="btn btn-ghost btn-sm" @click="isEditingDescription = false">Cancel</button>
-              <button class="btn btn-primary btn-sm" @click="saveDescription">Save Description</button>
-            </div>
-          </div>
-          <div v-else>
-            <div
-                v-if="currentVideo.meta.description"
-                class="bg-base-300 p-4 rounded-lg text-sm text-base-content/80 whitespace-pre-line group relative"
-            >
-              {{ currentVideo.meta.description }}
-              <button 
-                class="btn btn-circle btn-ghost btn-xs absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                @click="startEditDescription"
+          <!-- Video Content -->
+          <div v-else-if="currentVideo">
+            <!-- Player Wrapper -->
+            <div class="relative group aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/5">
+              <video
+                id="previewVideo"
+                controls
+                autoplay
+                class="w-full h-full"
+                :key="currentVideo.fullPath"
               >
-                <Icon name="mdi:pencil" class="w-4 h-4" />
-              </button>
-            </div>
-            <div v-else class="bg-base-300 p-4 rounded-lg text-sm text-base-content/70 flex justify-between items-center">
-              <span>No description available.</span>
-              <button class="btn btn-ghost btn-xs" @click="startEditDescription">
-                <Icon name="mdi:plus" class="w-4 h-4 mr-1" /> Add Description
-              </button>
-            </div>
-          </div>
-        </div>
-        <!-- Recommended Videos Grid -->
-        <div class="mt-8">
-          <h2 class="text-lg font-semibold mb-4">Recommended Videos</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <a
-                v-for="video in visibleRecommendedVideos"
-                :key="video.fullPath"
-                class="flex flex-col gap-2 hover:bg-base-300 p-2 rounded-lg cursor-pointer"
-                :href="getVideoUrl(video.fullPath)"
-                @click.prevent="goToVideo(video.fullPath)"
-            >
-              <img
-                  v-if="hasThumbnail(video.name)"
-                  :src="getThumbnailUrl(video.fullPath)"
-                  alt="Thumbnail"
-                  class="w-full h-auto rounded"
-                  style="aspect-ratio: 16 / 9;"
-              />
-              <div v-else class="w-full h-32 bg-gray-200 flex items-center justify-center rounded">
-                <span class="text-gray-500 text-xs">No Thumbnail</span>
-              </div>
-              <div class="flex flex-col">
-                <p class="font-medium line-clamp-2">{{ video.name }}</p>
-                <span class="text-sm text-gray-500">
-                  {{ formatFileSize(video.size) }} • {{ formatDate(video.lastModified) }}
-                </span>
-              </div>
-            </a>
-          </div>
-          <div v-if="visibleVideosCount < recommendedVideos.length" class="text-center mt-6">
-            <button @click="loadMore" class="btn btn-primary">Load More</button>
-          </div>
-        </div>
-
-        <!-- Tag Modal -->
-        <div v-if="showTagModal" class="modal modal-open">
-          <div class="modal-box">
-            <h3 class="font-bold text-lg">Add Tag to Video</h3>
-
-            <div v-if="showNewTagForm">
-              <div class="form-control mt-4">
-                <label class="label">
-                  <span class="label-text">Tag Name</span>
-                </label>
-                <input
-                    v-model="newTagName"
-                    type="text"
-                    placeholder="Enter tag name"
-                    class="input input-bordered w-full"
-                />
-              </div>
-              <div class="form-control mt-4">
-                <label class="label">
-                  <span class="label-text">Tag Color</span>
-                </label>
-                <input
-                    v-model="newTagColor"
-                    type="color"
-                    class="input input-bordered w-full"
-                />
-              </div>
-              <div class="modal-action">
-                <button class="btn btn-primary" @click="addTag">Add Tag</button>
-                <button class="btn btn-ghost" @click="showNewTagForm = false">Select Predefined Tags</button>
-                <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
-              </div>
+                <source :src="getStreamUrl()" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </div>
 
-            <div v-else>
-              <div class="form-control mt-4">
-                <label class="label">
-                  <span class="label-text">Select Tags</span>
-                </label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
-                  <div
-                      v-for="tag in predefinedTags"
-                      :key="tag.name"
-                      class="p-2 rounded-lg cursor-pointer text-center"
-                      :style="{ backgroundColor: tag.color, border: isTagSelected(tag) ? '2px solid #D1D5DB' : '2px solid ' + tag.color }"
-                      @click="toggleTagSelection(tag)"
+            <!-- Header Info -->
+            <div class="mt-6">
+              <h1 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight mb-3">
+                {{ currentVideo.name }}
+              </h1>
+
+              <div class="flex flex-wrap items-center justify-between gap-4 py-4 border-y border-base-content/5">
+                <div class="flex items-center gap-6">
+                  <div class="flex flex-col">
+                    <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider">Size</span>
+                    <span class="text-sm font-bold">{{ formatFileSize(currentVideo.size) }}</span>
+                  </div>
+                  <div class="h-8 w-px bg-base-content/10"></div>
+                  <div class="flex flex-col">
+                    <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider">Modified</span>
+                    <span class="text-sm font-bold">{{ formatDate(currentVideo.lastModified) }}</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                   <button class="btn btn-sm btn-ghost gap-2 rounded-full border border-base-content/10">
+                     <Icon name="mdi:download" class="w-4 h-4" />
+                     Download
+                   </button>
+                   <button class="btn btn-sm btn-primary gap-2 rounded-full px-4 shadow-lg">
+                     <Icon name="mdi:share-variant" class="w-4 h-4" />
+                     Share
+                   </button>
+                </div>
+              </div>
+
+              <!-- Tags & Actions -->
+              <div class="flex flex-wrap items-center gap-3 mt-6">
+                <div v-if="currentVideo.meta.tags?.length" class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="tag in currentVideo.meta.tags"
+                    :key="tag.name"
+                    class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm"
+                    :style="{ backgroundColor: tag.color }"
                   >
                     {{ tag.name }}
+                  </span>
+                </div>
+                <button
+                  class="btn btn-ghost btn-xs sm:btn-sm bg-base-100 hover:bg-base-200 border border-base-content/5 rounded-full px-3 transition-all"
+                  @click="openTagModal"
+                >
+                  <Icon name="mdi:tag-plus-outline" class="w-4 h-4 mr-1 text-primary" /> 
+                  <span class="font-bold text-[11px] uppercase tracking-wide">Add Tag</span>
+                </button>
+              </div>
+
+              <!-- Description Section -->
+              <div class="mt-8 bg-base-100 rounded-2xl p-6 shadow-sm ring-1 ring-base-content/5">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-xs font-black uppercase tracking-widest text-base-content/40">Description</h3>
+                  <button 
+                    v-if="!isEditingDescription"
+                    class="btn btn-ghost btn-circle btn-sm"
+                    @click="startEditDescription"
+                  >
+                    <Icon name="mdi:pencil" class="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div v-if="isEditingDescription" class="space-y-4">
+                  <textarea
+                    v-model="editableDescription"
+                    class="textarea textarea-bordered w-full h-40 bg-base-200/50 focus:bg-base-100 transition-all font-medium text-sm rounded-xl"
+                    placeholder="Tell us more about this video..."
+                  ></textarea>
+                  <div class="flex justify-end gap-3">
+                    <button class="btn btn-ghost btn-sm rounded-lg" @click="isEditingDescription = false">Cancel</button>
+                    <button class="btn btn-primary btn-sm rounded-lg px-6 shadow-md" @click="saveDescription">Save Changes</button>
+                  </div>
+                </div>
+                
+                <div v-else>
+                  <p v-if="currentVideo.meta.description" class="text-sm leading-relaxed font-medium text-base-content/80 whitespace-pre-line">
+                    {{ currentVideo.meta.description }}
+                  </p>
+                  <div v-else class="flex flex-col items-center py-4 text-center">
+                    <p class="text-sm font-bold text-base-content/30 italic mb-3">No description provided yet.</p>
+                    <button class="btn btn-ghost btn-sm border border-dashed border-base-content/20 rounded-xl" @click="startEditDescription">
+                      <Icon name="mdi:plus" class="w-4 h-4 mr-1" /> Add Details
+                    </button>
                   </div>
                 </div>
               </div>
-              <div class="modal-action">
-                <button class="btn btn-primary" @click="addTag">Add Tags</button>
-                <button class="btn btn-ghost" @click="showNewTagForm = true">Create New Tag</button>
-                <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Video Not Found -->
+          <div v-else class="flex flex-col items-center justify-center py-24 text-center">
+             <div class="bg-base-300 p-8 rounded-full mb-6">
+               <Icon name="mdi:movie-off-outline" class="w-20 h-20 text-base-content/20" />
+             </div>
+             <h2 class="text-2xl font-black">Video not found</h2>
+             <p class="text-base-content/60 max-w-sm mt-3">The video you're looking for might have been moved, renamed, or deleted.</p>
+             <NuxtLink to="/media" class="btn btn-primary mt-8 px-8 rounded-full shadow-lg">Return to Library</NuxtLink>
+          </div>
+        </div>
+
+        <!-- Recommendations Column -->
+        <div class="lg:col-span-4 xl:col-span-3">
+          <div class="sticky top-24">
+            <h2 class="text-xs font-black uppercase tracking-widest text-base-content/40 mb-5 pl-1 flex items-center gap-2">
+              <Icon name="mdi:sparkles" class="w-4 h-4 text-primary" />
+              Recommended for you
+            </h2>
+
+            <div v-if="isLoading" class="flex flex-col gap-4">
+              <div v-for="i in 5" :key="i" class="flex gap-3">
+                 <div class="w-32 aspect-video bg-base-300 animate-pulse rounded-lg flex-shrink-0"></div>
+                 <div class="flex-grow space-y-2">
+                   <div class="h-3 w-full bg-base-300 animate-pulse rounded"></div>
+                   <div class="h-2 w-1/2 bg-base-300 animate-pulse rounded"></div>
+                 </div>
               </div>
+            </div>
+
+            <div v-else-if="visibleRecommendedVideos.length" class="flex flex-col gap-5">
+              <a
+                v-for="video in visibleRecommendedVideos"
+                :key="video.fullPath"
+                class="group flex gap-3 hover:bg-base-100 p-2 -m-2 rounded-xl transition-all"
+                :href="getVideoUrl(video.fullPath)"
+                @click.prevent="goToVideo(video.fullPath)"
+              >
+                <!-- Compact Thumbnail -->
+                <div class="relative w-32 aspect-video overflow-hidden rounded-lg bg-base-300 shadow-sm flex-shrink-0 ring-1 ring-base-content/5">
+                  <img
+                    v-if="hasThumbnail(video.name)"
+                    :src="getThumbnailUrl(video.fullPath)"
+                    alt=""
+                    class="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div v-else class="flex h-full w-full items-center justify-center">
+                    <Icon name="mdi:play" class="w-5 h-5 text-base-content/20" />
+                  </div>
+                </div>
+
+                <!-- Small Metadata -->
+                <div class="flex flex-col min-w-0">
+                  <h4 class="text-xs font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors mb-1">
+                    {{ video.name }}
+                  </h4>
+                  <div class="text-[10px] font-bold text-base-content/40">
+                    {{ formatDate(video.lastModified) }}
+                  </div>
+                  <div class="flex flex-wrap gap-1 mt-1">
+                     <span v-for="tag in video.meta.tags.slice(0, 1)" :key="tag.name" class="badge badge-xs border-none text-[8px]" :style="{ backgroundColor: tag.color, color: 'white' }">
+                       {{ tag.name }}
+                     </span>
+                  </div>
+                </div>
+              </a>
+
+              <button 
+                v-if="visibleVideosCount < recommendedVideos.length"
+                class="btn btn-ghost btn-sm w-full font-bold uppercase tracking-widest text-[10px] mt-2 rounded-xl border-base-content/5"
+                @click="loadMore"
+              >
+                Load more suggestions
+              </button>
+            </div>
+
+            <div v-else class="bg-base-100 p-8 rounded-2xl text-center shadow-sm ring-1 ring-base-content/5">
+              <Icon name="mdi:video-off-outline" class="w-8 h-8 text-base-content/20 mx-auto mb-3" />
+              <p class="text-xs font-bold text-base-content/40 uppercase tracking-wider">No similar videos found</p>
             </div>
           </div>
         </div>
       </div>
-      <!-- Not Found State -->
-      <div v-else class="text-center py-12">
-        <p class="text-xl text-gray-500">Video not found.</p>
+    </div>
+
+    <!-- Tag Modal (Enhanced) -->
+    <div v-if="showTagModal" class="modal modal-open backdrop-blur-sm">
+      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-base-content/5">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="bg-primary/10 p-3 rounded-2xl">
+            <Icon name="mdi:tag-plus" class="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h3 class="font-black text-xl tracking-tight">Tag your content</h3>
+            <p class="text-xs font-medium text-base-content/50">Organization makes finding videos easier.</p>
+          </div>
+        </div>
+
+        <div v-if="showNewTagForm" class="space-y-6">
+          <div class="form-control">
+            <label class="label mb-1">
+              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/50">Tag Identity</span>
+            </label>
+            <input
+              v-model="newTagName"
+              type="text"
+              placeholder="e.g. Cinematic, Vacation 2024..."
+              class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+            />
+          </div>
+          <div class="form-control">
+            <label class="label mb-1">
+              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/50">Visual Color</span>
+            </label>
+            <div class="flex gap-4 items-center">
+              <input
+                v-model="newTagColor"
+                type="color"
+                class="w-16 h-12 rounded-xl cursor-pointer border-none bg-base-200/50"
+              />
+              <div class="flex-grow h-12 rounded-xl flex items-center px-4 font-bold text-sm bg-base-200/50 border border-dashed border-base-content/20" :style="{ color: newTagColor }">
+                 {{ newTagColor }} Preview
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-3 mt-8">
+            <button class="btn btn-primary h-12 rounded-xl shadow-lg shadow-primary/20" @click="addTag">Create & Add Tag</button>
+            <button class="btn btn-ghost btn-sm h-12 rounded-xl" @click="showNewTagForm = false">Choose from library</button>
+            <button class="btn btn-ghost btn-sm h-12 rounded-xl" @click="closeTagModal">Dismiss</button>
+          </div>
+        </div>
+
+        <div v-else class="space-y-6">
+          <div class="form-control">
+            <label class="label mb-3">
+              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/50">Library Selection</span>
+            </label>
+            <div class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+              <div
+                v-for="tag in predefinedTags"
+                :key="tag.name"
+                class="p-3 rounded-xl cursor-pointer text-center font-bold text-xs transition-all ring-2 ring-inset"
+                :style="{ 
+                  backgroundColor: isTagSelected(tag) ? tag.color : 'transparent', 
+                  color: isTagSelected(tag) ? 'white' : tag.color,
+                  ringColor: tag.color
+                }"
+                @click="toggleTagSelection(tag)"
+              >
+                {{ tag.name }}
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-3 mt-8">
+            <button class="btn btn-primary h-12 rounded-xl shadow-lg shadow-primary/20" @click="addTag">Apply Selected Tags</button>
+            <button class="btn btn-ghost btn-sm h-12 rounded-xl" @click="showNewTagForm = true">Create new identity</button>
+            <button class="btn btn-ghost btn-sm h-12 rounded-xl" @click="closeTagModal">Dismiss</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Tailwind handles most styling. Additional tweaks below. */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+video::shadow(video-controls) {
+  display: none !important;
+}
+
+/* Ensure proper focus ring on thumbnails */
+.group\/thumb:focus-within {
+  outline: 2px solid hsl(var(--p));
+  outline-offset: 2px;
 }
 </style>
