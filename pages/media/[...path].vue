@@ -279,20 +279,20 @@ onMounted(() => {
           </div>
 
           <!-- Tags -->
-          <div class="flex flex-wrap gap-2 mb-4">
+          <div class="flex flex-wrap gap-2 mb-4 items-center">
             <span
                 v-for="tag in currentVideo.meta.tags"
                 :key="tag.name"
-                class="badge"
+                class="badge text-white border-none"
                 :style="{ backgroundColor: tag.color }"
             >
               {{ tag.name }}
             </span>
             <button
-                class="btn btn-secondary btn-sm"
+                class="btn btn-ghost btn-xs bg-base-300 hover:bg-base-content/10"
                 @click="openTagModal"
             >
-              Add Tag
+              <Icon name="mdi:tag-plus-outline" class="w-4 h-4 mr-1" /> Add Tag
             </button>
           </div>
 

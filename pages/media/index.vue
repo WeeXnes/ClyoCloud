@@ -9,13 +9,6 @@ const videos = ref<Video[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const searchQuery = ref('')
-const showTagModal = ref(false)
-const selectedVideoPath = ref('')
-const selectedTags = ref<Tag[]>([])
-const predefinedTags = ref<Tag[]>([])
-const showNewTagForm = ref(true)
-const newTagName = ref('')
-const newTagColor = ref('#4B5EAA')
 
 async function fetchVideos() {
   try {
@@ -35,23 +28,8 @@ async function fetchVideos() {
   }
 }
 
-async function fetchPredefinedTags() {
-  try {
-    const response = await fetch('/api/tags', {
-      credentials: 'include',
-    })
-    if (!response.ok) {
-      throw new Error(`Failed to fetch tags: ${response.statusText}`)
-    }
-    predefinedTags.value = await response.json()
-  } catch (err) {
-    console.error('Error fetching tags:', err)
-  }
-}
-
 onMounted(() => {
   fetchVideos()
-  fetchPredefinedTags()
 })
 
 function formatFileSize(size: number): string {
@@ -93,77 +71,6 @@ const getVideoUrl = (fullPath: string) => {
 const goToVideo = (fullPath: string) => {
   navigateTo(getVideoUrl(fullPath))
 }
-
-const openTagModal = (fullPath: string) => {
-  selectedVideoPath.value = fullPath
-  selectedTags.value = []
-  showNewTagForm.value = true
-  newTagName.value = ''
-  newTagColor.value = '#4B5EAA'
-  showTagModal.value = true
-}
-
-const closeTagModal = () => {
-  showTagModal.value = false
-}
-
-const toggleTagSelection = (tag: Tag) => {
-  const index = selectedTags.value.findIndex(t => t.name === tag.name)
-  if (index > -1) {
-    selectedTags.value.splice(index, 1)
-  } else {
-    selectedTags.value.push(tag)
-  }
-}
-
-const isTagSelected = (tag: Tag) => {
-  return selectedTags.value.some(t => t.name === tag.name)
-}
-
-const addTag = async () => {
-  let tagsToAdd: Tag[] = []
-  if (showNewTagForm.value) {
-    if (!newTagName.value.trim()) {
-      createNotification('Tag name is required', NotificationType.WARNING)
-      return;
-    }
-    tagsToAdd.push({ name: newTagName.value, color: newTagColor.value })
-  } else {
-    tagsToAdd = selectedTags.value
-  }
-
-  if (tagsToAdd.length === 0) {
-    createNotification('Please select or create at least one tag', NotificationType.WARNING)
-    return;
-  }
-
-  try {
-    const video = videos.value.find(v => v.fullPath === selectedVideoPath.value)
-    const currentTags = video?.meta.tags || []
-    const updatedTags = [...currentTags, ...tagsToAdd]
-
-    const response = await fetch('/api/file-meta', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        fullPath: selectedVideoPath.value,
-        tags: updatedTags,
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to add tags`);
-    }
-    createNotification('Tags added successfully', NotificationType.SUCCESS)
-    await fetchVideos(); // Refresh video list
-    closeTagModal();
-  } catch (err) {
-    console.error('Error adding tags:', err);
-    createNotification('Failed to add tags', NotificationType.ERROR)
-  }
-};
 
 const copyPublicLinkForVideo = async (fullPath: string) => {
   const user = useState<any>('user')
@@ -296,14 +203,6 @@ function prevPage() {
               {{ tag.name }}
             </span>
           </div>
-          <div class="card-actions justify-end mt-4">
-            <button
-                class="btn btn-secondary btn-sm"
-                @click.stop="openTagModal(video.fullPath)"
-            >
-              Add Tag
-            </button>
-          </div>
         </div>
       </a>
     </div>
@@ -330,66 +229,6 @@ function prevPage() {
     <!-- Empty State -->
     <div v-else class="text-center py-12">
       <p class="text-xl text-gray-500">No videos found.</p>
-    </div>
-
-    <!-- Tag Modal -->
-    <div v-if="showTagModal" class="modal modal-open">
-      <div class="modal-box">
-        <h3 class="font-bold text-lg">Add Tag to Video</h3>
-
-        <div v-if="showNewTagForm">
-          <div class="form-control mt-4">
-            <label class="label">
-              <span class="label-text">Tag Name</span>
-            </label>
-            <input
-                v-model="newTagName"
-                type="text"
-                placeholder="Enter tag name"
-                class="input input-bordered w-full"
-            />
-          </div>
-          <div class="form-control mt-4">
-            <label class="label">
-              <span class="label-text">Tag Color</span>
-            </label>
-            <input
-                v-model="newTagColor"
-                type="color"
-                class="input input-bordered w-full"
-            />
-          </div>
-          <div class="modal-action">
-            <button class="btn btn-primary" @click="addTag">Add Tag</button>
-            <button class="btn btn-ghost" @click="showNewTagForm = false">Select Predefined Tags</button>
-            <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
-          </div>
-        </div>
-
-        <div v-else>
-          <div class="form-control mt-4">
-            <label class="label">
-              <span class="label-text">Select Tags</span>
-            </label>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
-              <div
-                  v-for="tag in predefinedTags"
-                  :key="tag.name"
-                  class="p-2 rounded-lg cursor-pointer text-center"
-                  :style="{ backgroundColor: tag.color, border: isTagSelected(tag) ? '2px solid #D1D5DB' : '2px solid ' + tag.color }"
-                  @click="toggleTagSelection(tag)"
-              >
-                {{ tag.name }}
-              </div>
-            </div>
-          </div>
-          <div class="modal-action">
-            <button class="btn btn-primary" @click="addTag">Add Tags</button>
-            <button class="btn btn-ghost" @click="showNewTagForm = true">Create New Tag</button>
-            <button class="btn btn-ghost" @click="closeTagModal">Cancel</button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
