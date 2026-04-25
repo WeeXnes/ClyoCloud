@@ -9,8 +9,26 @@
           </svg>
         </label>
         <h2 class="text-lg lg:text-xl font-semibold">My Files</h2>
+        <div class="ml-4 relative hidden md:block">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search files..."
+            class="input input-sm input-bordered pl-8"
+          />
+          <Icon name="mdi:magnify" class="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-base-content/50" />
+        </div>
       </div>
       <div class="flex flex-wrap items-center gap-2 lg:gap-4">
+        <div class="md:hidden w-full order-last mt-2 relative">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search files..."
+            class="input input-sm input-bordered w-full pl-8"
+          />
+          <Icon name="mdi:magnify" class="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-base-content/50" />
+        </div>
         <select v-model="sortOption" class="select select-sm select-bordered">
           <option value="name">Name</option>
           <option value="size">Size</option>
@@ -349,6 +367,7 @@ const uploadProgress = ref(0)
 
 const isEditingDescription = ref(false)
 const editableDescription = ref('')
+const searchQuery = ref('')
 
 const startEditDescription = () => {
   editableDescription.value = (selectedFile.value?.meta.description || '') as string
@@ -418,7 +437,18 @@ const promptCreateFolder = async () => {
 }
 
 const sortedFiles = computed(() => {
-  return [...files.value].sort((a, b) => {
+  let filtered = [...files.value]
+  
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filtered = filtered.filter(file => {
+      const nameMatch = file.name.toLowerCase().includes(query)
+      const tagMatch = file.meta.tags.some(tag => tag.name.toLowerCase().includes(query))
+      return nameMatch || tagMatch
+    })
+  }
+
+  return filtered.sort((a, b) => {
     if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1
     if (sortOption.value === 'size') return b.size - a.size
     if (sortOption.value === 'date') return b.lastModified - a.lastModified
