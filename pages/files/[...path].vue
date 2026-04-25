@@ -33,17 +33,6 @@
       </div>
     </div>
 
-    <!-- Bulk actions -->
-    <div v-if="selectedFiles.size > 0" class="flex flex-wrap gap-2 mb-4 p-2 bg-base-100 shadow rounded items-center">
-      <button class="btn btn-sm" @click="toggleSelectAll">
-        {{ selectedFiles.size === sortedFiles.length ? 'Deselect All' : 'Select All' }}
-      </button>
-      <button class="btn btn-sm btn-error" @click="bulkDelete">Delete Selected</button>
-      <button class="btn btn-sm" @click="bulkDownload">Download Selected</button>
-      <button class="btn btn-sm btn-secondary" @click="openBulkTagModal">Add Tags</button>
-      <span class="text-sm self-center ml-auto">{{ selectedFiles.size }} selected</span>
-    </div>
-
     <div class="flex items-center gap-1 text-sm text-base-content/70 mb-2">
       <NuxtLink to="/files" class="hover:underline">Files</NuxtLink>
       <template v-for="(folder, index) in useRoute().params.path" :key="index">
@@ -61,7 +50,17 @@
         </NuxtLink>
       </template>
     </div>
-    <br>
+
+    <!-- Bulk actions -->
+    <div v-if="selectedFiles.size > 0" class="sticky top-0 z-50 flex flex-wrap gap-2 mb-4 p-2 bg-base-100 shadow items-center -mx-4 lg:-mx-6 px-4 lg:px-6">
+      <button class="btn btn-sm" @click="toggleSelectAll">
+        {{ selectedFiles.size === sortedFiles.length ? 'Deselect All' : 'Select All' }}
+      </button>
+      <button class="btn btn-sm" @click="bulkDownload">Download Selected</button>
+      <button class="btn btn-sm btn-secondary" @click="openBulkTagModal">Add Tags</button>
+      <button class="btn btn-sm btn-error" @click="bulkDelete">Delete Selected</button>
+      <span class="text-sm self-center ml-auto">{{ selectedFiles.size }} selected</span>
+    </div>
 
     <div 
       @dragover.prevent 
