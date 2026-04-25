@@ -46,7 +46,7 @@
                 </li>
                 <li>
                   <NuxtLink to="/media" class="nav-link" active-class="active">
-                    <Icon name="mdi:video-library" class="w-5 h-5" />
+                    <Icon name="mdi:play-box-multiple-outline" class="w-5 h-5" />
                     <span>Media Tab</span>
                   </NuxtLink>
                 </li>

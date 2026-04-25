@@ -947,7 +947,7 @@ const copyPublicLinkForFile = async (file: File) => {
           <li><a class="py-3 px-4 hover:text-primary transition-colors" @click="handleContextAction('open')"><Icon name="mdi:open-in-new" class="w-4 h-4" /> Open</a></li>
           <li v-if="contextMenuFile && isVideoFile(contextMenuFile.name)">
             <a class="py-3 px-4 hover:text-primary transition-colors" @click="handleContextAction('media')">
-              <Icon name="mdi:video-library" class="w-4 h-4" /> Media Tab
+              <Icon name="mdi:play-box-multiple-outline" class="w-4 h-4" /> Media Tab
             </a>
           </li>
           <div class="h-px bg-base-content/5 mx-2 my-1"></div>
