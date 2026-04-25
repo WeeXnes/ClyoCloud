@@ -199,7 +199,7 @@ onMounted(fetchStats)
        <div class="flex items-center gap-6 opacity-30">
           <span class="text-[9px] font-black uppercase tracking-[0.4em]">ClyoCloud Kernel</span>
           <div class="w-1 h-1 rounded-full bg-base-content"></div>
-          <span class="text-[9px] font-black uppercase tracking-[0.4em]">Node v2.4.0-Stable</span>
+          <span class="text-[9px] font-black uppercase tracking-[0.4em]">Node v{{ useRuntimeConfig().public.version }}</span>
        </div>
     </footer>
   </div>

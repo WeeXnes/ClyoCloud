@@ -1,5 +1,6 @@
 import * as path from 'path'
 import * as os from "node:os";
+import pkg from './package.json'
 
 export default defineNuxtConfig({
     compatibilityDate: '2024-11-01',
@@ -10,7 +11,7 @@ export default defineNuxtConfig({
     },
     runtimeConfig: {
         public: {
-            version: process.env.npm_package_version || '1.0.0'
+            version: pkg.version || '1.0.0'
         },
         storagePath:
             process.env.STORAGE_PATH ||
