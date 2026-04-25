@@ -299,7 +299,7 @@ async function logout() {
       <!-- System Info -->
       <footer class="pt-8 opacity-20 flex flex-col items-center gap-2">
          <div class="w-12 h-px bg-base-content"></div>
-         <p class="text-[9px] font-black uppercase tracking-[0.4em]">ClyoCloud v2.4.0 • Core Terminal</p>
+         <p class="text-[9px] font-black uppercase tracking-[0.4em]">ClyoCloud v{{ useRuntimeConfig().public.version }} • Core Terminal</p>
       </footer>
     </main>
   </div>

@@ -9,6 +9,9 @@ export default defineNuxtConfig({
       url: 'https://weexnes.dev',
     },
     runtimeConfig: {
+        public: {
+            version: process.env.npm_package_version || '1.0.0'
+        },
         storagePath:
             process.env.STORAGE_PATH ||
             path.join(os.homedir(), '.clyo', 'data'),
