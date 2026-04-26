@@ -1,0 +1,14 @@
+{
+  "name": "clyocloud-user-manager",
+  "version": "1.0.0",
+  "description": "CLI tool to manage ClyoCloud users",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.0",
+    "commander": "^14.0.3"
+  }
+}
