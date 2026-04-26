@@ -27,6 +27,11 @@ const isEditingDescription = ref(false)
 const editableDescription = ref('')
 const searchQuery = ref('')
 
+const sortOption = useCookie<'name' | 'size' | 'date'>('file-sort-option', {
+  default: () => 'name',
+  maxAge: 60 * 60 * 24 * 365 // 1 year
+})
+
 const startEditDescription = () => {
   editableDescription.value = (selectedFile.value?.meta.description || '') as string
   isEditingDescription.value = true
@@ -61,7 +66,6 @@ const saveDescription = async () => {
   }
 }
 
-const sortOption = ref<'name' | 'size' | 'date'>('name')
 const selectedFiles = ref<Set<string>>(new Set())
 const editingName = ref<string | null>(null)
 const newName = ref('')
