@@ -251,15 +251,15 @@ async function logout() {
                    <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Custom Download Path</span>
                  </label>
                  <div class="flex flex-col sm:flex-row gap-3">
-                   <div class="relative flex-1">
-                      <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-base-content/30 text-xs font-bold">
+                   <div class="flex-1 flex items-center bg-base-200/50 border border-base-content/10 rounded-xl focus-within:bg-base-100 focus-within:ring-1 focus-within:ring-primary/30 transition-all overflow-hidden px-4">
+                      <span class="text-base-content/30 text-xs font-bold whitespace-nowrap select-none">
                         {{ user?.name }}/
-                      </div>
+                      </span>
                       <input 
                         v-model="downloadPath" 
                         type="text" 
                         placeholder="e.g. videos/youtube" 
-                        class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10 pl-16" 
+                        class="bg-transparent border-none outline-none w-full font-bold text-sm h-12 pl-1 focus:ring-0" 
                       />
                    </div>
                    <button 
