@@ -86,7 +86,7 @@ export const startDownloadJob = async (username: string, url: string, userPath: 
   const job: DownloadJob = {
     process: child,
     logs: [{ type: 'info', message: `Initializing download for: ${url}`, time: getFormattedTime() }],
-    progress: {},
+    progress: { filename: '' },
     status: 'running',
     url
   };
@@ -97,26 +97,37 @@ export const startDownloadJob = async (username: string, url: string, userPath: 
     if (job.status !== 'running') return;
     const lines = data.toString().split('\n');
     for (const line of lines) {
-      if (line.trim()) {
-        if (line.startsWith('progress:')) {
-          const content = line.slice(9);
-          const parts = content.split('|');
-          if (parts.length >= 4) {
-             const sizeParts = parts[0].split('/');
-             job.progress = {
-                bytes: sizeParts[0],
-                total: sizeParts[1] === 'NA' ? '' : sizeParts[1],
-                eta: parts[1],
-                speed: parts[2],
-                percent: parts[3],
-                playlistIndex: parts[4],
-                playlistCount: parts[5]
-             };
-          }
-        } else {
-          job.logs.push({ type: 'log', message: line, time: getFormattedTime() });
-          if (job.logs.length > 500) job.logs.shift();
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      if (trimmed.startsWith('progress:')) {
+        const content = trimmed.slice(9);
+        const parts = content.split('|');
+        if (parts.length >= 4) {
+           const sizeParts = parts[0].split('/');
+           job.progress = {
+              ...job.progress,
+              bytes: sizeParts[0],
+              total: sizeParts[1] === 'NA' ? '' : sizeParts[1],
+              eta: parts[1],
+              speed: parts[2],
+              percent: parts[3],
+              playlistIndex: parts[4],
+              playlistCount: parts[5]
+           };
         }
+      } else {
+        // Extract filename from normal logs
+        if (trimmed.includes('[download] Destination:')) {
+          const fullPath = trimmed.split('Destination:')[1].trim();
+          job.progress.filename = fullPath.split('/').pop() || '';
+        } else if (trimmed.includes('has already been downloaded')) {
+          const fullPath = trimmed.replace('[download] ', '').replace(' has already been downloaded', '').trim();
+          job.progress.filename = fullPath.split('/').pop() || '';
+        }
+
+        job.logs.push({ type: 'log', message: trimmed, time: getFormattedTime() });
+        if (job.logs.length > 500) job.logs.shift();
       }
     }
   });

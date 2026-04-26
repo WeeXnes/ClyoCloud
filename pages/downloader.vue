@@ -214,14 +214,8 @@ async function checkStatus() {
         ...data.progress,
         percent: data.progress.percent ? (data.progress.percent.endsWith('%') ? data.progress.percent : data.progress.percent + '%') : '0%'
       }
-    }
-
-    // Extract filename from logs if not already detected
-    if (logs.value.length > 0 && !detectedFilename.value) {
-      const destLog = logs.value.find(l => l.message.includes('[download] Destination:'))
-      if (destLog) {
-        const fullPath = destLog.message.split('Destination:')[1].trim()
-        detectedFilename.value = fullPath.split('/').pop() || ''
+      if (data.progress.filename) {
+        detectedFilename.value = data.progress.filename
       }
     }
 
