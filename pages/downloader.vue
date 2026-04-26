@@ -1,23 +1,35 @@
 <template>
-  <div>
-    <div class="flex justify-between items-center mb-4 lg:mb-6">
-      <div class="flex items-center gap-2">
-        <label for="sidebar-drawer" class="btn btn-ghost btn-circle lg:hidden">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-          </svg>
-        </label>
-        <h2 class="text-lg lg:text-xl font-semibold">Downloader</h2>
+  <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
+    <!-- Edge-to-Edge Sticky Header -->
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-3">
+          <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
+            <Icon name="mdi:menu" class="w-5 h-5" />
+          </label>
+          <div>
+            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
+              <Icon name="mdi:cloud-download" class="text-primary w-6 h-6" />
+              Downloader
+            </h1>
+            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Remote Fetching</p>
+          </div>
+        </div>
       </div>
-    </div>
+    </header>
 
-    <div class="mt-8 p-4 border rounded shadow-sm max-w-md mx-auto">
-      <h3 class="text-lg font-semibold mb-2">Download Media</h3>
-      <div class="flex gap-2">
-        <input v-model="downloadUrl" type="text" placeholder="Enter URL" class="input input-bordered w-full" />
-        <button @click="downloadMedia" class="btn btn-primary">Download</button>
+    <main class="flex-1 p-4 sm:p-8">
+      <div class="mt-8 p-6 bg-base-100 border border-base-content/5 rounded-3xl shadow-sm max-w-md mx-auto">
+        <h3 class="text-lg font-black tracking-tight mb-4">Download Media</h3>
+        <div class="flex flex-col gap-3">
+          <input v-model="downloadUrl" type="text" placeholder="Enter URL" class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all" />
+          <button @click="downloadMedia" class="btn btn-primary rounded-2xl gap-2 shadow-lg shadow-primary/20">
+            <Icon name="mdi:download" class="w-5 h-5" />
+            Download
+          </button>
+        </div>
       </div>
-    </div>
+    </main>
   </div>
 </template>
 

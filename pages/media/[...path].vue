@@ -250,15 +250,25 @@ watch(() => route.params.path, () => {
 <template>
   <div class="min-h-screen bg-base-200/30">
     <!-- Edge-to-Edge Header area (modern and clean) -->
-    <header class="bg-base-100/50 backdrop-blur-md border-b border-base-content/5 mb-6">
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5 mb-6">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
-        <div class="max-w-[1800px] mx-auto flex items-center gap-4">
-          <NuxtLink to="/media" class="btn btn-ghost btn-circle shadow-sm bg-base-100">
-            <Icon name="mdi:arrow-left" class="w-6 h-6" />
+        <div class="flex items-center gap-4">
+          <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
+            <Icon name="mdi:menu" class="w-5 h-5" />
+          </label>
+          
+          <NuxtLink to="/media" class="btn btn-ghost btn-circle btn-sm bg-base-100 shadow-sm border border-base-content/5">
+            <Icon name="mdi:arrow-left" class="w-5 h-5" />
           </NuxtLink>
-          <div class="hidden sm:block">
-             <div class="text-xs font-medium text-base-content/40 uppercase tracking-widest mb-0.5">Media Library</div>
-             <div class="text-sm font-bold truncate max-w-[300px]">{{ currentVideo?.name }}</div>
+          
+          <div>
+            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
+              <Icon name="mdi:play-box-multiple-outline" class="text-primary w-6 h-6" />
+              Media Player
+            </h1>
+            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1 truncate max-w-[150px] sm:max-w-md">
+              {{ currentVideo?.name || 'Loading video...' }}
+            </p>
           </div>
         </div>
       </div>

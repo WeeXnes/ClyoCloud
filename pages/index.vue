@@ -74,15 +74,18 @@ onUnmounted(() => {
 <template>
   <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
     <!-- Header Area -->
-    <header class="w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5 py-6 px-4 sm:px-8 sticky top-0 z-30">
-      <div class="max-w-[1400px] mx-auto flex items-center justify-between">
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-3">
           <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
             <Icon name="mdi:menu" class="w-5 h-5" />
           </label>
           <div>
-            <h1 class="text-xl font-black tracking-tight leading-none">Dashboard</h1>
-            <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest pl-1 mt-1">System Overview</p>
+            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
+              <Icon name="mdi:view-dashboard-outline" class="text-primary w-6 h-6" />
+              Dashboard
+            </h1>
+            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">System Overview</p>
           </div>
         </div>
       </div>
