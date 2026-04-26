@@ -40,14 +40,15 @@
             <Icon name="mdi:download" class="w-5 h-5" />
             Download
           </button>
-          <button 
-            v-else
-            @click="stopDownload" 
-            class="btn btn-error rounded-2xl gap-2 shadow-lg shadow-error/20"
-          >
-            <Icon name="mdi:stop-circle" class="w-5 h-5" />
-            Stop Download
-          </button>
+          <div v-else class="flex gap-2">
+            <button 
+              @click="stopDownload" 
+              class="btn btn-error rounded-2xl gap-2 shadow-lg shadow-error/20"
+            >
+              <Icon name="mdi:stop-circle" class="w-5 h-5" />
+              Stop
+            </button>
+          </div>
         </div>
       </div>
 
@@ -63,9 +64,14 @@
               <p class="text-xs text-base-content/40 font-bold uppercase tracking-widest">{{ statusSubtitle }}</p>
             </div>
           </div>
-          <div v-if="progressData.percent" class="text-right">
-            <p class="text-2xl font-black text-primary">{{ progressData.percent }}</p>
-            <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest">{{ progressData.speed }} • {{ progressData.eta }}</p>
+          <div class="flex items-center gap-6">
+            <div v-if="progressData.percent" class="text-right">
+              <p class="text-2xl font-black text-primary">{{ progressData.percent }}</p>
+              <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest">{{ progressData.speed }} • {{ progressData.eta }}</p>
+            </div>
+            <button v-if="!isDownloading" @click="clearJobState" class="btn btn-ghost btn-sm btn-circle" title="Dismiss">
+              <Icon name="mdi:close" class="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -100,7 +106,7 @@
             'text-gray-400': log.type === 'log',
             'text-yellow-400': log.type === 'warning'
           }" class="break-all">
-            <span class="opacity-30 mr-2">[{{ new Date().toLocaleTimeString() }}]</span>
+            <span class="opacity-30 mr-2">[{{ log.time }}]</span>
             {{ log.message }}
           </div>
         </div>
@@ -190,13 +196,19 @@ async function checkStatus() {
       return
     }
 
+    const wasRunning = isDownloading.value
     isDownloading.value = data.status === 'running'
+    
     if (data.status === 'completed') lastDownloadStatus.value = 'success'
     else if (data.status === 'error') lastDownloadStatus.value = 'error'
     else if (data.status === 'cancelled') lastDownloadStatus.value = 'cancelled'
     else lastDownloadStatus.value = null
 
-    logs.value = data.logs || []
+    // Only update logs if length changed to prevent flickering/re-scrolling
+    if (data.logs && data.logs.length !== logs.value.length) {
+      logs.value = data.logs
+    }
+
     if (data.progress) {
       progressData.value = {
         ...data.progress,
@@ -205,12 +217,17 @@ async function checkStatus() {
     }
 
     // Extract filename from logs if not already detected
-    if (logs.value.length > 0) {
+    if (logs.value.length > 0 && !detectedFilename.value) {
       const destLog = logs.value.find(l => l.message.includes('[download] Destination:'))
       if (destLog) {
         const fullPath = destLog.message.split('Destination:')[1].trim()
         detectedFilename.value = fullPath.split('/').pop() || ''
       }
+    }
+
+    // If it just stopped, we can clear the interval or slow it down
+    if (wasRunning && !isDownloading.value) {
+       // Optional: small delay then one final check
     }
 
   } catch (err) {
@@ -253,6 +270,25 @@ async function stopDownload() {
     }
   } catch (err) {
     createNotification('Failed to stop download', NotificationType.ERROR)
+  }
+}
+
+async function clearJobState() {
+  try {
+    const response = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clear' })
+    })
+    if (response.ok) {
+      lastDownloadStatus.value = null
+      logs.value = []
+      detectedFilename.value = ''
+      progressData.value = { bytes: '', total: '', eta: '', speed: '', percent: '', playlistIndex: null, playlistCount: null }
+      checkStatus()
+    }
+  } catch (err) {
+    console.error('Failed to clear job:', err)
   }
 }
 

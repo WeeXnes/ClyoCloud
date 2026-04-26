@@ -2,9 +2,15 @@ import { ChildProcess, spawn } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
+interface LogEntry {
+  type: string;
+  message: string;
+  time: string;
+}
+
 interface DownloadJob {
   process: ChildProcess;
-  logs: { type: string; message: string }[];
+  logs: LogEntry[];
   progress: any;
   status: 'running' | 'completed' | 'error' | 'cancelled';
   url: string;
@@ -12,34 +18,52 @@ interface DownloadJob {
 
 const activeJobs = new Map<string, DownloadJob>();
 
+const getFormattedTime = () => {
+  const now = new Date();
+  return now.toLocaleTimeString('de-DE', { hour12: false });
+};
+
 export const getActiveJob = (username: string) => activeJobs.get(username);
 
 export const stopActiveJob = (username: string) => {
   const job = activeJobs.get(username);
   if (job && job.status === 'running') {
-    // Kill the entire process group if possible
+    job.status = 'cancelled';
+    
+    job.logs.push({ 
+      type: 'warning', 
+      message: 'Download cancelled by user. Process terminated.',
+      time: getFormattedTime()
+    });
+
     if (job.process.pid) {
       try {
-        process.kill(-job.process.pid, 'SIGTERM');
+        process.kill(-job.process.pid, 'SIGKILL');
       } catch (e) {
-        job.process.kill('SIGTERM');
+        try {
+          job.process.kill('SIGKILL');
+        } catch (err) {}
       }
     }
-    job.status = 'cancelled';
-    job.logs.push({ type: 'warning', message: 'Download cancelled by user.' });
     return true;
   }
   return false;
 };
 
-export const clearJob = (username: string) => {
-  activeJobs.delete(username);
+export const dismissJob = (username: string) => {
+  const job = activeJobs.get(username);
+  if (job && job.status !== 'running') {
+    activeJobs.delete(username);
+    return true;
+  }
+  return false;
 };
 
 export const startDownloadJob = async (username: string, url: string, userPath: string) => {
-  // If a job is already running, don't start a new one
-  if (activeJobs.has(username) && activeJobs.get(username)?.status === 'running') {
-    return activeJobs.get(username);
+  const existingJob = activeJobs.get(username);
+  if (existingJob) {
+    if (existingJob.status === 'running') return existingJob;
+    activeJobs.delete(username);
   }
 
   await fs.mkdir(userPath, { recursive: true });
@@ -54,11 +78,14 @@ export const startDownloadJob = async (username: string, url: string, userPath: 
     '--no-mtime',
     '-P', userPath,
     url
-  ], { detached: true }); // detached for process group killing
+  ], { 
+    detached: true,
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
 
   const job: DownloadJob = {
     process: child,
-    logs: [{ type: 'info', message: `Initializing download for: ${url}` }],
+    logs: [{ type: 'info', message: `Initializing download for: ${url}`, time: getFormattedTime() }],
     progress: {},
     status: 'running',
     url
@@ -67,6 +94,7 @@ export const startDownloadJob = async (username: string, url: string, userPath: 
   activeJobs.set(username, job);
 
   child.stdout?.on('data', (data) => {
+    if (job.status !== 'running') return;
     const lines = data.toString().split('\n');
     for (const line of lines) {
       if (line.trim()) {
@@ -86,8 +114,7 @@ export const startDownloadJob = async (username: string, url: string, userPath: 
              };
           }
         } else {
-          job.logs.push({ type: 'log', message: line });
-          // Limit logs to last 500 lines
+          job.logs.push({ type: 'log', message: line, time: getFormattedTime() });
           if (job.logs.length > 500) job.logs.shift();
         }
       }
@@ -95,10 +122,11 @@ export const startDownloadJob = async (username: string, url: string, userPath: 
   });
 
   child.stderr?.on('data', (data) => {
+    if (job.status !== 'running') return;
     const lines = data.toString().split('\n');
     for (const line of lines) {
       if (line.trim()) {
-        job.logs.push({ type: 'error', message: line });
+        job.logs.push({ type: 'error', message: line, time: getFormattedTime() });
         if (job.logs.length > 500) job.logs.shift();
       }
     }
@@ -109,14 +137,19 @@ export const startDownloadJob = async (username: string, url: string, userPath: 
       job.status = code === 0 ? 'completed' : 'error';
       job.logs.push({ 
         type: code === 0 ? 'success' : 'error', 
-        message: code === 0 ? 'Download process finished successfully.' : `Process exited with code ${code}` 
+        message: code === 0 ? 'Download process finished successfully.' : `Process exited with code ${code}`,
+        time: getFormattedTime()
       });
     }
+    child.stdout?.removeAllListeners();
+    child.stderr?.removeAllListeners();
   });
 
   child.on('error', (err) => {
-    job.status = 'error';
-    job.logs.push({ type: 'error', message: err.message });
+    if (job.status === 'running') {
+      job.status = 'error';
+      job.logs.push({ type: 'error', message: err.message, time: getFormattedTime() });
+    }
   });
 
   return job;

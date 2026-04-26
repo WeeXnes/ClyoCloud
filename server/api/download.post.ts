@@ -1,7 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { startDownloadJob, getActiveJob } from '../utils/downloadManager';
+import { startDownloadJob, getActiveJob, dismissJob } from '../utils/downloadManager';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -11,6 +11,10 @@ export default defineEventHandler(async (event) => {
 
   const { url, action } = await readBody(event);
   const config = useRuntimeConfig();
+
+  if (action === 'clear') {
+    return { success: dismissJob(user.name) };
+  }
 
   // If we're just checking status
   if (action === 'status') {
