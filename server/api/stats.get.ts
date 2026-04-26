@@ -58,8 +58,8 @@ export default defineEventHandler(async (event) => {
 
         return {
             used: dynamicStats,
-            total: storageDisk.size,
-            free: storageDisk.available,
+            total: storageDisk?.size,
+            free: storageDisk?.available,
             ram: {
                 total: memory.total,
                 used: memory.active, // Active memory is a better representation of "used"

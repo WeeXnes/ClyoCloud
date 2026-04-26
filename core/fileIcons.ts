@@ -9,12 +9,16 @@ const iconLookup: Record<string, string> = {
     "vite.config.ts": "vscode-icons:file-type-vite",
     "webpack.config.js": "vscode-icons:file-type-webpack",
     "tsconfig.json": "vscode-icons:file-type-typescript-official",
+    ".env": "vscode-icons:file-type-dotenv",
+    ".gitignore": "vscode-icons:file-type-git",
+    ".gitattributes": "vscode-icons:file-type-git",
+    ".dockerignore": "vscode-icons:file-type-docker",
 
     // Code
-    "c": "file-icons:c",
-    "cpp": "file-icons:c",
-    "h": "file-icons:h",
-    "hpp": "file-icons:h",
+    "c": "vscode-icons:file-type-c",
+    "cpp": "vscode-icons:file-type-cpp",
+    "h": "vscode-icons:file-type-c",
+    "hpp": "vscode-icons:file-type-cpp",
     "ts": "vscode-icons:file-type-typescript-official",
     "tsx": "vscode-icons:file-type-reactts",
     "js": "vscode-icons:file-type-js-official",
@@ -29,6 +33,11 @@ const iconLookup: Record<string, string> = {
     "swift": "vscode-icons:file-type-swift",
     "kt": "vscode-icons:file-type-kotlin",
     "sh": "vscode-icons:file-type-shell",
+    "ps1": "vscode-icons:file-type-powershell",
+    "bat": "vscode-icons:file-type-shell",
+    "cmd": "vscode-icons:file-type-shell",
+    "vue": "vscode-icons:file-type-vue",
+    "v": "vscode-icons:file-type-vlang",
 
     // Web
     "html": "vscode-icons:file-type-html",
@@ -40,6 +49,7 @@ const iconLookup: Record<string, string> = {
     "yaml": "vscode-icons:file-type-yaml",
     "yml": "vscode-icons:file-type-yaml",
     "md": "vscode-icons:file-type-markdown",
+    "toml": "vscode-icons:file-type-toml",
 
     // Documents
     "txt": "vscode-icons:file-type-text",
@@ -51,6 +61,8 @@ const iconLookup: Record<string, string> = {
     "csv": "vscode-icons:file-type-excel",
     "ppt": "vscode-icons:file-type-powerpoint",
     "pptx": "vscode-icons:file-type-powerpoint",
+    "ini": "vscode-icons:file-type-ini",
+    "conf": "vscode-icons:file-type-config",
 
     // Images
     "png": "vscode-icons:file-type-image",
@@ -62,20 +74,27 @@ const iconLookup: Record<string, string> = {
     "webp": "vscode-icons:file-type-image",
     "ico": "vscode-icons:file-type-image",
     "heic": "vscode-icons:file-type-image",
+    "psd": "vscode-icons:file-type-photoshop",
+    "ai": "vscode-icons:file-type-ai",
+    "eps": "vscode-icons:file-type-image",
 
     // Video
-    "mp4": "vscode-icons:file-type-video",
-    "mkv": "vscode-icons:file-type-video",
-    "mov": "vscode-icons:file-type-video",
-    "avi": "vscode-icons:file-type-video",
-    "webm": "vscode-icons:file-type-video",
-    "flv": "vscode-icons:file-type-video",
+    "mp4": "subway:media",
+    "mkv": "subway:media",
+    "mov": "subway:media",
+    "avi": "subway:media",
+    "webm": "subway:media",
+    "flv": "subway:media",
+    "wmv": "subway:media",
+    "3gp": "subway:media",
 
     // Audio
-    "mp3": "vscode-icons:file-type-audio",
-    "wav": "vscode-icons:file-type-audio",
-    "flac": "vscode-icons:file-type-audio",
-    "ogg": "vscode-icons:file-type-audio",
+    "mp3": "wpf:audio-wave",
+    "wav": "wpf:audio-wave",
+    "flac": "wpf:audio-wave",
+    "ogg": "wpf:audio-wave",
+    "m4a": "wpf:audio-wave",
+    "aac": "wpf:audio-wave",
 
     // Archives
     "zip": "vscode-icons:file-type-zip",
@@ -83,6 +102,7 @@ const iconLookup: Record<string, string> = {
     "7z": "vscode-icons:file-type-zip",
     "tar": "vscode-icons:file-type-zip",
     "gz": "vscode-icons:file-type-zip",
+    "iso": "fxemoji:opticaldisc",
 
     // Fonts
     "ttf": "vscode-icons:file-type-font",
@@ -92,7 +112,7 @@ const iconLookup: Record<string, string> = {
 
     // Database
     "sqlite": "vscode-icons:file-type-sqlite",
-    "db": "vscode-icons:file-type-database",
+    "db": "vscode-icons:file-type-sql",
     "sql": "vscode-icons:file-type-sql",
 
     // Others
@@ -103,6 +123,16 @@ const iconLookup: Record<string, string> = {
     "elf": "vscode-icons:file-type-binary",
     "dll": "vscode-icons:file-type-binary",
     "msi": "vscode-icons:file-type-binary",
+    "bin": "vscode-icons:file-type-binary",
+    "AppImage": "simple-icons:appimage",
+    "appimage": "simple-icons:appimage",
+    "dmg": "ic:baseline-apple",
+    "pkg": "vscode-icons:file-type-binary",
+    "apk": "material-icon-theme:android",
+    "deb": "vscode-icons:file-type-debian",
+    "rpm": "logos:redhat-icon",
+    "jar": "vscode-icons:file-type-jar",
+    "war": "vscode-icons:file-type-jar",
 };
 
 
@@ -114,5 +144,5 @@ export function getIconForExtension(input: string): string {
     const match = cleanInput.match(/\.([a-zA-Z0-9]+)$/);
     const ext = match ? match[1].toLowerCase() : cleanInput.toLowerCase();
 
-    return iconLookup[ext] ?? "file-icons:default";
+    return iconLookup[ext] ?? "vscode-icons:file-type-default";
 }
