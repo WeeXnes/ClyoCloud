@@ -32,13 +32,21 @@
             @keyup.enter="startDownload"
           />
           <button 
+            v-if="!isDownloading"
             @click="startDownload" 
             class="btn btn-primary rounded-2xl gap-2 shadow-lg shadow-primary/20"
-            :disabled="isDownloading || !downloadUrl"
+            :disabled="!downloadUrl"
           >
-            <Icon v-if="isDownloading" name="mdi:loading" class="w-5 h-5 animate-spin" />
-            <Icon v-else name="mdi:download" class="w-5 h-5" />
-            {{ isDownloading ? 'Downloading...' : 'Download' }}
+            <Icon name="mdi:download" class="w-5 h-5" />
+            Download
+          </button>
+          <button 
+            v-else
+            @click="stopDownload" 
+            class="btn btn-error rounded-2xl gap-2 shadow-lg shadow-error/20"
+          >
+            <Icon name="mdi:stop-circle" class="w-5 h-5" />
+            Stop Download
           </button>
         </div>
       </div>
@@ -112,6 +120,7 @@ const lastDownloadStatus = ref<'success' | 'error' | null>(null)
 const logs = ref<{ type: string, message: string }[]>([])
 const logContainer = ref<HTMLElement | null>(null)
 const detectedFilename = ref('')
+const abortController = ref<AbortController | null>(null)
 
 const progressData = ref({
   bytes: '',
@@ -153,6 +162,16 @@ const statusSubtitle = computed(() => {
   return 'Enter a URL to begin'
 })
 
+function stopDownload() {
+  if (abortController.value) {
+    abortController.value.abort()
+    abortController.value = null
+    isDownloading.value = false
+    logs.value.push({ type: 'warning', message: 'Download cancelled by user.' })
+    createNotification('Download stopped', NotificationType.WARNING)
+  }
+}
+
 watch(logs, () => {
   nextTick(() => {
     if (logContainer.value) {
@@ -170,13 +189,15 @@ async function startDownload() {
   detectedFilename.value = ''
   progressData.value = { bytes: '', total: '', eta: '', speed: '', percent: '', playlistIndex: null, playlistCount: null }
   
+  abortController.value = new AbortController()
   logs.value.push({ type: 'info', message: `Initializing download for: ${downloadUrl.value}` })
 
   try {
     const response = await fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: downloadUrl.value })
+      body: JSON.stringify({ url: downloadUrl.value }),
+      signal: abortController.value.signal
     })
 
     if (!response.ok) throw new Error('Failed to connect to download server')
