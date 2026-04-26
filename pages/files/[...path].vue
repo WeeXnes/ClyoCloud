@@ -977,9 +977,9 @@ const copyPublicLinkForFile = async (file: File) => {
     </transition>
 
     <!-- File Info Modal (Overhauled) -->
-    <div class="modal backdrop-blur-md" :class="{ 'modal-open': showFileInfoModal }" @click="showFileInfoModal = false">
-      <div class="modal-box rounded-3xl shadow-2xl p-0 max-w-lg border border-base-content/5 overflow-hidden" @click.stop>
-        <div class="bg-primary/5 p-8 border-b border-base-content/5">
+    <div class="modal backdrop-blur-md" :class="{ 'modal-open': showFileInfoModal }" @click="closeFileModal">
+      <div class="modal-box rounded-3xl shadow-2xl p-0 max-w-lg border border-base-content/5 overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
+        <div class="bg-primary/5 p-8 border-b border-base-content/5 shrink-0">
           <div class="flex items-center gap-6">
             <div class="bg-base-100 p-4 rounded-2xl shadow-sm ring-1 ring-base-content/5">
               <Icon
@@ -996,7 +996,7 @@ const copyPublicLinkForFile = async (file: File) => {
           </div>
         </div>
 
-        <div v-if="selectedFile" class="p-8 space-y-8">
+        <div v-if="selectedFile" class="p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
           <div class="grid grid-cols-2 gap-6">
             <div class="flex flex-col gap-1">
               <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Size</span>
@@ -1078,22 +1078,18 @@ const copyPublicLinkForFile = async (file: File) => {
           </div>
 
           <!-- Preview -->
-          <div v-if="!selectedFile.isFolder" class="pt-4">
+          <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))" class="pt-4">
              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-3">Quick Preview</span>
-             <div class="rounded-2xl overflow-hidden shadow-sm ring-1 ring-base-content/10 bg-base-200 flex items-center justify-center aspect-video">
+             <div :key="selectedFile.name" class="rounded-2xl overflow-hidden shadow-sm ring-1 ring-base-content/10 bg-base-200 flex items-center justify-center aspect-video">
                 <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
                   <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
                 </video>
                 <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-cover" />
-                <div v-else class="flex flex-col items-center gap-2">
-                   <Icon :name="getIconForExtension(selectedFile.name)" class="w-12 h-12 opacity-20" />
-                   <span class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest">Preview not available</span>
-                </div>
              </div>
           </div>
         </div>
 
-        <div class="p-6 bg-base-200/50 flex flex-wrap gap-2 justify-center">
+        <div class="p-6 bg-base-200/50 flex flex-wrap gap-2 justify-center shrink-0">
           <button class="btn btn-sm btn-error btn-outline border-none hover:bg-error/20 rounded-xl px-4" @click="deleteFile(selectedFile)">
             <Icon name="mdi:delete" class="w-4 h-4 mr-1" /> Delete
           </button>
@@ -1109,7 +1105,7 @@ const copyPublicLinkForFile = async (file: File) => {
     </div>
 
     <!-- Image Viewer Modal (Overhauled) -->
-    <div class="modal image-viewer-modal" :class="{ 'modal-open': showImageViewerModal }" @click="closeImageViewer">
+    <div class="modal image-viewer-modal backdrop-blur-md" :class="{ 'modal-open': showImageViewerModal }" @click="closeImageViewer">
       <div class="modal-box-image p-4 bg-transparent border-none shadow-none" @click.stop>
         <div class="relative group">
           <img :src="selectedImageUrl" alt="Full size preview" class="max-h-[85vh] max-w-[90vw] rounded-2xl shadow-2xl ring-1 ring-white/10" />
@@ -1293,7 +1289,7 @@ const copyPublicLinkForFile = async (file: File) => {
 }
 
 .image-viewer-modal {
-  background-color: rgba(0, 0, 0, 0.95);
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex !important;
   align-items: center;
   justify-content: center;

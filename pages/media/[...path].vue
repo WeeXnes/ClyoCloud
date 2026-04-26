@@ -472,7 +472,7 @@ watch(() => route.params.path, () => {
     </div>
 
     <!-- Tag Modal (Enhanced) -->
-    <div v-if="showTagModal" class="modal modal-open backdrop-blur-sm">
+    <div v-if="showTagModal" class="modal modal-open backdrop-blur-md">
       <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-base-content/5">
         <div class="flex items-center gap-3 mb-6">
           <div class="bg-primary/10 p-3 rounded-2xl">
