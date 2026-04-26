@@ -1,9 +1,6 @@
-import { defineEventHandler, readBody, createError } from 'h3';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { defineEventHandler, readBody, createError, setResponseHeader } from 'h3';
+import { spawn } from 'node:child_process';
 import path from 'node:path';
-
-const execFileAsync = promisify(execFile);
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -19,13 +16,54 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const userPath = path.join(config.storagePath, user.name);
 
-  try {
-    // Execute gallery-dl. 
-    // Using execFile with arguments array prevents shell injection.
-    await execFileAsync('gallery-dl', ['-d', userPath, url]);
-    return { success: true, message: 'Download started' };
-  } catch (error) {
-    console.error('gallery-dl error:', error);
-    throw createError({ statusCode: 500, message: 'Failed to download media' });
-  }
+  // Set headers for streaming
+  setResponseHeader(event, 'Content-Type', 'text/event-stream');
+  setResponseHeader(event, 'Cache-Control', 'no-cache');
+  setResponseHeader(event, 'Connection', 'keep-alive');
+
+  const child = spawn('yt-dlp', [
+    '--newline',
+    '--progress',
+    '--progress-template', 'progress:%(progress._downloaded_bytes_str)s/%(progress._total_bytes_str)s:%(progress._eta_str)s:%(progress._speed_str)s:%(progress._percent_str)s',
+    '--no-colors',
+    '--format', 'bestvideo+bestaudio/best',
+    '--output', '%(title)s.%(ext)s',
+    '-P', userPath,
+    url
+  ]);
+
+  return new ReadableStream({
+    start(controller) {
+      child.stdout.on('data', (data) => {
+        const lines = data.toString().split('\n');
+        for (const line of lines) {
+          if (line.trim()) {
+            controller.enqueue(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+          }
+        }
+      });
+
+      child.stderr.on('data', (data) => {
+        const lines = data.toString().split('\n');
+        for (const line of lines) {
+          if (line.trim()) {
+            controller.enqueue(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+          }
+        }
+      });
+
+      child.on('close', (code) => {
+        controller.enqueue(`data: ${JSON.stringify({ type: 'close', code })}\n\n`);
+        controller.close();
+      });
+
+      child.on('error', (err) => {
+        controller.enqueue(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
+        controller.close();
+      });
+    },
+    cancel() {
+      child.kill();
+    }
+  });
 });
