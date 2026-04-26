@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError, setResponseHeader } from 'h3';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import fs from 'node:fs/promises';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -14,7 +15,24 @@ export default defineEventHandler(async (event) => {
   }
 
   const config = useRuntimeConfig();
-  const userPath = path.join(config.storagePath, user.name);
+  
+  // Get user specific download path
+  let userDownloadSubPath = '';
+  try {
+    const usersData = await fs.readFile(config.usersFilePath, 'utf-8');
+    const users = JSON.parse(usersData);
+    const userData = users.find((u: any) => u.name === user.name);
+    if (userData && userData.downloadPath) {
+      userDownloadSubPath = userData.downloadPath;
+    }
+  } catch (e) {
+    console.error('Error reading user settings for download path:', e);
+  }
+
+  const userPath = path.join(config.storagePath, user.name, userDownloadSubPath);
+  
+  // Ensure the directory exists
+  await fs.mkdir(userPath, { recursive: true });
 
   // Set headers for streaming
   setResponseHeader(event, 'Content-Type', 'text/event-stream');

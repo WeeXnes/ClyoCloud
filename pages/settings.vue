@@ -9,6 +9,9 @@ const newPassword = ref('')
 const confirmPassword = ref('')
 const isChangingPassword = ref(false)
 
+const downloadPath = ref('')
+const isSavingSettings = ref(false)
+
 const tags = ref<Tag[]>([])
 const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
@@ -27,9 +30,40 @@ async function fetchTags() {
   }
 }
 
+async function fetchUserSettings() {
+  try {
+    const response = await fetch('/api/user-settings', { credentials: 'include' })
+    if (response.ok) {
+      const data = await response.json()
+      downloadPath.value = data.downloadPath || ''
+    }
+  } catch (err) {
+    console.error('Error fetching user settings:', err)
+  }
+}
+
 onMounted(() => {
   fetchTags()
+  fetchUserSettings()
 })
+
+async function saveUserSettings() {
+  isSavingSettings.value = true
+  try {
+    const response = await fetch('/api/user-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ downloadPath: downloadPath.value }),
+    })
+
+    if (!response.ok) throw new Error('Failed to save settings')
+    createNotification('Settings updated', NotificationType.SUCCESS)
+  } catch (err) {
+    createNotification('Failed to save settings', NotificationType.ERROR)
+  } finally {
+    isSavingSettings.value = false
+  }
+}
 
 async function changePassword() {
   if (newPassword.value !== confirmPassword.value) {
@@ -208,6 +242,40 @@ async function logout() {
              </div>
              <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Organization</h2>
           </div>
+
+          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+             <div class="p-8 sm:p-10">
+               <h3 class="text-lg font-black tracking-tight mb-6">Download Configuration</h3>
+               <div class="form-control">
+                 <label class="label py-1">
+                   <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Custom Download Path</span>
+                 </label>
+                 <div class="flex flex-col sm:flex-row gap-3">
+                   <div class="relative flex-1">
+                      <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-base-content/30 text-xs font-bold">
+                        {{ user?.name }}/
+                      </div>
+                      <input 
+                        v-model="downloadPath" 
+                        type="text" 
+                        placeholder="e.g. videos/youtube" 
+                        class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10 pl-16" 
+                      />
+                   </div>
+                   <button 
+                     class="btn btn-primary h-12 rounded-xl px-8 shadow-lg shadow-primary/20 gap-2" 
+                     @click="saveUserSettings" 
+                     :disabled="isSavingSettings"
+                   >
+                     <Icon v-if="!isSavingSettings" name="mdi:content-save-outline" class="w-4 h-4" />
+                     <span v-else class="loading loading-spinner loading-xs"></span>
+                     Save
+                   </button>
+                 </div>
+                 <p class="mt-3 text-[10px] font-medium text-base-content/40 px-2 italic">Relative to your root storage folder. Leave empty for root.</p>
+               </div>
+             </div>
+          </section>
 
           <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
              <div class="p-8 sm:p-10">
