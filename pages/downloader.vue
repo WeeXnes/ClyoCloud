@@ -110,17 +110,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, watch, nextTick, computed, onMounted, onUnmounted } from 'vue'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
 
 const downloadUrl = ref('')
 const isDownloading = ref(false)
-const lastDownloadStatus = ref<'success' | 'error' | null>(null)
+const lastDownloadStatus = ref<'success' | 'error' | 'cancelled' | null>(null)
 const logs = ref<{ type: string, message: string }[]>([])
 const logContainer = ref<HTMLElement | null>(null)
 const detectedFilename = ref('')
-const abortController = ref<AbortController | null>(null)
 
 const progressData = ref({
   bytes: '',
@@ -132,10 +131,13 @@ const progressData = ref({
   playlistCount: null as number | null
 })
 
+let pollInterval: any = null
+
 const statusIcon = computed(() => {
   if (isDownloading.value) return 'mdi:sync'
   if (lastDownloadStatus.value === 'success') return 'mdi:check-decagram'
   if (lastDownloadStatus.value === 'error') return 'mdi:alert-circle'
+  if (lastDownloadStatus.value === 'cancelled') return 'mdi:stop-circle-outline'
   return 'mdi:console-line'
 })
 
@@ -148,6 +150,7 @@ const statusTitle = computed(() => {
   }
   if (lastDownloadStatus.value === 'success') return 'Download Completed'
   if (lastDownloadStatus.value === 'error') return 'Download Failed'
+  if (lastDownloadStatus.value === 'cancelled') return 'Download Cancelled'
   return 'Ready'
 })
 
@@ -159,18 +162,9 @@ const statusSubtitle = computed(() => {
   if (isDownloading.value) return 'Fetching media data...'
   if (lastDownloadStatus.value === 'success') return 'File saved to your storage'
   if (lastDownloadStatus.value === 'error') return 'Check logs for details'
+  if (lastDownloadStatus.value === 'cancelled') return 'Process terminated'
   return 'Enter a URL to begin'
 })
-
-function stopDownload() {
-  if (abortController.value) {
-    abortController.value.abort()
-    abortController.value = null
-    isDownloading.value = false
-    logs.value.push({ type: 'warning', message: 'Download cancelled by user.' })
-    createNotification('Download stopped', NotificationType.WARNING)
-  }
-}
 
 watch(logs, () => {
   nextTick(() => {
@@ -180,6 +174,50 @@ watch(logs, () => {
   })
 }, { deep: true })
 
+async function checkStatus() {
+  try {
+    const response = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'status' })
+    })
+
+    if (!response.ok) return
+
+    const data = await response.json()
+    if (data.status === 'idle') {
+      isDownloading.value = false
+      return
+    }
+
+    isDownloading.value = data.status === 'running'
+    if (data.status === 'completed') lastDownloadStatus.value = 'success'
+    else if (data.status === 'error') lastDownloadStatus.value = 'error'
+    else if (data.status === 'cancelled') lastDownloadStatus.value = 'cancelled'
+    else lastDownloadStatus.value = null
+
+    logs.value = data.logs || []
+    if (data.progress) {
+      progressData.value = {
+        ...data.progress,
+        percent: data.progress.percent ? (data.progress.percent.endsWith('%') ? data.progress.percent : data.progress.percent + '%') : '0%'
+      }
+    }
+
+    // Extract filename from logs if not already detected
+    if (logs.value.length > 0) {
+      const destLog = logs.value.find(l => l.message.includes('[download] Destination:'))
+      if (destLog) {
+        const fullPath = destLog.message.split('Destination:')[1].trim()
+        detectedFilename.value = fullPath.split('/').pop() || ''
+      }
+    }
+
+  } catch (err) {
+    console.error('Status check failed:', err)
+  }
+}
+
 async function startDownload() {
   if (!downloadUrl.value || isDownloading.value) return
 
@@ -188,102 +226,44 @@ async function startDownload() {
   logs.value = []
   detectedFilename.value = ''
   progressData.value = { bytes: '', total: '', eta: '', speed: '', percent: '', playlistIndex: null, playlistCount: null }
-  
-  abortController.value = new AbortController()
-  logs.value.push({ type: 'info', message: `Initializing download for: ${downloadUrl.value}` })
 
   try {
     const response = await fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: downloadUrl.value }),
-      signal: abortController.value.signal
+      body: JSON.stringify({ url: downloadUrl.value })
     })
 
-    if (!response.ok) throw new Error('Failed to connect to download server')
-
-    const reader = response.body?.getReader()
-    if (!reader) throw new Error('ReadableStream not supported')
-
-    const decoder = new TextDecoder()
-    let buffer = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6))
-            handleEvent(data)
-          } catch (e) {
-            console.error('Failed to parse event:', e)
-          }
-        }
-      }
-    }
+    if (!response.ok) throw new Error('Failed to start download')
+    
+    // Start polling immediately
+    checkStatus()
   } catch (err: any) {
-    logs.value.push({ type: 'error', message: err.message || 'Unknown error occurred' })
-    lastDownloadStatus.value = 'error'
-    createNotification('Download failed', NotificationType.ERROR)
-  } finally {
+    createNotification(err.message || 'Failed to start download', NotificationType.ERROR)
     isDownloading.value = false
-    if (!lastDownloadStatus.value) lastDownloadStatus.value = 'success'
   }
 }
 
-function handleEvent(data: any) {
-  if (data.type === 'log') {
-    if (data.message.startsWith('progress:')) {
-      const content = data.message.slice(9) // Remove "progress:"
-      const parts = content.split('|')
-      // [0]downloaded/total | [1]eta | [2]speed | [3]percent | [4]playlist_index | [5]playlist_count
-      if (parts.length >= 4) {
-        const sizeParts = parts[0].split('/')
-        progressData.value.bytes = sizeParts[0]
-        progressData.value.total = (sizeParts[1] === 'NA' || !sizeParts[1]) ? '' : sizeParts[1]
-        progressData.value.eta = parts[1] === 'NA' ? '--:--' : parts[1]
-        progressData.value.speed = parts[2] === 'NA' ? '0KiB/s' : parts[2]
-        
-        let pct = parts[3].trim()
-        if (pct === 'NA' || !pct) pct = '0%'
-        if (!pct.endsWith('%')) pct += '%'
-        progressData.value.percent = pct
-
-        if (parts[4] && parts[4] !== 'NA') progressData.value.playlistIndex = parseInt(parts[4])
-        if (parts[5] && parts[5] !== 'NA') progressData.value.playlistCount = parseInt(parts[5])
-      }
-    } else {
-      logs.value.push({ type: 'log', message: data.message })
-      
-      // Extract filename if present
-      if (data.message.includes('[download] Destination:')) {
-        const fullPath = data.message.split('Destination:')[1].trim()
-        const filename = fullPath.split('/').pop()
-        if (filename) {
-          detectedFilename.value = filename
-        }
-      }
+async function stopDownload() {
+  try {
+    const response = await fetch('/api/download-stop', { method: 'POST' })
+    if (response.ok) {
+      createNotification('Download stopping...', NotificationType.WARNING)
+      checkStatus()
     }
-  } else if (data.type === 'error') {
-    logs.value.push({ type: 'warning', message: data.message })
-  } else if (data.type === 'close') {
-    if (data.code === 0) {
-      logs.value.push({ type: 'success', message: 'Download process finished successfully.' })
-      lastDownloadStatus.value = 'success'
-      createNotification('Download complete!', NotificationType.SUCCESS)
-    } else {
-      logs.value.push({ type: 'error', message: `Process exited with code ${data.code}` })
-      lastDownloadStatus.value = 'error'
-      createNotification('Download failed', NotificationType.ERROR)
-    }
+  } catch (err) {
+    createNotification('Failed to stop download', NotificationType.ERROR)
   }
 }
+
+onMounted(() => {
+  checkStatus()
+  pollInterval = setInterval(checkStatus, 1000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval)
+})
 </script>
 
 <style scoped>
