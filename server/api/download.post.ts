@@ -24,10 +24,11 @@ export default defineEventHandler(async (event) => {
   const child = spawn('yt-dlp', [
     '--newline',
     '--progress',
-    '--progress-template', 'progress:%(progress._downloaded_bytes_str)s/%(progress._total_bytes_str)s:%(progress._eta_str)s:%(progress._speed_str)s:%(progress._percent_str)s',
+    '--progress-template', 'progress:%(progress._downloaded_bytes_str)s/%(progress._total_bytes_str)s|%(progress._eta_str)s|%(progress._speed_str)s|%(progress._percent_str)s|%(info.playlist_index)s|%(info.playlist_count)s',
     '--no-colors',
     '--format', 'bestvideo+bestaudio/best',
     '--output', '%(title)s.%(ext)s',
+    '--no-mtime',
     '-P', userPath,
     url
   ]);

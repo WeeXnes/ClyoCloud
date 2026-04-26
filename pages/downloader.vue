@@ -118,7 +118,9 @@ const progressData = ref({
   total: '',
   eta: '',
   speed: '',
-  percent: ''
+  percent: '',
+  playlistIndex: null as number | null,
+  playlistCount: null as number | null
 })
 
 const statusIcon = computed(() => {
@@ -129,14 +131,22 @@ const statusIcon = computed(() => {
 })
 
 const statusTitle = computed(() => {
-  if (isDownloading.value) return 'Download in Progress'
+  if (isDownloading.value) {
+    if (progressData.value.playlistIndex && progressData.value.playlistCount) {
+      return `Downloading Item ${progressData.value.playlistIndex} of ${progressData.value.playlistCount}`
+    }
+    return 'Download in Progress'
+  }
   if (lastDownloadStatus.value === 'success') return 'Download Completed'
   if (lastDownloadStatus.value === 'error') return 'Download Failed'
   return 'Ready'
 })
 
 const statusSubtitle = computed(() => {
-  if (detectedFilename.value) return detectedFilename.value
+  if (detectedFilename.value) {
+    const sizeInfo = progressData.value.total ? ` (${progressData.value.total})` : ''
+    return detectedFilename.value + sizeInfo
+  }
   if (isDownloading.value) return 'Fetching media data...'
   if (lastDownloadStatus.value === 'success') return 'File saved to your storage'
   if (lastDownloadStatus.value === 'error') return 'Check logs for details'
@@ -158,7 +168,7 @@ async function startDownload() {
   lastDownloadStatus.value = null
   logs.value = []
   detectedFilename.value = ''
-  progressData.value = { bytes: '', total: '', eta: '', speed: '', percent: '' }
+  progressData.value = { bytes: '', total: '', eta: '', speed: '', percent: '', playlistIndex: null, playlistCount: null }
   
   logs.value.push({ type: 'info', message: `Initializing download for: ${downloadUrl.value}` })
 
@@ -209,16 +219,23 @@ async function startDownload() {
 function handleEvent(data: any) {
   if (data.type === 'log') {
     if (data.message.startsWith('progress:')) {
-      const parts = data.message.split(':')
-      // progress:downloaded/total:eta:speed:percent
-      if (parts.length >= 5) {
-        progressData.value = {
-          bytes: parts[1].split('/')[0],
-          total: parts[1].split('/')[1],
-          eta: parts[2] === 'NA' ? '--:--' : parts[2],
-          speed: parts[3] === 'NA' ? '0KiB/s' : parts[3],
-          percent: parts[4].trim() === 'NA' ? '0%' : parts[4].trim()
-        }
+      const content = data.message.slice(9) // Remove "progress:"
+      const parts = content.split('|')
+      // [0]downloaded/total | [1]eta | [2]speed | [3]percent | [4]playlist_index | [5]playlist_count
+      if (parts.length >= 4) {
+        const sizeParts = parts[0].split('/')
+        progressData.value.bytes = sizeParts[0]
+        progressData.value.total = (sizeParts[1] === 'NA' || !sizeParts[1]) ? '' : sizeParts[1]
+        progressData.value.eta = parts[1] === 'NA' ? '--:--' : parts[1]
+        progressData.value.speed = parts[2] === 'NA' ? '0KiB/s' : parts[2]
+        
+        let pct = parts[3].trim()
+        if (pct === 'NA' || !pct) pct = '0%'
+        if (!pct.endsWith('%')) pct += '%'
+        progressData.value.percent = pct
+
+        if (parts[4] && parts[4] !== 'NA') progressData.value.playlistIndex = parseInt(parts[4])
+        if (parts[5] && parts[5] !== 'NA') progressData.value.playlistCount = parseInt(parts[5])
       }
     } else {
       logs.value.push({ type: 'log', message: data.message })
