@@ -79,7 +79,7 @@ export default defineEventHandler(async (event) => {
         await fs.promises.mkdir(path.dirname(requestedThumbnail), { recursive: true });
 
         if (supportedImageTypes.includes(contentType)) {
-            const ffmpegCommand = `ffmpeg -i "${requestedFile}" -filter_complex "[0:v]scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -y "${requestedThumbnail}"`
+            const ffmpegCommand = `ffmpeg -i "${requestedFile}" -filter_complex "[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -y "${requestedThumbnail}"`
             await execAsync(ffmpegCommand)
         } else {
             let duration
@@ -92,7 +92,7 @@ export default defineEventHandler(async (event) => {
             }
 
             const seekTime = duration * 0.1
-            const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vframes 1 -filter_complex "[0:v]scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -frames:v 1 -q:v 2 -y "${requestedThumbnail}"`
+            const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vframes 1 -filter_complex "[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -frames:v 1 -q:v 2 -y "${requestedThumbnail}"`
             await execAsync(ffmpegCommand)
         }
 

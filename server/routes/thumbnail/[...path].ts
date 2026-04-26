@@ -91,7 +91,7 @@ export default defineEventHandler(async (event) => {
                 return createReadStream(requestedFile)
             }
 
-            const ffmpegCommand = `ffmpeg -i "${requestedFile}" -filter_complex "[0:v]scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -y "${requestedThumbnail}"`
+            const ffmpegCommand = `ffmpeg -i "${requestedFile}" -filter_complex "[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -y "${requestedThumbnail}"`
             try {
                 await execAsync(ffmpegCommand)
                 console.log(`Image thumbnail generated successfully: ${requestedThumbnail}`)
@@ -120,7 +120,7 @@ export default defineEventHandler(async (event) => {
             }
 
             const seekTime = duration * 0.1
-            const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vframes 1 -filter_complex "[0:v]scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -frames:v 1 -q:v 2 -y "${requestedThumbnail}"`
+            const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vframes 1 -filter_complex "[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -frames:v 1 -q:v 2 -y "${requestedThumbnail}"`
             try {
                 await execAsync(ffmpegCommand)
                 console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
@@ -129,7 +129,7 @@ export default defineEventHandler(async (event) => {
 
                 // Check for a second time point if the first one fails
                 const secondSeekTime = duration * 0.5
-                const secondFfmpegCommand = `ffmpeg -ss ${secondSeekTime} -i "${requestedFile}" -vf scale=320:180 -frames:v 1 -pix_fmt yuvj420p "${requestedThumbnail}" -y`
+                const secondFfmpegCommand = `ffmpeg -ss ${secondSeekTime} -i "${requestedFile}" -vf "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180" -frames:v 1 -pix_fmt yuvj420p "${requestedThumbnail}" -y`
                 try {
                     await execAsync(secondFfmpegCommand)
                     console.log(`Video thumbnail generated successfully on second attempt: ${requestedThumbnail}`)
