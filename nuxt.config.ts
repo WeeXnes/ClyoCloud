@@ -41,4 +41,12 @@ export default defineNuxtConfig({
     tailwindcss: {
         viewer: false,
     },
+    build: {
+        transpile: ['otplib']
+    },
+    nitro: {
+      externals: {
+        inline: ['otplib']
+      }
+    }
 })

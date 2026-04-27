@@ -5,6 +5,10 @@ ClyoCloud is a personal, self-hosted cloud storage and media management applicat
 ## Features
 
 - **Personal Cloud Storage**: Host your files securely on your own server.
+- **Two-Factor Authentication (2FA)**: Secure your account with TOTP-based 2FA (e.g., Google Authenticator).
+- **WebDAV Support**: Mount your ClyoCloud storage as a network drive on Windows, macOS, and Linux.
+- **Favourites**: Star important files and folders for quick access in a dedicated view.
+- **Activity Log**: Keep track of recent file operations directly from your dashboard.
 - **Media Management**: Automatic thumbnail generation, metadata tagging, and description management for your media collection.
 - **Video Streaming**: Built-in, range-aware video streaming with support for seamless playback.
 - **Sharing**: Easily mark files as public to generate shareable, unauthenticated links.
