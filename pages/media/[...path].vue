@@ -55,9 +55,16 @@ const getStreamUrl = () => {
   return `${baseUrl}/stream/${encodeURIComponent(subpath)}`
 }
 
+const getSourceType = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  if (ext === 'webm') return 'video/webm'
+  if (ext === 'mov') return 'video/quicktime'
+  return 'video/mp4'
+}
+
 const hasThumbnail = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['mp4'].includes(ext)
+  return ['mp4', 'webm', 'mov'].includes(ext)
 }
 
 const getThumbnailUrl = (fullPath: string) => {
@@ -300,10 +307,9 @@ watch(() => route.params.path, () => {
                 class="w-full h-full"
                 :key="currentVideo.fullPath"
               >
-                <source :src="getStreamUrl()" type="video/mp4" />
+                <source :src="getStreamUrl()" :type="getSourceType(currentVideo.name)" />
                 Your browser does not support the video tag.
-              </video>
-            </div>
+              </video>            </div>
 
             <!-- Header Info -->
             <div class="mt-6">

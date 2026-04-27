@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const contentType = mime.lookup(requestedFile)
-    const supportedVideoTypes = ['video/mp4', 'application/mp4', 'video/webm']
+    const supportedVideoTypes = ['video/mp4', 'application/mp4', 'video/webm', 'video/quicktime']
     const supportedImageTypes = ['image/png', 'image/jpeg', 'image/gif']
     const supportedTypes = [...supportedVideoTypes, ...supportedImageTypes]
     if (!contentType || !supportedTypes.includes(contentType)) {

@@ -28,8 +28,8 @@ async function scanMp4Files(directoryPath: string, userStoragePath: string): Pro
                 if (entry.isDirectory()) {
                     // Recursively scan subdirectories
                     await scanDir(fullPath);
-                } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.mp4')) {
-                    // Process MP4 files
+                } else if (entry.isFile() && (entry.name.toLowerCase().endsWith('.mp4') || entry.name.toLowerCase().endsWith('.webm') || entry.name.toLowerCase().endsWith('.mov'))) {
+                    // Process supported video files
                     const stats = await fs.stat(fullPath);
                     const cloudInfoFileName = `${entry.name}.cloudinfo`;
                     const cloudInfoPath = path.join(currentPath, cloudInfoFileName);

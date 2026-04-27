@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
         }
 
         const contentType = mime.lookup(resolvedPath) || 'application/octet-stream'
-        const videoTypes = ['video/mp4', 'video/webm', 'application/mp4']
+        const videoTypes = ['video/mp4', 'video/webm', 'application/mp4', 'video/quicktime']
         if (!videoTypes.includes(contentType)) {
             console.error(`Unsupported media type: ${contentType}`)
             throw createError({
