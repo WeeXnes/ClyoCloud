@@ -1,0 +1,32 @@
+version: 43
+jobs:
+- name: vue ci
+  steps:
+  - type: CheckoutStep
+    name: checkout code
+    cloneCredential:
+      type: DefaultCredential
+    withLfs: false
+    withSubmodules: false
+    condition: SUCCESSFUL
+    optional: false
+  - type: CommandStep
+    name: build & test
+    runInContainer: true
+    image: node
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
+        npm install
+        npx nuxt build
+        npx vitest run tests/security.spec.ts
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  triggers:
+  - type: BranchUpdateTrigger
+    userMatch: anyone
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 14400
