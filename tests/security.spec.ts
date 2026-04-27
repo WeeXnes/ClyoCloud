@@ -19,12 +19,14 @@ describe('API Security Tests', () => {
   describe('Protected Endpoints', () => {
     endpoints.forEach((endpoint) => {
       it(`should return 401 for ${endpoint} without a token`, async () => {
-        const response = await fetch(`${BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`)
+        const url = `${BASE_URL}${endpoint}`
+        const response = await fetch(url)
         expect(response.status).toBe(401)
       })
 
       it(`should return 401 for ${endpoint} with an invalid token`, async () => {
-        const response = await fetch(`${BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`, {
+        const url = `${BASE_URL}${endpoint}`
+        const response = await fetch(url, {
           headers: { Cookie: 'token=invalid_token_xyz' }
         })
         expect(response.status).toBe(401)
@@ -35,7 +37,8 @@ describe('API Security Tests', () => {
   describe('Public Endpoints', () => {
     publicEndpoints.forEach((endpoint) => {
       it(`should be accessible (not 401) for ${endpoint}`, async () => {
-        const response = await fetch(`${BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`)
+        const url = `${BASE_URL}${endpoint}`
+        const response = await fetch(url)
         // Public endpoints often require params; status >= 400 is fine if params missing,
         // but 401 (Unauthorized) is forbidden.
         expect(response.status).not.toBe(401)
