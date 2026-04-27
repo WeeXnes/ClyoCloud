@@ -27,6 +27,13 @@ describe('API Security Tests', () => {
         })
         expect(response.status).toBe(401)
       })
+
+      it(`should return 401 for ${endpoint} with a malformed token`, async () => {
+        const response = await fetch(`http://localhost:6969${endpoint}`, {
+          headers: { Cookie: 'token=MALFORMED_TOKEN_123' }
+        })
+        expect(response.status).toBe(401)
+      })
     })
   })
 
