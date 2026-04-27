@@ -31,9 +31,21 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const decoded = jwt.verify(token, config.jwtSecret) as { user: { name: string } }
+        const decoded = jwt.verify(token, config.jwtSecret) as { user: { name: string }, isPartial?: boolean }
+        
+        // If it's a partial token (for 2FA), only allow verify-login (handled above)
+        // Any other protected route should be rejected
+        if (decoded.isPartial) {
+            throw createError({
+                statusCode: 401,
+                statusMessage: 'Unauthorized: 2FA required',
+            })
+        }
+
         event.context.user = decoded.user // Attach user to context for API/routes
-    } catch (error) {
+    } catch (error: any) {
+        if (error.statusCode === 401) throw error
+        
         console.error('JWT verification error:', error)
         if (event.node.req.headers.accept?.includes('text/html')) {
             return sendRedirect(event, '/login', 302)

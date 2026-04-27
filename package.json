@@ -28,8 +28,7 @@
     "systeminformation": "^5.31.5",
     "uuid": "^11.0.5",
     "vue": "latest",
-    "vue-router": "latest",
-    "webdav-server": "^2.6.2"
+    "vue-router": "latest"
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",

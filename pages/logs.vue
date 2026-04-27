@@ -82,12 +82,17 @@ onMounted(fetchLogs)
     <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
-              <Icon name="mdi:history" class="text-primary w-6 h-6" />
-              Activity Logs
-            </h1>
-            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Security and Operation Audit</p>
+          <div class="flex items-center gap-3">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
+              <Icon name="mdi:menu" class="w-5 h-5" />
+            </label>
+            <div>
+              <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
+                <Icon name="mdi:history" class="text-primary w-6 h-6" />
+                Activity Logs
+              </h1>
+              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Security and Operation Audit</p>
+            </div>
           </div>
 
           <div class="relative w-full md:w-64">
