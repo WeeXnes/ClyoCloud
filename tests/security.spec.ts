@@ -13,34 +13,35 @@ const publicEndpoints = [
   '/api/login', '/api/logout', '/api/public/file-info', '/api/2fa/verify-login'
 ]
 
-const BASE_URL = (process.env.BASE_URL || 'http://localhost:6969').replace(/\/$/, '')
+const BASE_URL = (process.env.BASE_URL || 'http://localhost:6969').replace(/\/$/, '');
 
 describe('API Security Tests', () => {
   describe('Protected Endpoints', () => {
     endpoints.forEach((endpoint) => {
       it(`should return 401 for ${endpoint} without a token`, async () => {
-        const url = `${BASE_URL}${endpoint}`
-        const response = await fetch(url)
-        expect(response.status).toBe(401)
-      })
+        // Force fully qualified absolute URL
+        const fullUrl = BASE_URL + (endpoint.startsWith('/') ? '' : '/') + endpoint;
+        const response = await fetch(fullUrl);
+        expect(response.status).toBe(401);
+      });
 
       it(`should return 401 for ${endpoint} with an invalid token`, async () => {
-        const url = `${BASE_URL}${endpoint}`
-        const response = await fetch(url, {
+        const fullUrl = BASE_URL + (endpoint.startsWith('/') ? '' : '/') + endpoint;
+        const response = await fetch(fullUrl, {
           headers: { Cookie: 'token=invalid_token_xyz' }
-        })
-        expect(response.status).toBe(401)
-      })
-    })
-  })
+        });
+        expect(response.status).toBe(401);
+      });
+    });
+  });
 
   describe('Public Endpoints', () => {
     publicEndpoints.forEach((endpoint) => {
       it(`should be accessible (not 401) for ${endpoint}`, async () => {
-        const url = `${BASE_URL}${endpoint}`
-        const response = await fetch(url)
-        expect(response.status).not.toBe(401)
-      })
-    })
-  })
-})
+        const fullUrl = BASE_URL + (endpoint.startsWith('/') ? '' : '/') + endpoint;
+        const response = await fetch(fullUrl);
+        expect(response.status).not.toBe(401);
+      });
+    });
+  });
+});
