@@ -52,6 +52,13 @@ export default defineEventHandler(async (event) => {
 
         for (const fileData of uploadedFiles) {
             const decodedFilename = decodeURIComponent(fileData.originalFilename || 'unnamed_file')
+            
+            // Security: Prevent uploading .cloudinfo or hidden files
+            if (decodedFilename.endsWith('.cloudinfo') || decodedFilename.startsWith('.')) {
+                console.warn(`[SECURITY] Blocked upload attempt of sensitive file: ${decodedFilename}`)
+                continue // Skip this file
+            }
+
             const resolvedPath = resolve(join(resolvedDir, decodedFilename))
 
             console.log(`Saving file to: ${resolvedPath}`)

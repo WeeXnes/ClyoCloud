@@ -23,7 +23,7 @@ export default defineEventHandler(async (event): Promise<File[]> => {
         }
 
         const fileNames = await fs.readdir(fullPath)
-        const filteredFileNames = fileNames.filter((name) => !name.endsWith('.cloudinfo'))
+        const filteredFileNames = fileNames.filter((name) => !name.endsWith('.cloudinfo') && !name.startsWith('.'))
 
         const files = await Promise.all(
             filteredFileNames.map(async (name) => {

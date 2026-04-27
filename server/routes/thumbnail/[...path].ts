@@ -3,10 +3,35 @@ import { stat } from 'fs/promises'
 import { defineEventHandler, getRouterParam, setHeader, createError } from 'h3'
 import mime from 'mime-types'
 import path, { join, resolve } from 'path'
-import { exec } from 'child_process'
-import { promisify } from 'util'
+import { spawn } from 'child_process'
 
-const execAsync = promisify(exec)
+async function runFfmpeg(args: string[]): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const process = spawn('ffmpeg', args)
+        let stdout = ''
+        let stderr = ''
+        process.stdout.on('data', (data) => stdout += data)
+        process.stderr.on('data', (data) => stderr += data)
+        process.on('close', (code) => {
+            if (code === 0) resolve(stdout)
+            else reject(new Error(`ffmpeg failed with code ${code}: ${stderr}`))
+        })
+    })
+}
+
+async function runFfprobe(args: string[]): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const process = spawn('ffprobe', args)
+        let stdout = ''
+        let stderr = ''
+        process.stdout.on('data', (data) => stdout += data)
+        process.stderr.on('data', (data) => stderr += data)
+        process.on('close', (code) => {
+            if (code === 0) resolve(stdout)
+            else reject(new Error(`ffprobe failed with code ${code}: ${stderr}`))
+        })
+    })
+}
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -69,12 +94,10 @@ export default defineEventHandler(async (event) => {
 
         await fs.promises.mkdir(path.dirname(requestedThumbnail), { recursive: true });
 
-
         if (supportedImageTypes.includes(contentType)) {
             let needsResize = true
             try {
-                const ffprobeCommand = `ffprobe -v error -show_entries stream=width,height -of json "${requestedFile}"`
-                const { stdout } = await execAsync(ffprobeCommand)
+                const stdout = await runFfprobe(['-v', 'error', '-show_entries', 'stream=width,height', '-of', 'json', requestedFile])
                 const data = JSON.parse(stdout)
                 const { width, height } = data.streams[0] || {}
                 if (width && height && width <= 320 && height <= 180) {
@@ -91,9 +114,12 @@ export default defineEventHandler(async (event) => {
                 return createReadStream(requestedFile)
             }
 
-            const ffmpegCommand = `ffmpeg -i "${requestedFile}" -filter_complex "[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -y "${requestedThumbnail}"`
             try {
-                await execAsync(ffmpegCommand)
+                await runFfmpeg([
+                    '-i', requestedFile,
+                    '-filter_complex', '[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2',
+                    '-y', requestedThumbnail
+                ])
                 console.log(`Image thumbnail generated successfully: ${requestedThumbnail}`)
             } catch (ffmpegError) {
                 console.error(`Error generating image thumbnail: ${ffmpegError}`)
@@ -105,8 +131,7 @@ export default defineEventHandler(async (event) => {
         } else {
             let duration
             try {
-                const ffprobeCommand = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${requestedFile}"`
-                const { stdout } = await execAsync(ffprobeCommand)
+                const stdout = await runFfprobe(['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', requestedFile])
                 duration = parseFloat(stdout)
                 if (isNaN(duration)) {
                     throw new Error('Failed to parse video duration.')
@@ -119,19 +144,32 @@ export default defineEventHandler(async (event) => {
                 })
             }
 
-            const seekTime = duration * 0.1
-            const ffmpegCommand = `ffmpeg -ss ${seekTime} -i "${requestedFile}" -vframes 1 -filter_complex "[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2" -frames:v 1 -q:v 2 -y "${requestedThumbnail}"`
+            const seekTime = (duration * 0.1).toString()
             try {
-                await execAsync(ffmpegCommand)
+                await runFfmpeg([
+                    '-ss', seekTime,
+                    '-i', requestedFile,
+                    '-vframes', '1',
+                    '-filter_complex', '[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2',
+                    '-frames:v', '1',
+                    '-q:v', '2',
+                    '-y', requestedThumbnail
+                ])
                 console.log(`Video thumbnail generated successfully: ${requestedThumbnail}`)
             } catch (ffmpegError: any) {
                 console.error(`Error generating video thumbnail: ${ffmpegError.message}`)
 
-                // Check for a second time point if the first one fails
-                const secondSeekTime = duration * 0.5
-                const secondFfmpegCommand = `ffmpeg -ss ${secondSeekTime} -i "${requestedFile}" -vf "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180" -frames:v 1 -pix_fmt yuvj420p "${requestedThumbnail}" -y`
+                const secondSeekTime = (duration * 0.5).toString()
                 try {
-                    await execAsync(secondFfmpegCommand)
+                    await runFfmpeg([
+                        '-ss', secondSeekTime,
+                        '-i', requestedFile,
+                        '-vf', 'setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180',
+                        '-frames:v', '1',
+                        '-pix_fmt', 'yuvj420p',
+                        requestedThumbnail,
+                        '-y'
+                    ])
                     console.log(`Video thumbnail generated successfully on second attempt: ${requestedThumbnail}`)
                 } catch (secondFfmpegError: any) {
                     console.error(`Final Error generating video thumbnail: ${secondFfmpegError.message}`)

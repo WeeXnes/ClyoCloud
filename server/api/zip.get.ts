@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   archive.pipe(event.node.res);
   archive.glob('**/*', {
     cwd: fullPath,
-    ignore: ['**/*.cloudinfo']
+    ignore: ['**/*.cloudinfo', '**/.*']
   });
   await archive.finalize();
 });

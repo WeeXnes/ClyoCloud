@@ -27,15 +27,15 @@ export default defineEventHandler(async (event) => {
   archive.pipe(event.node.res);
 
   // Correct strategy: Use archive.directory for folders (maintains structure) 
-  // and archive.file for files, and filter .cloudinfo.
+  // and archive.file for files, and filter .cloudinfo and dotfiles.
   for (const name of fileNames) {
       const filePath = path.join(fullPath, name);
       if (fs.existsSync(filePath)) {
           if (fs.lstatSync(filePath).isDirectory()) {
               archive.directory(filePath, name, {
-                  filter: (path) => !path.endsWith('.cloudinfo')
+                  filter: (path) => !path.endsWith('.cloudinfo') && !path.split('/').some(part => part.startsWith('.'))
               });
-          } else if (!name.endsWith('.cloudinfo')) {
+          } else if (!name.endsWith('.cloudinfo') && !name.startsWith('.')) {
               archive.file(filePath, { name });
           }
       }

@@ -23,6 +23,8 @@ const qrCodeUrl = ref('')
 const totpSecret = ref('')
 const totpCode = ref('')
 const isVerifying2fa = ref(false)
+const showDisableConfirm = ref(false)
+const disableCode = ref('')
 
 const user = useState<{ name: string } | null>('user')
 
@@ -44,8 +46,8 @@ async function setup2fa() {
     qrCodeUrl.value = data.qrCodeUrl
     totpSecret.value = data.secret
     show2faSetup.value = true
-  } catch (err) {
-    createNotification('Failed to start 2FA setup', NotificationType.ERROR)
+  } catch (err: any) {
+    createNotification(err.data?.statusMessage || 'Failed to start 2FA setup', NotificationType.ERROR)
   }
 }
 
@@ -61,21 +63,33 @@ async function enable2fa() {
     show2faSetup.value = false
     totpCode.value = ''
     createNotification('2FA enabled successfully', NotificationType.SUCCESS)
-  } catch (err) {
-    createNotification('Invalid 2FA code', NotificationType.ERROR)
+  } catch (err: any) {
+    createNotification(err.data?.statusMessage || 'Invalid 2FA code', NotificationType.ERROR)
   } finally {
     isVerifying2fa.value = false
   }
 }
 
 async function disable2fa() {
-  if (!confirm('Are you sure you want to disable 2FA? This will make your account less secure.')) return
+  showDisableConfirm.value = true
+}
+
+async function confirmDisable2fa() {
+  if (!disableCode.value) return
+  isVerifying2fa.value = true
   try {
-    await $fetch('/api/2fa/disable', { method: 'POST' })
+    await $fetch('/api/2fa/disable', {
+      method: 'POST',
+      body: { code: disableCode.value }
+    })
     is2faEnabled.value = false
-    createNotification('2FA disabled', NotificationType.INFO)
-  } catch (err) {
-    createNotification('Failed to disable 2FA', NotificationType.ERROR)
+    showDisableConfirm.value = false
+    disableCode.value = ''
+    createNotification('2FA disabled successfully', NotificationType.INFO)
+  } catch (err: any) {
+    createNotification(err.data?.statusMessage || 'Failed to disable 2FA', NotificationType.ERROR)
+  } finally {
+    isVerifying2fa.value = false
   }
 }
 
@@ -340,16 +354,50 @@ async function logout() {
               </div>
 
               <div v-else>
-                <p class="text-xs font-medium text-base-content/50 mb-6 leading-relaxed">
-                  Your account is protected with two-factor authentication. You will need your authenticator app to log in.
-                </p>
-                <button 
-                  class="btn btn-error btn-outline btn-block h-12 rounded-xl gap-2 border-2"
-                  @click="disable2fa"
-                >
-                  <Icon name="mdi:shield-off-outline" class="w-5 h-5" />
-                  Disable 2FA
-                </button>
+                <div v-if="!showDisableConfirm">
+                  <p class="text-xs font-medium text-base-content/50 mb-6 leading-relaxed">
+                    Your account is protected with two-factor authentication. You will need your authenticator app to log in.
+                  </p>
+                  <button 
+                    class="btn btn-error btn-outline btn-block h-12 rounded-xl gap-2 border-2"
+                    @click="disable2fa"
+                  >
+                    <Icon name="mdi:shield-off-outline" class="w-5 h-5" />
+                    Disable 2FA
+                  </button>
+                </div>
+                
+                <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                  <div class="p-4 bg-error/5 rounded-2xl border border-error/10 text-center">
+                    <p class="text-xs font-bold text-error uppercase tracking-widest mb-2">Confirm Identity</p>
+                    <p class="text-[10px] font-medium text-error/60">Please enter a code from your authenticator to disable security.</p>
+                  </div>
+
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Authenticator Code</span>
+                    </label>
+                    <input 
+                      v-model="disableCode"
+                      type="text"
+                      placeholder="000 000"
+                      class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.3em] h-12 rounded-xl border-base-content/10"
+                      maxlength="6"
+                    />
+                  </div>
+
+                  <div class="flex gap-3">
+                    <button class="btn btn-ghost flex-1 h-12 rounded-xl" @click="showDisableConfirm = false">Cancel</button>
+                    <button 
+                      class="btn btn-error flex-1 h-12 rounded-xl shadow-lg shadow-error/20"
+                      @click="confirmDisable2fa"
+                      :disabled="isVerifying2fa || disableCode.length < 6"
+                    >
+                      <span v-if="isVerifying2fa" class="loading loading-spinner loading-xs"></span>
+                      Disable Now
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
