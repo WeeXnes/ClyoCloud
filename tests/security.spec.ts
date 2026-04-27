@@ -6,7 +6,9 @@ const endpoints = [
   '/api/activity-full', '/api/bulk-download', '/api/change-password', '/api/download',
   '/api/download-stop', '/api/favorites', '/api/file-meta', '/api/files',
   '/api/folder', '/api/rename', '/api/stats', '/api/tags', '/api/upload',
-  '/api/user-settings', '/api/verify', '/api/videos', '/api/zip'
+  '/api/user-settings', '/api/verify', '/api/videos', '/api/zip',
+  '/file/test.txt', '/stream/test.mp4', '/thumbnail/test.png', 
+  '/p/file/admin/test.txt', '/p/stream/admin/test.mp4', '/p/thumbnail/admin/test.png'
 ]
 
 const publicEndpoints = [
