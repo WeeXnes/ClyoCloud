@@ -38,7 +38,11 @@ export default defineEventHandler(async (event) => {
 
         const isValid = await bcrypt.compare(password, user.password)
         if (!isValid) {
-            await logActivity(username, 'LOGIN_FAIL', 'Login', 'Invalid password attempt')
+            try {
+                await logActivity(username, 'LOGIN_FAIL', 'Login', 'Invalid password attempt')
+            } catch (logError) {
+                console.error('Failed to log login failure:', logError)
+            }
             throw createError({
                 statusCode: 401,
                 statusMessage: 'Invalid username or password',
@@ -46,7 +50,11 @@ export default defineEventHandler(async (event) => {
         }
 
         if (user.twoFactorEnabled) {
-            await logActivity(username, 'LOGIN_STEP1', 'Login', 'Password verified, 2FA required')
+            try {
+                await logActivity(username, 'LOGIN_STEP1', 'Login', 'Password verified, 2FA required')
+            } catch (logError) {
+                console.error('Failed to log login step 1:', logError)
+            }
             // Return temporary token for 2FA verification
             const tempToken = jwt.sign({ 
                 user: { name: username },
@@ -57,7 +65,11 @@ export default defineEventHandler(async (event) => {
             return { requires2fa: true, tempToken }
         }
 
-        await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful login')
+        try {
+            await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful login')
+        } catch (logError) {
+            console.error('Failed to log login success:', logError)
+        }
 
         const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
             expiresIn: '7d',
@@ -67,7 +79,9 @@ export default defineEventHandler(async (event) => {
 
         // Return token in response body
         return { token }
-    } catch (error) {
+    } catch (error: any) {
+        if (error.statusCode) throw error
+        
         console.error('Login error:', error)
         throw createError({
             statusCode: 500,
