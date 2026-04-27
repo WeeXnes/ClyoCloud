@@ -537,8 +537,8 @@ const hasThumbnail = (filename: string) => {
 }
 
 const isVideoFile = (filename: string) => {
-  const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['mp4', 'webm'].includes(ext)
+  const ext = filename.split('.').pop()?.toLowerCase()
+  return ['mp4', 'webm', 'mov'].includes(ext || '')
 }
 
 const isImageFile = (filename: string) => {
