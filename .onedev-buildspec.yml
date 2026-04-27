@@ -11,40 +11,62 @@ jobs:
     condition: SUCCESSFUL
     optional: false
   - type: CommandStep
-    name: Build Test
+    name: NPM Install
     runInContainer: false
     interpreter:
       type: DefaultInterpreter
       commands: |
         echo "Installing dependencies..."
         npm install
-
-        # 2. Build the project
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  - type: CommandStep
+    name: Build Server
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
         echo "Building project..."
         npm run build
-
-        # 3. Start the application with PM2
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  - type: CommandStep
+    name: Start PM2
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
         echo "Starting application with PM2..."
         pm2 start ecosystem.config.js
-
-        # Wait for the application to be ready (adjust sleep if necessary)
         echo "Waiting for server to initialize..."
         sleep 10
-
-        # 4. Run the security tests
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  - type: CommandStep
+    name: Run Tests
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
         echo "Running security tests..."
-        # Note: Ensure the test suite uses the correct port (6969)
-        # If your tests are hardcoded to 3000, they might need adjustment or environment variables
         npm run test:security
-
-        # 5. Stop and clean up PM2
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  - type: CommandStep
+    name: Stop PM2
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
         echo "Stopping and cleaning up PM2..."
         pm2 stop all
         pm2 delete all
-
-        echo "Workflow finished successfully."
     useTTY: true
-    condition: SUCCESSFUL
+    condition: ALWAYS
     optional: false
   jobExecutor: Builder
   triggers:
