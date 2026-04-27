@@ -1,6 +1,6 @@
 version: 43
 jobs:
-- name: Get Version (private)
+- name: Build & Test
   steps:
   - type: CheckoutStep
     name: checkout code
@@ -8,6 +8,18 @@ jobs:
       type: DefaultCredential
     withLfs: false
     withSubmodules: false
+    condition: SUCCESSFUL
+    optional: false
+  - type: CommandStep
+    name: Build Test
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
+        npm install
+        npx nuxt build
+        npx vitest run tests/security.spec.ts
+    useTTY: true
     condition: SUCCESSFUL
     optional: false
   jobExecutor: Builder
