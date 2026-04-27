@@ -80,6 +80,12 @@
                     <span>Settings</span>
                   </NuxtLink>
                 </li>
+                <li>
+                  <NuxtLink to="/logs" class="nav-link" active-class="active">
+                    <Icon name="mdi:history" class="w-5 h-5" />
+                    <span>Logs</span>
+                  </NuxtLink>
+                </li>
               </ul>
             </div>
           </nav>

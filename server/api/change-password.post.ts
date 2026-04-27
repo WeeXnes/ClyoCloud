@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import bcrypt from 'bcryptjs'
+import { logActivity } from '../utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
@@ -39,6 +40,8 @@ export default defineEventHandler(async (event) => {
         users[userIndex].password = hashedPassword
 
         await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')
+
+        await logActivity(user.name, 'PASSWORD_CHANGE', 'Account', 'Password updated successfully')
 
         return { message: 'Password updated successfully' }
     } catch (error) {

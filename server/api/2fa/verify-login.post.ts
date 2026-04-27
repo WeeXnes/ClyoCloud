@@ -2,6 +2,7 @@ import { defineEventHandler, createError, readBody } from 'h3'
 import fs from 'fs/promises'
 import jwt from 'jsonwebtoken'
 import { createRequire } from 'module'
+import { logActivity } from '../../utils/activityLogger'
 
 const require = createRequire(import.meta.url)
 const otplib = require('otplib')
@@ -60,6 +61,7 @@ export default defineEventHandler(async (event) => {
 
         if (!isValid) {
             console.warn(`[2FA] REJECTED: Code ${cleanCode} is NOT valid for user ${username}`)
+            await logActivity(username, '2FA_FAIL', 'Security', `Invalid 2FA code attempt: ${cleanCode}`)
             throw createError({
                 statusCode: 401,
                 statusMessage: 'Invalid 2FA code',
@@ -67,6 +69,7 @@ export default defineEventHandler(async (event) => {
         }
 
         console.log(`[2FA] ACCEPTED: Code ${cleanCode} is valid for user ${username}`)
+        await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful 2FA verification')
 
         const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
             expiresIn: '7d',

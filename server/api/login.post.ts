@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { logActivity } from '../utils/activityLogger'
 
 interface User {
     name: string
@@ -28,6 +29,7 @@ export default defineEventHandler(async (event) => {
 
         const user = users.find((u) => u.name === username)
         if (!user) {
+            console.warn(`[SECURITY] Login attempt for non-existent user: ${username}`)
             throw createError({
                 statusCode: 401,
                 statusMessage: 'Invalid username or password',
@@ -36,6 +38,7 @@ export default defineEventHandler(async (event) => {
 
         const isValid = await bcrypt.compare(password, user.password)
         if (!isValid) {
+            await logActivity(username, 'LOGIN_FAIL', 'Login', 'Invalid password attempt')
             throw createError({
                 statusCode: 401,
                 statusMessage: 'Invalid username or password',
@@ -43,6 +46,7 @@ export default defineEventHandler(async (event) => {
         }
 
         if (user.twoFactorEnabled) {
+            await logActivity(username, 'LOGIN_STEP1', 'Login', 'Password verified, 2FA required')
             // Return temporary token for 2FA verification
             const tempToken = jwt.sign({ 
                 user: { name: username },
@@ -52,6 +56,8 @@ export default defineEventHandler(async (event) => {
             })
             return { requires2fa: true, tempToken }
         }
+
+        await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful login')
 
         const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
             expiresIn: '7d',
