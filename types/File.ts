@@ -14,6 +14,7 @@ export interface FileMeta {
     tags: Tag[];
     description?: string;
     isPublic?: boolean;
+    isFavourite?: boolean;
 }
 
 export interface Tag {

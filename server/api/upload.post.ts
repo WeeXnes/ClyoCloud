@@ -63,6 +63,9 @@ export default defineEventHandler(async (event) => {
                 writeStream.on('error', reject)
                 readStream.on('error', reject)
             })
+
+            const relativePath = path.relative(userStoragePath, resolvedPath)
+            await logActivity(event.context.user.name, 'UPLOAD', relativePath)
         }
 
         return { message: 'Files uploaded successfully' }

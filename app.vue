@@ -45,6 +45,12 @@
                   </NuxtLink>
                 </li>
                 <li>
+                  <NuxtLink to="/favorites" class="nav-link" active-class="active">
+                    <Icon name="mdi:star" class="w-5 h-5" />
+                    <span>Favorites</span>
+                  </NuxtLink>
+                </li>
+                <li>
                   <NuxtLink to="/media" class="nav-link" active-class="active">
                     <Icon name="mdi:play-box-multiple-outline" class="w-5 h-5" />
                     <span>Media Tab</span>

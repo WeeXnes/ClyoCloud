@@ -363,6 +363,9 @@ const handleContextAction = (action: string) => {
     case 'download':
       downloadFile(file)
       break
+    case 'favourite':
+      toggleFavourite(file)
+      break
     case 'delete':
       deleteFile(file)
       break
@@ -678,6 +681,32 @@ const copyPublicLinkForFile = async (file: File) => {
     createNotification('Failed to copy link', NotificationType.ERROR)
   }
 }
+
+const toggleFavourite = async (file: File) => {
+  const isFavourite = !file.meta.isFavourite
+  
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const filePath = folderPath ? `${folderPath}/${file.name}` : file.name
+
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullPath: filePath, isFavourite }),
+    })
+    
+    if (!response.ok) throw new Error('Failed to update favorite status')
+    
+    file.meta.isFavourite = isFavourite
+    createNotification(`File ${isFavourite ? 'added to' : 'removed from'} favorites`, NotificationType.INFO)
+    
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update favorite status', NotificationType.ERROR)
+  }
+}
 </script>
 
 <template>
@@ -845,11 +874,19 @@ const copyPublicLinkForFile = async (file: File) => {
               </div>
 
               <!-- Shared Indicator (Top Right) -->
-              <div v-if="file.meta.isPublic" 
-                   class="absolute top-2 right-2 z-20 bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
-                   title="Copy Shared Link"
-                   @click.stop="copyPublicLinkForFile(file)">
-                <Icon name="mdi:share-variant" class="w-4 h-4" />
+              <div class="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
+                <div v-if="file.meta.isPublic" 
+                     class="bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
+                     title="Copy Shared Link"
+                     @click.stop="copyPublicLinkForFile(file)">
+                  <Icon name="mdi:share-variant" class="w-4 h-4" />
+                </div>
+                <div class="bg-base-100/80 text-orange-500 w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
+                     :class="{ 'opacity-0 group-hover/item:opacity-100': !file.meta.isFavourite }"
+                     title="Toggle Favorite"
+                     @click.stop="toggleFavourite(file)">
+                  <Icon :name="file.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
+                </div>
               </div>
 
               <!-- File Content -->
@@ -926,11 +963,19 @@ const copyPublicLinkForFile = async (file: File) => {
               
               <!-- Metadata Group -->
               <div class="flex items-center gap-6 text-[11px] font-bold text-base-content/40 uppercase tracking-widest shrink-0">
-                <div v-if="file.meta.isPublic" 
-                     class="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 text-success hover:bg-success hover:text-white transition-all"
-                     title="Copy Shared Link"
-                     @click.stop="copyPublicLinkForFile(file)">
-                  <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
+                <div class="flex items-center gap-2">
+                  <div v-if="file.meta.isPublic" 
+                       class="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 text-success hover:bg-success hover:text-white transition-all"
+                       title="Copy Shared Link"
+                       @click.stop="copyPublicLinkForFile(file)">
+                    <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
+                  </div>
+                  <div class="flex items-center justify-center w-6 h-6 rounded-full hover:bg-orange-500 hover:text-white transition-all"
+                       :class="file.meta.isFavourite ? 'bg-orange-500/10 text-orange-500' : 'opacity-0 group-hover/row:opacity-100 bg-base-content/5'"
+                       title="Toggle Favorite"
+                       @click.stop="toggleFavourite(file)">
+                    <Icon :name="file.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-3.5 h-3.5" />
+                  </div>
                 </div>
                 
                 <span v-if="!file.isFolder" class="hidden sm:inline w-20 text-right">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
@@ -973,6 +1018,10 @@ const copyPublicLinkForFile = async (file: File) => {
           <li><a class="py-3 px-4" @click="handleContextAction('rename')"><Icon name="mdi:pencil" class="w-4 h-4 text-blue-500" /> Rename</a></li>
           <li><a class="py-3 px-4" @click="handleContextAction('description')"><Icon name="mdi:text-box-edit-outline" class="w-4 h-4 text-orange-500" /> Edit Description</a></li>
           <li><a class="py-3 px-4" @click="handleContextAction('info')"><Icon name="mdi:information" class="w-4 h-4 text-primary" /> Details</a></li>
+          <li><a class="py-3 px-4" @click="handleContextAction('favourite')">
+            <Icon :name="contextMenuFile?.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4 text-orange-500" />
+            {{ contextMenuFile?.meta.isFavourite ? 'Unstar' : 'Star' }}
+          </a></li>
           <li><a class="py-3 px-4" @click="handleContextAction('download')"><Icon name="mdi:download" class="w-4 h-4 text-success" /> Download</a></li>
           <div class="h-px bg-base-content/5 mx-2 my-1"></div>
           <li><a class="py-3 px-4 text-error" @click="handleContextAction('delete')"><Icon name="mdi:delete" class="w-4 h-4" /> Delete</a></li>
@@ -1062,6 +1111,20 @@ const copyPublicLinkForFile = async (file: File) => {
           <div class="h-px bg-base-content/5"></div>
 
           <div class="flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-sm font-black tracking-tight">Favorite</span>
+                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Pin to favorites for quick access</p>
+              </div>
+              <button 
+                class="btn btn-sm btn-ghost btn-circle"
+                :class="selectedFile.meta.isFavourite ? 'text-orange-500' : 'text-base-content/20'"
+                @click="toggleFavourite(selectedFile)"
+              >
+                <Icon :name="selectedFile.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-6 h-6" />
+              </button>
+            </div>
+
             <div class="flex items-center justify-between">
               <div>
                 <span class="text-sm font-black tracking-tight">Public Access</span>

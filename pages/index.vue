@@ -18,20 +18,66 @@ interface Stats {
   username: string
 }
 
+interface ActivityEntry {
+  action: string
+  path: string
+  timestamp: number
+  details?: string
+}
+
 const stats = ref<Stats | null>(null)
+const activities = ref<ActivityEntry[]>([])
 const isLoading = ref(true)
 let refreshInterval: any = null
 
 const fetchStats = async (silent = false) => {
   if (!silent) isLoading.value = true
   try {
-    const data = await $fetch<Stats>('/api/stats')
-    stats.value = data
+    const [statsData, activityData] = await Promise.all([
+      $fetch<Stats>('/api/stats'),
+      $fetch<ActivityEntry[]>('/api/activity')
+    ])
+    stats.value = statsData
+    activities.value = activityData
   } catch (err) {
-    console.error('Failed to fetch stats:', err)
+    console.error('Failed to fetch dashboard data:', err)
   } finally {
     if (!silent) isLoading.value = false
   }
+}
+
+const getActionIcon = (action: string) => {
+  switch (action) {
+    case 'UPLOAD': return 'mdi:cloud-upload'
+    case 'DELETE': return 'mdi:delete'
+    case 'RENAME': return 'mdi:pencil'
+    case 'MKDIR': return 'mdi:folder-plus'
+    case 'TAG': return 'mdi:tag'
+    case 'SHARE': return 'mdi:share-variant'
+    case 'FAVORITE': return 'mdi:star'
+    default: return 'mdi:history'
+  }
+}
+
+const getActionColor = (action: string) => {
+  switch (action) {
+    case 'UPLOAD': return 'text-blue-500 bg-blue-500/10'
+    case 'DELETE': return 'text-red-500 bg-red-500/10'
+    case 'RENAME': return 'text-orange-500 bg-orange-500/10'
+    case 'MKDIR': return 'text-purple-500 bg-purple-500/10'
+    case 'TAG': return 'text-primary bg-primary/10'
+    case 'SHARE': return 'text-success bg-success/10'
+    case 'FAVORITE': return 'text-orange-400 bg-orange-400/10'
+    default: return 'text-base-content/40 bg-base-content/5'
+  }
+}
+
+const formatTime = (timestamp: number) => {
+  const diff = Date.now() - timestamp
+  if (diff < 60000) return 'Just now'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
+  return new Date(timestamp).toLocaleDateString()
 }
 
 const formatSize = (bytes: number) => {
@@ -234,6 +280,14 @@ onUnmounted(() => {
                   <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Direct Playback</p>
                </NuxtLink>
 
+               <NuxtLink to="/favorites" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Icon name="mdi:star-outline" class="text-orange-500 w-5 h-5" />
+                  </div>
+                  <h4 class="font-black text-sm uppercase tracking-tight">Favorites</h4>
+                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Quick Access</p>
+               </NuxtLink>
+
                <NuxtLink to="/downloader" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                   <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <Icon name="mdi:cloud-download-outline" class="text-orange-500 w-5 h-5" />
@@ -287,6 +341,46 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
+
+      <!-- Recent Activity Section -->
+      <section class="space-y-6">
+        <div class="flex items-center justify-between px-2">
+          <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-lg bg-base-content/5 flex items-center justify-center">
+               <Icon name="mdi:history" class="text-base-content/40 w-5 h-5" />
+             </div>
+             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Recent Activity</h2>
+          </div>
+          <NuxtLink to="/files" class="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">View All Files</NuxtLink>
+        </div>
+
+        <div class="bg-base-100 rounded-[2.5rem] border border-base-content/5 shadow-xl shadow-base-content/5 overflow-hidden">
+          <div v-if="isLoading" class="p-8 space-y-4">
+             <div v-for="i in 3" :key="i" class="h-12 w-full bg-base-200 animate-pulse rounded-2xl"></div>
+          </div>
+          <div v-else-if="activities.length" class="divide-y divide-base-content/5">
+             <div v-for="(activity, index) in activities" :key="index" class="p-4 sm:p-6 flex items-center gap-4 hover:bg-base-200/30 transition-colors group">
+                <div :class="`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${getActionColor(activity.action)}`">
+                   <Icon :name="getActionIcon(activity.action)" class="w-5 h-5" />
+                </div>
+                <div class="flex-grow min-w-0">
+                   <div class="flex items-center justify-between gap-2">
+                      <h4 class="text-sm font-black truncate">{{ activity.path }}</h4>
+                      <span class="text-[10px] font-bold text-base-content/30 whitespace-nowrap">{{ formatTime(activity.timestamp) }}</span>
+                   </div>
+                   <p class="text-[11px] font-medium text-base-content/40 truncate">
+                      {{ activity.action }} {{ activity.details ? '• ' + activity.details : '' }}
+                   </p>
+                </div>
+                <Icon name="mdi:chevron-right" class="w-4 h-4 text-base-content/10 group-hover:text-primary transition-colors" />
+             </div>
+          </div>
+          <div v-else class="p-12 text-center">
+             <Icon name="mdi:tray-blank-outline" class="w-12 h-12 text-base-content/10 mx-auto mb-4" />
+             <p class="text-xs font-bold text-base-content/30 uppercase tracking-widest">No recent activity detected</p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="w-full py-8 px-8 flex flex-col items-center gap-4 mt-auto">

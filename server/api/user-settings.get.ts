@@ -26,7 +26,8 @@ export default defineEventHandler(async (event) => {
         }
 
         return {
-            downloadPath: userData.downloadPath || ''
+            downloadPath: userData.downloadPath || '',
+            twoFactorEnabled: userData.twoFactorEnabled || false
         }
     } catch (error) {
         console.error('Get settings error:', error)

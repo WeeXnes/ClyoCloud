@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
         const config = useRuntimeConfig()
         const userStoragePath = path.resolve(path.join(config.storagePath, event.context.user.name))
         const body = await readBody(event)
-        const { fullPath, description, tags, isPublic } = body
+        const { fullPath, description, tags, isPublic, isFavourite } = body
 
         if (!fullPath) {
             throw createError({
@@ -44,8 +44,18 @@ export default defineEventHandler(async (event) => {
         }
 
         if (description !== undefined) meta.description = description
-        if (tags !== undefined) meta.tags = tags
-        if (isPublic !== undefined) meta.isPublic = isPublic
+        if (tags !== undefined) {
+            meta.tags = tags
+            await logActivity(event.context.user.name, 'TAG', fullPath, `Updated tags`)
+        }
+        if (isPublic !== undefined) {
+            meta.isPublic = isPublic
+            await logActivity(event.context.user.name, 'SHARE', fullPath, isPublic ? 'Enabled public access' : 'Disabled public access')
+        }
+        if (isFavourite !== undefined) {
+            meta.isFavourite = isFavourite
+            await logActivity(event.context.user.name, 'FAVORITE', fullPath, isFavourite ? 'Added to favorites' : 'Removed from favorites')
+        }
 
         await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')
 

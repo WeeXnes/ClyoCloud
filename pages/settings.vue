@@ -17,7 +17,67 @@ const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 const isSavingTags = ref(false)
 
+const is2faEnabled = ref(false)
+const show2faSetup = ref(false)
+const qrCodeUrl = ref('')
+const totpSecret = ref('')
+const totpCode = ref('')
+const isVerifying2fa = ref(false)
+
 const user = useState<{ name: string } | null>('user')
+
+async function fetch2faStatus() {
+  try {
+    const response = await fetch('/api/user-settings', { credentials: 'include' })
+    if (response.ok) {
+      const data = await response.json()
+      is2faEnabled.value = data.twoFactorEnabled || false
+    }
+  } catch (err) {
+    console.error('Error fetching 2FA status:', err)
+  }
+}
+
+async function setup2fa() {
+  try {
+    const data: any = await $fetch('/api/2fa/setup')
+    qrCodeUrl.value = data.qrCodeUrl
+    totpSecret.value = data.secret
+    show2faSetup.value = true
+  } catch (err) {
+    createNotification('Failed to start 2FA setup', NotificationType.ERROR)
+  }
+}
+
+async function enable2fa() {
+  if (!totpCode.value) return
+  isVerifying2fa.value = true
+  try {
+    await $fetch('/api/2fa/enable', {
+      method: 'POST',
+      body: { secret: totpSecret.value, code: totpCode.value }
+    })
+    is2faEnabled.value = true
+    show2faSetup.value = false
+    totpCode.value = ''
+    createNotification('2FA enabled successfully', NotificationType.SUCCESS)
+  } catch (err) {
+    createNotification('Invalid 2FA code', NotificationType.ERROR)
+  } finally {
+    isVerifying2fa.value = false
+  }
+}
+
+async function disable2fa() {
+  if (!confirm('Are you sure you want to disable 2FA? This will make your account less secure.')) return
+  try {
+    await $fetch('/api/2fa/disable', { method: 'POST' })
+    is2faEnabled.value = false
+    createNotification('2FA disabled', NotificationType.INFO)
+  } catch (err) {
+    createNotification('Failed to disable 2FA', NotificationType.ERROR)
+  }
+}
 
 async function fetchTags() {
   try {
@@ -45,6 +105,7 @@ async function fetchUserSettings() {
 onMounted(() => {
   fetchTags()
   fetchUserSettings()
+  fetch2faStatus()
 })
 
 async function saveUserSettings() {
@@ -217,6 +278,80 @@ async function logout() {
                  </div>
                </div>
              </div>
+          </section>
+
+          <!-- 2FA Section -->
+          <section class="bg-base-100 rounded-[2rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+            <div class="p-8 sm:p-10">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-black tracking-tight">Two-Factor Auth</h3>
+                <div :class="`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${is2faEnabled ? 'bg-success/10 text-success' : 'bg-base-200 text-base-content/40'}`">
+                  {{ is2faEnabled ? 'Enabled' : 'Disabled' }}
+                </div>
+              </div>
+
+              <div v-if="!is2faEnabled">
+                <p class="text-xs font-medium text-base-content/50 mb-6 leading-relaxed">
+                  Enhance your account security by requiring a code from your authenticator app when signing in.
+                </p>
+                <button 
+                  v-if="!show2faSetup"
+                  class="btn btn-outline btn-primary btn-block h-12 rounded-xl gap-2 border-2"
+                  @click="setup2fa"
+                >
+                  <Icon name="mdi:shield-plus-outline" class="w-5 h-5" />
+                  Configure 2FA
+                </button>
+
+                <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                  <div class="flex flex-col items-center gap-4 p-4 bg-base-200/50 rounded-2xl">
+                    <img :src="qrCodeUrl" class="w-48 h-48 rounded-lg shadow-sm" alt="2FA QR Code" />
+                    <div class="text-center">
+                      <p class="text-[10px] font-black uppercase tracking-widest text-base-content/30 mb-1">Manual Entry Code</p>
+                      <code class="text-xs font-mono font-bold tracking-wider">{{ totpSecret }}</code>
+                    </div>
+                  </div>
+
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Verification Code</span>
+                    </label>
+                    <input 
+                      v-model="totpCode"
+                      type="text"
+                      placeholder="000 000"
+                      class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.3em] h-12 rounded-xl border-base-content/10"
+                      maxlength="6"
+                    />
+                  </div>
+
+                  <div class="flex gap-3">
+                    <button class="btn btn-ghost flex-1 h-12 rounded-xl" @click="show2faSetup = false">Cancel</button>
+                    <button 
+                      class="btn btn-primary flex-1 h-12 rounded-xl shadow-lg shadow-primary/20"
+                      @click="enable2fa"
+                      :disabled="isVerifying2fa || totpCode.length < 6"
+                    >
+                      <span v-if="isVerifying2fa" class="loading loading-spinner loading-xs"></span>
+                      Confirm
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else>
+                <p class="text-xs font-medium text-base-content/50 mb-6 leading-relaxed">
+                  Your account is protected with two-factor authentication. You will need your authenticator app to log in.
+                </p>
+                <button 
+                  class="btn btn-error btn-outline btn-block h-12 rounded-xl gap-2 border-2"
+                  @click="disable2fa"
+                >
+                  <Icon name="mdi:shield-off-outline" class="w-5 h-5" />
+                  Disable 2FA
+                </button>
+              </div>
+            </div>
           </section>
 
           <!-- Quick Actions / Danger Zone -->

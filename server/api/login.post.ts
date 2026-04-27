@@ -42,6 +42,17 @@ export default defineEventHandler(async (event) => {
             })
         }
 
+        if (user.twoFactorEnabled) {
+            // Return temporary token for 2FA verification
+            const tempToken = jwt.sign({ 
+                user: { name: username },
+                isPartial: true 
+            }, config.jwtSecret, {
+                expiresIn: '5m',
+            })
+            return { requires2fa: true, tempToken }
+        }
+
         const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
             expiresIn: '7d',
         })

@@ -18,11 +18,13 @@
           <div class="p-8 sm:p-12">
             <!-- Title -->
             <div class="mb-10 text-center sm:text-left">
-              <h2 class="text-3xl font-black tracking-tight mb-2">Welcome Back</h2>
-              <p class="text-sm font-bold text-base-content/40 uppercase tracking-widest">Sign in to your secure cloud</p>
+              <h2 class="text-3xl font-black tracking-tight mb-2">{{ requires2fa ? 'Security Check' : 'Welcome Back' }}</h2>
+              <p class="text-sm font-bold text-base-content/40 uppercase tracking-widest">
+                {{ requires2fa ? 'Enter your verification code' : 'Sign in to your secure cloud' }}
+              </p>
             </div>
 
-            <form @submit.prevent="login" class="space-y-6">
+            <form v-if="!requires2fa" @submit.prevent="login" class="space-y-6">
               <!-- Username -->
               <div class="form-control">
                 <label class="label mb-1.5">
@@ -85,6 +87,60 @@
               </div>
             </form>
 
+            <form v-else @submit.prevent="verify2fa" class="space-y-6">
+              <!-- TOTP Code -->
+              <div class="form-control">
+                <label class="label mb-1.5">
+                  <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/50">6-Digit Code</span>
+                </label>
+                <div class="relative group">
+                  <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-base-content/30 group-focus-within:text-primary transition-colors">
+                    <Icon name="mdi:numeric" class="w-5 h-5" />
+                  </div>
+                  <input
+                    v-model="totpCode"
+                    type="text"
+                    placeholder="000 000"
+                    class="input input-bordered w-full pl-12 h-14 bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-xl tracking-[0.5em] rounded-2xl border-base-content/10"
+                    required
+                    maxlength="6"
+                    autofocus
+                  />
+                </div>
+              </div>
+
+              <!-- Error Message -->
+              <transition name="fade">
+                <div v-if="error" class="alert alert-error py-3 rounded-xl text-xs font-bold shadow-lg shadow-error/10">
+                  <Icon name="mdi:alert-circle" class="w-4 h-4" />
+                  <span>{{ error }}</span>
+                </div>
+              </transition>
+
+              <!-- Submit Button -->
+              <div class="pt-4 flex flex-col gap-3">
+                <button 
+                  type="submit" 
+                  class="btn btn-primary btn-block h-14 rounded-2xl shadow-xl shadow-primary/25 gap-3" 
+                  :disabled="isLoading"
+                >
+                  <span v-if="isLoading" class="loading loading-spinner loading-sm"></span>
+                  <span v-else class="flex items-center gap-2">
+                    <span class="font-black tracking-tight">Verify Code</span>
+                    <Icon name="mdi:shield-check" class="w-5 h-5" />
+                  </span>
+                </button>
+                <button 
+                  type="button"
+                  @click="requires2fa = false"
+                  class="btn btn-ghost btn-block h-14 rounded-2xl gap-3" 
+                  :disabled="isLoading"
+                >
+                  <span class="font-black tracking-tight">Back to Login</span>
+                </button>
+              </div>
+            </form>
+
             <!-- Sign Up/Forgot Fallback -->
             <div class="mt-10 pt-8 border-t border-base-content/5 flex flex-col gap-4 text-center">
               <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-[0.2em]">End-to-End Secure Storage</p>
@@ -111,8 +167,11 @@ import { NotificationType } from "~/types/Notification";
 
 const username = ref('')
 const password = ref('')
+const totpCode = ref('')
 const error = ref('')
 const isLoading = ref(false)
+const requires2fa = ref(false)
+const tempToken = ref('')
 const router = useRouter()
 
 const login = async () => {
@@ -127,13 +186,44 @@ const login = async () => {
       }
     });
 
+    if (response.requires2fa) {
+      requires2fa.value = true
+      tempToken.value = response.tempToken
+      createNotification("Two-Factor Authentication required", NotificationType.INFO)
+    } else {
+      const token = response.token;
+      const cookie = useCookie('token');
+      cookie.value = token;
+      createNotification("Logged in successfully", NotificationType.SUCCESS)
+      router.push('/files');
+    }
+  } catch (err: any) {
+    error.value = err.data?.message || 'Invalid credentials'
+    createNotification(error.value, NotificationType.ERROR)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const verify2fa = async () => {
+  isLoading.value = true
+  error.value = ''
+  try {
+    const response: any = await $fetch('/api/2fa/verify-login', {
+      method: 'POST',
+      body: {
+        tempToken: tempToken.value,
+        code: totpCode.value,
+      }
+    });
+
     const token = response.token;
     const cookie = useCookie('token');
     cookie.value = token;
     createNotification("Logged in successfully", NotificationType.SUCCESS)
     router.push('/files');
   } catch (err: any) {
-    error.value = err.data?.message || 'Invalid credentials'
+    error.value = err.data?.message || 'Invalid code'
     createNotification(error.value, NotificationType.ERROR)
   } finally {
     isLoading.value = false
