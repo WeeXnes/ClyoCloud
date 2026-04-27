@@ -16,9 +16,33 @@ jobs:
     interpreter:
       type: DefaultInterpreter
       commands: |
+        echo "Installing dependencies..."
         npm install
-        npx nuxt build
-        npx vitest run tests/security.spec.ts
+
+        # 2. Build the project
+        echo "Building project..."
+        npm run build
+
+        # 3. Start the application with PM2
+        echo "Starting application with PM2..."
+        pm2 start ecosystem.config.js
+
+        # Wait for the application to be ready (adjust sleep if necessary)
+        echo "Waiting for server to initialize..."
+        sleep 10
+
+        # 4. Run the security tests
+        echo "Running security tests..."
+        # Note: Ensure the test suite uses the correct port (6969)
+        # If your tests are hardcoded to 3000, they might need adjustment or environment variables
+        npm run test:security
+
+        # 5. Stop and clean up PM2
+        echo "Stopping and cleaning up PM2..."
+        pm2 stop all
+        pm2 delete all
+
+        echo "Workflow finished successfully."
     useTTY: true
     condition: SUCCESSFUL
     optional: false
