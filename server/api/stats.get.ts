@@ -53,13 +53,31 @@ export default defineEventHandler(async (event) => {
             si.fsSize()
         ])
 
+        // Filter out virtual and system file systems
+        const relevantDrives = fsStats.filter(f => 
+            f.size > 0 && 
+            !f.mount.startsWith('/sys') && 
+            !f.mount.startsWith('/proc') && 
+            !f.mount.startsWith('/dev') && 
+            !f.mount.startsWith('/run') &&
+            !['tmpfs', 'devtmpfs', 'overlay', 'squashfs', 'efivarfs'].includes(f.type)
+        )
+
         // Find the correct partition for storagePath
-        const storageDisk = fsStats.find(f => config.storagePath.startsWith(f.mount)) || fsStats[0]
+        const storageDisk = relevantDrives.find(f => config.storagePath.startsWith(f.mount)) || relevantDrives[0] || fsStats[0]
 
         return {
             used: dynamicStats,
             total: storageDisk?.size,
             free: storageDisk?.available,
+            drives: relevantDrives.map(f => ({
+                mount: f.mount,
+                label: f.fs,
+                total: f.size,
+                used: f.used,
+                available: f.available,
+                use: f.use
+            })),
             ram: {
                 total: memory.total,
                 used: memory.active, // Active memory is a better representation of "used"
