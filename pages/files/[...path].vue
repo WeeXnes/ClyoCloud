@@ -32,6 +32,11 @@ const sortOption = useCookie<'name' | 'size' | 'date'>('file-sort-option', {
   maxAge: 60 * 60 * 24 * 365 // 1 year
 })
 
+const showFavouritesOnly = useCookie<boolean>('file-show-favourites-only', {
+  default: () => false,
+  maxAge: 60 * 60 * 24 * 365 // 1 year
+})
+
 const startEditDescription = () => {
   editableDescription.value = (selectedFile.value?.meta.description || '') as string
   isEditingDescription.value = true
@@ -100,7 +105,11 @@ const promptCreateFolder = async () => {
 
 const sortedFiles = computed(() => {
   let filtered = [...files.value]
-  
+
+  if (showFavouritesOnly.value) {
+    filtered = filtered.filter(file => file.meta.isFavourite)
+  }
+
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase().trim()
     filtered = filtered.filter(file => {
@@ -117,7 +126,6 @@ const sortedFiles = computed(() => {
     return a.name.localeCompare(b.name)
   })
 })
-
 const toggleSelection = (fileName: string) => {
   if (selectedFiles.value.has(fileName)) {
     selectedFiles.value.delete(fileName)
@@ -759,6 +767,16 @@ const toggleFavourite = async (file: File) => {
              </div>
 
              <div class="flex items-center gap-2 ml-auto md:ml-0">
+               <button 
+                class="btn btn-sm btn-ghost border border-base-content/10 bg-base-100/50 transition-all duration-300" 
+                :class="{ 'text-orange-500 bg-orange-500/10 border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]': showFavouritesOnly }"
+                @click="showFavouritesOnly = !showFavouritesOnly"
+                title="Show Favourites Only"
+               >
+                 <Icon :name="showFavouritesOnly ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
+                 <span class="hidden xl:inline ml-1 font-bold text-xs uppercase tracking-widest">Favorites</span>
+               </button>
+
                <div class="dropdown dropdown-end">
                  <button tabindex="0" class="btn btn-sm btn-ghost gap-2 border border-base-content/10 bg-base-100/50">
                     <Icon name="mdi:sort-variant" class="w-4 h-4" />
@@ -991,13 +1009,32 @@ const toggleFavourite = async (file: File) => {
       <!-- Empty State -->
       <div v-else class="flex flex-col items-center justify-center py-32 text-center">
         <div class="bg-base-200/50 p-8 rounded-full mb-6">
-          <Icon name="mdi:folder-open-outline" class="w-20 h-20 text-base-content/10" />
+          <Icon 
+            :name="showFavouritesOnly ? 'mdi:star-outline' : 'mdi:folder-open-outline'" 
+            class="w-20 h-20 text-base-content/10" 
+          />
         </div>
-        <h3 class="text-2xl font-black tracking-tight">Empty folder</h3>
-        <p class="text-base-content/50 max-w-xs mt-2 font-medium">This space is waiting for your content. Drop files here or use the upload button.</p>
-        <label class="btn btn-primary mt-8 px-8 rounded-full shadow-lg shadow-primary/20" for="upload-modal">
-          Upload Files
-        </label>
+        <template v-if="showFavouritesOnly">
+          <h3 class="text-2xl font-black tracking-tight">No favorites here</h3>
+          <p class="text-base-content/50 max-w-xs mt-2 font-medium">You haven't starred any items in this directory yet.</p>
+          <button @click="showFavouritesOnly = false" class="btn btn-primary mt-8 px-8 rounded-full shadow-lg shadow-primary/20">
+            Show all files
+          </button>
+        </template>
+        <template v-else-if="searchQuery">
+          <h3 class="text-2xl font-black tracking-tight">No results found</h3>
+          <p class="text-base-content/50 max-w-xs mt-2 font-medium">We couldn't find anything matching "{{ searchQuery }}" in this folder.</p>
+          <button @click="searchQuery = ''" class="btn btn-primary mt-8 px-8 rounded-full shadow-lg shadow-primary/20">
+            Clear search
+          </button>
+        </template>
+        <template v-else>
+          <h3 class="text-2xl font-black tracking-tight">Empty folder</h3>
+          <p class="text-base-content/50 max-w-xs mt-2 font-medium">This space is waiting for your content. Drop files here or use the upload button.</p>
+          <label class="btn btn-primary mt-8 px-8 rounded-full shadow-lg shadow-primary/20" for="upload-modal">
+            Upload Files
+          </label>
+        </template>
       </div>
     </main>
 
