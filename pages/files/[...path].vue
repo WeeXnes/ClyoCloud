@@ -184,7 +184,10 @@ const bulkDownload = () => {
   window.location.href = `/api/bulk-download?files=${encodeURIComponent(filesQuery)}&path=${encodeURIComponent(folderPath)}`
 }
 
-const isGridViewCookie = useCookie<boolean>('isGridView', { default: () => false })
+const isGridViewCookie = useCookie<boolean>('isGridView', { 
+  default: () => false,
+  maxAge: 60 * 60 * 24 * 365 // 1 year
+})
 const isGridView = ref(isGridViewCookie.value)
 watch(isGridView, (newVal) => {
   isGridViewCookie.value = newVal
