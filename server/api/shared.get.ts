@@ -3,8 +3,8 @@ import fs from 'fs/promises'
 import path from 'path'
 import type { File, FileMeta } from '~/types/File'
 
-async function findFavorites(dirPath: string, userStoragePath: string): Promise<File[]> {
-    let favorites: File[] = []
+async function findSharedFiles(dirPath: string, userStoragePath: string): Promise<File[]> {
+    let shared: File[] = []
     const items = await fs.readdir(dirPath, { withFileTypes: true })
 
     for (const item of items) {
@@ -22,10 +22,10 @@ async function findFavorites(dirPath: string, userStoragePath: string): Promise<
             // No meta found
         }
 
-        if (meta && meta.isFavourite) {
+        if (meta && meta.isPublic) {
             const stats = await fs.stat(fullPath)
-            favorites.push({
-                name: relativePath, // Use relative path for favorites view
+            shared.push({
+                name: relativePath,
                 size: stats.size,
                 type: path.extname(item.name),
                 lastModified: stats.mtime.getTime(),
@@ -35,12 +35,12 @@ async function findFavorites(dirPath: string, userStoragePath: string): Promise<
         }
 
         if (item.isDirectory()) {
-            const subFavorites = await findFavorites(fullPath, userStoragePath)
-            favorites = favorites.concat(subFavorites)
+            const subShared = await findSharedFiles(fullPath, userStoragePath)
+            shared = subShared.concat(shared)
         }
     }
 
-    return favorites
+    return shared
 }
 
 export default defineEventHandler(async (event) => {
@@ -55,14 +55,14 @@ export default defineEventHandler(async (event) => {
         const config = useRuntimeConfig()
         const userStoragePath = path.join(config.storagePath, event.context.user.name)
 
-        const favorites = await findFavorites(userStoragePath, userStoragePath)
+        const shared = await findSharedFiles(userStoragePath, userStoragePath)
 
-        return favorites
+        return shared
     } catch (error) {
-        console.error('Error fetching favorites:', error)
+        console.error('Error fetching shared files:', error)
         throw createError({
             statusCode: 500,
-            statusMessage: 'Could not fetch favorites',
+            statusMessage: 'Could not fetch shared files',
         })
     }
 })

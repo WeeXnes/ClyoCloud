@@ -45,9 +45,9 @@
                   </NuxtLink>
                 </li>
                 <li>
-                  <NuxtLink to="/favorites" class="nav-link" active-class="active">
-                    <Icon name="mdi:star" class="w-5 h-5" />
-                    <span>Favorites</span>
+                  <NuxtLink to="/shared" class="nav-link" active-class="active">
+                    <Icon name="mdi:share-variant" class="w-5 h-5" />
+                    <span>Shared</span>
                   </NuxtLink>
                 </li>
                 <li>
