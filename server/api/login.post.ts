@@ -72,7 +72,7 @@ export default defineEventHandler(async (event) => {
         }
 
         const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
-            expiresIn: '7d',
+            expiresIn: '30d',
         })
 
         await fs.mkdir(path.join(config.storagePath, username), { recursive: true })

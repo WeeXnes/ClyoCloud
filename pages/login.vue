@@ -192,7 +192,7 @@ const login = async () => {
       createNotification("Two-Factor Authentication required", NotificationType.INFO)
     } else {
       const token = response.token;
-      const cookie = useCookie('token');
+      const cookie = useCookie('token', { maxAge: 60 * 60 * 24 * 30 });
       cookie.value = token;
       createNotification("Logged in successfully", NotificationType.SUCCESS)
       router.push('/files');
@@ -218,7 +218,7 @@ const verify2fa = async () => {
     });
 
     const token = response.token;
-    const cookie = useCookie('token');
+    const cookie = useCookie('token', { maxAge: 60 * 60 * 24 * 30 });
     cookie.value = token;
     createNotification("Logged in successfully", NotificationType.SUCCESS)
     router.push('/files');

@@ -72,7 +72,7 @@ export default defineEventHandler(async (event) => {
         await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful 2FA verification')
 
         const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
-            expiresIn: '7d',
+            expiresIn: '30d',
         })
 
         return { token }
