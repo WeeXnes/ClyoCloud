@@ -8,6 +8,7 @@ const videos = ref<Video[]>([])
 const currentVisibleVideo = ref<Video | null>(null)
 const isLoading = ref(true)
 const isMuted = ref(true)
+const isPaused = ref(false)
 
 const showTagModal = ref(false)
 const selectedTags = ref<Tag[]>([])
@@ -58,6 +59,19 @@ const toggleMute = () => {
   videoRefs.value.forEach(video => {
     if (video) video.muted = isMuted.value
   })
+}
+
+const togglePlayPause = () => {
+  const activeVideo = videoRefs.value.find(v => (v as any)._videoData?.fullPath === currentVisibleVideo.value?.fullPath)
+  if (!activeVideo) return
+
+  if (activeVideo.paused) {
+    activeVideo.play()
+    isPaused.value = false
+  } else {
+    activeVideo.pause()
+    isPaused.value = true
+  }
 }
 
 const toggleFavourite = async (video: Video) => {
@@ -188,6 +202,7 @@ onMounted(async () => {
       const video = entry.target as any
       if (entry.isIntersecting) {
         currentVisibleVideo.value = video._videoData
+        isPaused.value = false
         video.currentTime = 0
         video.play().catch((e: any) => console.warn('Autoplay prevented:', e))
       } else {
@@ -268,7 +283,8 @@ const refresh = () => {
       <div 
         v-for="video in videos" 
         :key="video.fullPath" 
-        class="h-[100dvh] w-full snap-center relative flex items-center justify-center bg-black"
+        class="h-[100dvh] w-full snap-center relative flex items-center justify-center bg-black cursor-pointer"
+        @click="togglePlayPause"
       >
         <video
           :ref="el => setVideoRef(el, video)"
@@ -279,6 +295,15 @@ const refresh = () => {
         >
           <source :src="getStreamUrl(video.fullPath)" :type="getSourceType(video.name)" />
         </video>
+
+        <!-- Pause Overlay -->
+        <transition name="fade">
+          <div v-if="isPaused && currentVisibleVideo?.fullPath === video.fullPath" class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+            <div class="bg-black/40 p-6 rounded-full backdrop-blur-sm">
+              <Icon name="mdi:play" class="w-16 h-16 text-white opacity-80" />
+            </div>
+          </div>
+        </transition>
 
         <!-- Video Info Overlay -->
         <div class="absolute bottom-0 left-0 right-0 p-8 pt-24 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none">
