@@ -59,14 +59,14 @@ export default defineEventHandler(async (event) => {
     }
 
     const contentType = mime.lookup(requestedFile)
-    const supportedVideoTypes = ['video/mp4', 'application/mp4', 'video/webm', 'video/quicktime']
+    const supportedVideoTypes = ['video/mp4', 'application/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska']
     const supportedImageTypes = ['image/png', 'image/jpeg', 'image/gif']
     const supportedTypes = [...supportedVideoTypes, ...supportedImageTypes]
     if (!contentType || !supportedTypes.includes(contentType)) {
         console.error(`Unsupported file type: ${contentType}`)
         throw createError({
             statusCode: 400,
-            statusMessage: 'Unsupported file type. Only MP4, PNG, JPEG, and GIF are supported',
+            statusMessage: 'Unsupported file type. Only MP4, WEBM, MOV, MKV, PNG, JPEG, and GIF are supported',
         })
     }
 

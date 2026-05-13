@@ -59,12 +59,13 @@ const getSourceType = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
   if (ext === 'webm') return 'video/webm'
   if (ext === 'mov') return 'video/quicktime'
+  if (ext === 'mkv') return 'video/x-matroska'
   return 'video/mp4'
 }
 
 const hasThumbnail = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['mp4', 'webm', 'mov'].includes(ext)
+  return ['mp4', 'webm', 'mov', 'mkv'].includes(ext)
 }
 
 const getThumbnailUrl = (fullPath: string) => {

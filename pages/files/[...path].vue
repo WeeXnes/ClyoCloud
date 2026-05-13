@@ -675,12 +675,12 @@ const handleDrop = (event: DragEvent) => {
 
 const hasThumbnail = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['jpg', 'jpeg', 'png', 'mp4', 'webm'].includes(ext)
+  return ['jpg', 'jpeg', 'png', 'mp4', 'webm', 'mov', 'mkv'].includes(ext)
 }
 
 const isVideoFile = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase()
-  return ['mp4', 'webm', 'mov'].includes(ext || '')
+  return ['mp4', 'webm', 'mov', 'mkv'].includes(ext || '')
 }
 
 const isImageFile = (filename: string) => {

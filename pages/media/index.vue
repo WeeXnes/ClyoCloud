@@ -53,7 +53,7 @@ function formatDate(timestamp: number): string {
 
 const hasThumbnail = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['mp4'].includes(ext)
+  return ['mp4', 'webm', 'mov', 'mkv'].includes(ext)
 }
 
 const getThumbnailUrl = (fullPath: string) => {
