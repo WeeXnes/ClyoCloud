@@ -1,0 +1,1370 @@
+<script setup lang="ts">
+import { ref, onMounted, computed, watch } from 'vue'
+import { getIconForExtension } from '~/core/fileIcons'
+import type { File, Tag } from '~/types/File'
+import { createNotification } from '~/core/notificationManager'
+import { NotificationType } from '~/types/Notification'
+import { copyToClipboard } from '~/core/clipboard'
+
+const files = ref<File[]>([])
+const selectedFile = ref<File | null>(null)
+const showFileInfoModal = ref(false)
+const showImageViewerModal = ref(false)
+const showTagModal = ref(false)
+const selectedTags = ref<Tag[]>([])
+const predefinedTags = ref<Tag[]>([])
+const showNewTagForm = ref(true)
+const newTagName = ref('')
+const newTagColor = ref('#4B5EAA')
+const selectedImageUrl = ref('')
+const isUploading = ref(false)
+
+const isEditingDescription = ref(false)
+const editableDescription = ref('')
+const searchQuery = ref('')
+
+const formatSize = (bytes: number) => {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let value = bytes
+  let unitIndex = 0
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex++
+  }
+  return `${value.toFixed(1)} ${units[unitIndex]}`
+}
+
+const sortOption = useCookie<'name' | 'size' | 'date'>('favorites-sort-option', {
+  default: () => 'name',
+  maxAge: 60 * 60 * 24 * 365 // 1 year
+})
+
+const startEditDescription = () => {
+  editableDescription.value = (selectedFile.value?.meta.description || '') as string
+  isEditingDescription.value = true
+}
+
+const saveDescription = async () => {
+  if (!selectedFile.value) return
+
+  try {
+    const filePath = selectedFile.value.name
+
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: filePath,
+        description: editableDescription.value,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to update description')
+
+    selectedFile.value.meta.description = editableDescription.value
+    isEditingDescription.value = false
+    createNotification('Description updated', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update description', NotificationType.ERROR)
+  }
+}
+
+const selectedFiles = ref<Set<string>>(new Set())
+const editingName = ref<string | null>(null)
+const newName = ref('')
+
+const showContextMenu = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const contextMenuFile = ref<File | null>(null)
+
+const sortedFiles = computed(() => {
+  let filtered = [...files.value]
+
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filtered = filtered.filter(file => {
+      const nameMatch = file.name.toLowerCase().includes(query)
+      const tagMatch = file.meta.tags.some(tag => tag.name.toLowerCase().includes(query))
+      return nameMatch || tagMatch
+    })
+  }
+
+  return filtered.sort((a, b) => {
+    if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1
+    if (sortOption.value === 'size') return b.size - a.size
+    if (sortOption.value === 'date') return b.lastModified - a.lastModified
+    return a.name.localeCompare(b.name)
+  })
+})
+
+const toggleSelection = (fileName: string) => {
+  if (selectedFiles.value.has(fileName)) {
+    selectedFiles.value.delete(fileName)
+  } else {
+    selectedFiles.value.add(fileName)
+  }
+}
+
+const startRename = (file: File) => {
+  editingName.value = file.name
+  newName.value = file.name.split('/').pop() || file.name
+}
+
+const bulkDelete = async () => {
+  if (selectedFiles.value.size === 0) return
+  const count = selectedFiles.value.size
+  if (!confirm(`Are you sure you want to delete ${count} file(s)?`)) return
+
+  try {
+    for (const filePath of selectedFiles.value) {
+        await fetch('/api/files', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: filePath }),
+        })
+    }
+    createNotification(`${count} file(s) deleted successfully`, NotificationType.SUCCESS)
+  } catch (err) {
+    console.error('Error in bulk delete:', err)
+    createNotification('Failed to delete some files', NotificationType.ERROR)
+  }
+  selectedFiles.value.clear()
+  await fetchFavorites()
+}
+
+const bulkDownload = () => {
+  // Bulk download across different folders might be complex if the API doesn't support it well.
+  // For now, let's just warn or handle it if bulk-download API supports absolute relative paths.
+  createNotification('Bulk download from Favorites is currently limited.', NotificationType.INFO)
+}
+
+const isGridViewCookie = useCookie<boolean>('isGridView', { 
+  default: () => false,
+  maxAge: 60 * 60 * 24 * 365 // 1 year
+})
+const isGridView = ref(isGridViewCookie.value)
+watch(isGridView, (newVal) => {
+  isGridViewCookie.value = newVal
+})
+
+const openBulkTagModal = () => {
+  selectedTags.value = []
+  showNewTagForm.value = true
+  newTagName.value = ''
+  newTagColor.value = '#4B5EAA'
+  showTagModal.value = true
+}
+
+const closeTagModal = () => {
+  showTagModal.value = false
+}
+
+const toggleTagSelection = (tag: Tag) => {
+  const index = selectedTags.value.findIndex(t => t.name === tag.name)
+  if (index > -1) {
+    selectedTags.value.splice(index, 1)
+  } else {
+    selectedTags.value.push(tag)
+  }
+}
+
+const isTagSelected = (tag: Tag) => {
+  return selectedTags.value.some(t => t.name === tag.name)
+}
+
+const removeTag = async (tagToRemove: Tag) => {
+  if (!selectedFile.value) return
+
+  try {
+    const filePath = selectedFile.value.name
+    const updatedTags = selectedFile.value.meta.tags.filter(t => t.name !== tagToRemove.name)
+
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: filePath,
+        tags: updatedTags,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to remove tag')
+
+    selectedFile.value.meta.tags = updatedTags
+    createNotification('Tag removed', NotificationType.SUCCESS)
+    await fetchFavorites()
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to remove tag', NotificationType.ERROR)
+  }
+}
+
+const fetchPredefinedTags = async () => {
+  try {
+    const response = await fetch('/api/tags', { credentials: 'include' })
+    if (!response.ok) throw new Error(`Failed to fetch tags: ${response.statusText}`)
+    predefinedTags.value = await response.json()
+  } catch (err) {
+    console.error('Error fetching tags:', err)
+  }
+}
+
+const taggingProgress = ref<{ current: number, total: number } | null>(null)
+
+const bulkAddTags = async () => {
+  let tagsToAdd: Tag[] = []
+  if (showNewTagForm.value) {
+    if (!newTagName.value.trim()) {
+      createNotification('Tag name is required', NotificationType.WARNING)
+      return
+    }
+    tagsToAdd.push({ name: newTagName.value, color: newTagColor.value })
+  } else {
+    tagsToAdd = selectedTags.value
+  }
+
+  if (tagsToAdd.length === 0) {
+    createNotification('Please select or create at least one tag', NotificationType.WARNING)
+    return
+  }
+
+  try {
+    const targetPaths = selectedFiles.value.size > 0 
+      ? Array.from(selectedFiles.value) 
+      : (selectedFile.value ? [selectedFile.value.name] : [])
+
+    if (targetPaths.length === 0) {
+      createNotification('No file selected', NotificationType.ERROR)
+      return
+    }
+
+    taggingProgress.value = { current: 0, total: targetPaths.length }
+
+    for (const filePath of targetPaths) {
+      const file = files.value.find(f => f.name === filePath)
+      if (!file) {
+        taggingProgress.value.current++
+        continue
+      }
+      
+      const currentTags = file.meta.tags || []
+      const tagsToActuallyAdd = tagsToAdd.filter(newTag => 
+        !currentTags.some(existingTag => existingTag.name.toLowerCase() === newTag.name.toLowerCase())
+      )
+
+      if (tagsToActuallyAdd.length === 0) {
+        taggingProgress.value.current++
+        continue
+      }
+
+      const updatedTags = [...currentTags, ...tagsToActuallyAdd]
+      
+      const response = await fetch('/api/file-meta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullPath: filePath,
+          tags: updatedTags,
+        }),
+      })
+      if (!response.ok) throw new Error(`Failed to add tags for ${filePath}`)
+      
+      if (selectedFile.value && filePath === selectedFile.value.name) {
+        selectedFile.value.meta.tags = updatedTags
+      }
+      taggingProgress.value.current++
+    }
+
+    createNotification('Tags added successfully', NotificationType.SUCCESS)
+    await fetchFavorites()
+    closeTagModal()
+  } catch (err) {
+    console.error('Error adding tags:', err)
+    createNotification('Failed to add tags', NotificationType.ERROR)
+  } finally {
+    taggingProgress.value = null
+  }
+}
+
+const toggleSelectAll = () => {
+  if (selectedFiles.value.size === sortedFiles.value.length) {
+    selectedFiles.value.clear()
+  } else {
+    for (const file of sortedFiles.value) {
+      selectedFiles.value.add(file.name)
+    }
+  }
+}
+
+const saveRename = async (oldPath: string) => {
+  if (!newName.value || newName.value === oldPath.split('/').pop()) {
+    editingName.value = null
+    return
+  }
+
+  try {
+    const response = await fetch('/api/rename', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldPath, newName: newName.value }),
+    })
+
+    if (!response.ok) throw new Error('Failed to rename')
+    
+    createNotification('Renamed successfully', NotificationType.SUCCESS)
+    await fetchFavorites()
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to rename', NotificationType.ERROR)
+  } finally {
+    editingName.value = null
+  }
+}
+
+const showMoveModal = ref(false)
+const movingItems = ref<string[]>([])
+const pickerCurrentPath = ref('')
+const pickerFolders = ref<File[]>([])
+const isMoving = ref(false)
+
+const showPickerCreateFolderInput = ref(false)
+const newPickerFolderName = ref('')
+const lastSelectedIndex = ref(-1)
+
+const scrollIndex = ref(0)
+const itemsPerRow = ref(6)
+
+const handleMainScroll = () => {
+  const scrollTop = window.scrollY
+  const gridElement = document.getElementById('file-grid-container')
+  if (!gridElement) return
+
+  const offsetTop = gridElement.offsetTop
+  const viewportHeight = window.innerHeight
+  const relativeScroll = Math.max(0, scrollTop - offsetTop)
+
+  if (!isGridView.value) {
+    const itemHeight = 76
+    scrollIndex.value = Math.floor(relativeScroll / itemHeight)
+  } else {
+    const containerWidth = gridElement.clientWidth
+    const gaps = itemsPerRow.value - 1
+    const totalGapWidth = gaps * 24
+    const itemWidth = (containerWidth - totalGapWidth) / itemsPerRow.value
+    const itemHeight = itemWidth + 8 + 48 + 24
+    const rowsScrolled = Math.floor(relativeScroll / itemHeight)
+    scrollIndex.value = rowsScrolled * itemsPerRow.value
+  }
+}
+
+const isFileVisible = (index: number) => {
+  const buffer = isGridView.value ? itemsPerRow.value * 20 : 60
+  return index >= scrollIndex.value - (buffer / 2) && index <= scrollIndex.value + buffer
+}
+
+const updateItemsPerRow = () => {
+  const width = window.innerWidth
+  if (width >= 1280) itemsPerRow.value = 6
+  else if (width >= 1024) itemsPerRow.value = 5
+  else if (width >= 768) itemsPerRow.value = 4
+  else if (width >= 640) itemsPerRow.value = 3
+  else itemsPerRow.value = 2
+}
+
+const openMoveModal = async (file?: File) => {
+  if (file) {
+    movingItems.value = [file.name]
+  } else if (selectedFiles.value.size > 0) {
+    movingItems.value = Array.from(selectedFiles.value)
+  } else {
+    return
+  }
+  
+  pickerCurrentPath.value = ''
+  await fetchPickerFolders('')
+  showMoveModal.value = true
+}
+
+const fetchPickerFolders = async (path: string) => {
+  try {
+    const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`, { credentials: 'include' })
+    if (!response.ok) throw new Error('Failed to fetch folders')
+    const allItems: File[] = await response.json()
+    pickerFolders.value = allItems.filter(item => item.isFolder && !movingItems.value.includes(path ? `${path}/${item.name}` : item.name))
+    pickerCurrentPath.value = path
+  } catch (err) {
+    console.error('Error fetching picker folders:', err)
+    createNotification('Failed to load folders', NotificationType.ERROR)
+  }
+}
+
+const navigatePicker = (folderName: string) => {
+  const newPath = pickerCurrentPath.value ? `${pickerCurrentPath.value}/${folderName}` : folderName
+  showPickerCreateFolderInput.value = false
+  newPickerFolderName.value = ''
+  fetchPickerFolders(newPath)
+}
+
+const navigatePickerUp = () => {
+  if (!pickerCurrentPath.value) return
+  const parts = pickerCurrentPath.value.split('/')
+  parts.pop()
+  const newPath = parts.join('/')
+  showPickerCreateFolderInput.value = false
+  newPickerFolderName.value = ''
+  fetchPickerFolders(newPath)
+}
+
+const executePickerCreateFolder = async () => {
+  if (!newPickerFolderName.value.trim()) {
+    createNotification('Folder name is required', NotificationType.WARNING)
+    return
+  }
+
+  try {
+    const response = await fetch('/api/folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newPickerFolderName.value, path: pickerCurrentPath.value }),
+    })
+    if (!response.ok) throw new Error('Failed to create folder')
+    
+    await fetchPickerFolders(pickerCurrentPath.value)
+    showPickerCreateFolderInput.value = false
+    newPickerFolderName.value = ''
+    createNotification('Folder created successfully', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to create folder', NotificationType.ERROR)
+  }
+}
+
+const executeMove = async () => {
+  isMoving.value = true
+  try {
+    const response = await fetch('/api/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paths: movingItems.value,
+        destination: pickerCurrentPath.value
+      })
+    })
+
+    if (!response.ok) throw new Error('Failed to move items')
+    
+    createNotification('Items moved successfully', NotificationType.SUCCESS)
+    showMoveModal.value = false
+    selectedFiles.value.clear()
+    await fetchFavorites()
+  } catch (err) {
+    console.error('Error moving items:', err)
+    createNotification('Failed to move items', NotificationType.ERROR)
+  } finally {
+    isMoving.value = false
+  }
+}
+
+const handleKeydown = (event: KeyboardEvent) => {
+  const target = event.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+    if (event.key === 'Escape') target.blur()
+    return
+  }
+
+  if (event.key === 'Escape') {
+    showFileInfoModal.value = false
+    showImageViewerModal.value = false
+    showTagModal.value = false
+    showMoveModal.value = false
+    showPickerCreateFolderInput.value = false
+    selectedFile.value = null
+    editingName.value = null
+  }
+
+  if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+    event.preventDefault()
+    toggleSelectAll()
+  }
+
+  if (event.key === 'Delete' && selectedFiles.value.size > 0) {
+    bulkDelete()
+  }
+
+  if (event.key === 'Enter') {
+    if (selectedFiles.value.size === 1) {
+      const filePath = Array.from(selectedFiles.value)[0]
+      const file = files.value.find(f => f.name === filePath)
+      if (file) onFileClick(new MouseEvent('click'), file)
+    }
+  }
+}
+
+const handleContextMenu = (event: MouseEvent, file: File) => {
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuFile.value = file
+  showContextMenu.value = true
+}
+
+const handleContextAction = (action: string) => {
+  const file = contextMenuFile.value
+  if (!file) return
+
+  showContextMenu.value = false
+
+  switch (action) {
+    case 'open':
+      onFileClick(new MouseEvent('click'), file)
+      break
+    case 'media':
+      const segments = file.name.split('/')
+      const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
+      navigateTo(`/media/${encodedPath}`)
+      break
+    case 'rename':
+      startRename(file)
+      break
+    case 'move':
+      openMoveModal(file)
+      break
+    case 'description':
+      selectedFile.value = file
+      showFileInfoModal.value = true
+      setTimeout(startEditDescription, 100)
+      break
+    case 'info':
+      selectedFile.value = file
+      showFileInfoModal.value = true
+      break
+    case 'download':
+      downloadFile(file)
+      break
+    case 'favourite':
+      toggleFavourite(file)
+      break
+    case 'delete':
+      deleteFile(file)
+      break
+  }
+}
+
+onMounted(async () => {
+  await fetchFavorites()
+  await fetchPredefinedTags()
+  updateItemsPerRow()
+  window.addEventListener('resize', updateItemsPerRow)
+  window.addEventListener('scroll', handleMainScroll, { passive: true })
+  window.addEventListener('keydown', handleKeydown)
+
+  window.addEventListener('click', () => {
+    showContextMenu.value = false
+  })
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', updateItemsPerRow)
+  window.removeEventListener('scroll', handleMainScroll)
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+const isLoading = ref(true)
+
+const fetchFavorites = async () => {
+  isLoading.value = true
+  try {
+    const response = await fetch('/api/favorites', { credentials: 'include' })
+    if (!response.ok) throw new Error('Failed to fetch favorites')
+    files.value = await response.json()
+  } catch (error) {
+    console.error('Error fetching favorites:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const deleteFile = async (file: File) => {
+  if (!file) return;
+  if (!confirm(`Are you sure you want to delete "${file.name.split('/').pop()}"?`)) return
+
+  try {
+    const response = await fetch('/api/files', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: file.name }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Failed to delete file')
+    }
+
+    await fetchFavorites()
+    if (showFileInfoModal.value) showFileInfoModal.value = false;
+    createNotification('File deleted successfully', NotificationType.SUCCESS)
+  } catch (error: any) {
+    console.error('Error deleting file:', error)
+    createNotification(error.message || 'Failed to delete file', NotificationType.ERROR)
+  }
+}
+
+const hasThumbnail = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return ['jpg', 'jpeg', 'png', 'mp4', 'webm', 'mov', 'mkv'].includes(ext)
+}
+
+const isVideoFile = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  return ['mp4', 'webm', 'mov', 'mkv'].includes(ext || '')
+}
+
+const isImageFile = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)
+}
+
+const getThumbnailUrl = (fullPath: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
+}
+
+const onFileClick = (event: MouseEvent, file: File) => {
+  const currentIndex = sortedFiles.value.findIndex(f => f.name === file.name)
+  
+  if (event.shiftKey && lastSelectedIndex.value !== -1) {
+    const start = Math.min(lastSelectedIndex.value, currentIndex)
+    const end = Math.max(lastSelectedIndex.value, currentIndex)
+    for (let i = start; i <= end; i++) {
+      selectedFiles.value.add(sortedFiles.value[i].name)
+    }
+    lastSelectedIndex.value = currentIndex
+    return
+  }
+
+  lastSelectedIndex.value = currentIndex
+
+  if (selectedFiles.value.size > 0 && !event.ctrlKey && !event.metaKey) {
+    toggleSelection(file.name)
+    return
+  }
+
+  if (event.ctrlKey || event.metaKey) {
+    toggleSelection(file.name)
+    return
+  }
+
+  const target = event.target as HTMLElement
+  const isThumbnail = target.dataset.isThumbnail === 'true'
+
+  if (file.isFolder) {
+    navigateTo(`/files/${encodeURIComponent(file.name)}`)
+  } else if (isImageFile(file.name) && isThumbnail) {
+    selectedImageUrl.value = getStaticUrl(file)
+    showImageViewerModal.value = true
+  } else {
+    selectedFile.value = file
+    isEditingDescription.value = false
+    editableDescription.value = ''
+    showFileInfoModal.value = true
+  }
+}
+
+const getStaticUrl = (file: File) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  const isVideo = isVideoFile(file.name)
+  const endpoint = isVideo ? '/stream' : '/file'
+  return `${baseUrl}${endpoint}/${encodeURIComponent(file.name)}`
+}
+
+const copyFileLinkStatic = async (file: File) => {
+  const success = await copyToClipboard(getStaticUrl(file));
+  if (!success) console.error('Failed to copy link')
+}
+
+const downloadFile = (file: File) => {
+  if (file.isFolder) {
+    window.location.href = `/api/zip?path=${encodeURIComponent(file.name)}`
+  } else {
+    window.location.href = getStaticUrl(file)
+  }
+}
+
+const closeFileModal = () => {
+  const videoEl = document.getElementById('previewVideo') as HTMLVideoElement
+  if (videoEl) {
+    videoEl.pause()
+    videoEl.currentTime = 0
+  }
+  selectedFile.value = null
+  showFileInfoModal.value = false
+  isEditingDescription.value = false
+}
+
+const closeImageViewer = () => {
+  showImageViewerModal.value = false
+  selectedImageUrl.value = ''
+}
+
+const togglePublicAccess = async (event: Event) => {
+  if (!selectedFile.value) return
+  const isPublic = (event.target as HTMLInputElement).checked
+  
+  try {
+    const filePath = selectedFile.value.name
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullPath: filePath, isPublic }),
+    })
+    
+    if (!response.ok) throw new Error('Failed to update visibility')
+    
+    selectedFile.value.meta.isPublic = isPublic
+    const fileInList = files.value.find(f => f.name === selectedFile.value?.name)
+    if (fileInList) fileInList.meta.isPublic = isPublic
+    
+    createNotification(`Public access ${isPublic ? 'enabled' : 'disabled'}`, NotificationType.INFO)
+    
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update public access', NotificationType.ERROR)
+    ;(event.target as HTMLInputElement).checked = !isPublic
+  }
+}
+
+const copyPublicLink = async () => {
+  if (!selectedFile.value) return
+  await copyPublicLinkForFile(selectedFile.value)
+}
+
+const copyPublicLinkForFile = async (file: File) => {
+  const user = useState<any>('user')
+  const username = user.value?.name
+  if (!username) return
+
+  const filePath = file.name
+  const url = useRequestURL()
+  const publicUrl = `${url.origin}/p/${username}/${encodeURIComponent(filePath)}`
+  
+  const success = await copyToClipboard(publicUrl)
+  if (success) {
+    createNotification('Public link copied to clipboard!', NotificationType.SUCCESS)
+  } else {
+    createNotification('Failed to copy link', NotificationType.ERROR)
+  }
+}
+
+const toggleFavourite = async (file: File) => {
+  const isFavourite = !file.meta.isFavourite
+  
+  try {
+    const filePath = file.name
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullPath: filePath, isFavourite }),
+    })
+    
+    if (!response.ok) throw new Error('Failed to update favorite status')
+    
+    file.meta.isFavourite = isFavourite
+    if (!isFavourite) {
+      files.value = files.value.filter(f => f.name !== file.name)
+      if (showFileInfoModal.value) showFileInfoModal.value = false
+    }
+    createNotification(`File ${isFavourite ? 'added to' : 'removed from'} favorites`, NotificationType.INFO)
+    
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update favorite status', NotificationType.ERROR)
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen bg-base-200/50">
+    <!-- Edge-to-Edge Sticky Header -->
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
+          <!-- Title -->
+          <div class="flex flex-col gap-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
+                <Icon name="mdi:menu" class="w-5 h-5" />
+              </label>
+              <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
+                <Icon name="mdi:star" class="text-orange-500 w-6 h-6" />
+                Favorites
+              </h1>
+            </div>
+            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Your starred collection</p>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex flex-wrap items-center gap-3">
+             <!-- Search -->
+             <div class="relative w-full sm:w-auto sm:min-w-[240px]">
+                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
+                </div>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Filter favorites..."
+                  class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-medium"
+                />
+             </div>
+
+             <div class="flex items-center gap-2 ml-auto md:ml-0">
+               <div class="dropdown dropdown-end">
+                 <button tabindex="0" class="btn btn-sm btn-ghost gap-2 border border-base-content/10 bg-base-100/50">
+                    <Icon name="mdi:sort-variant" class="w-4 h-4" />
+                    <span class="hidden sm:inline">Sort</span>
+                 </button>
+                 <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-2xl bg-base-100 rounded-box w-40 border border-base-content/5 mt-2">
+                   <li><a @click="sortOption = 'name'" :class="{ 'active': sortOption === 'name' }">Name</a></li>
+                   <li><a @click="sortOption = 'size'" :class="{ 'active': sortOption === 'size' }">Size</a></li>
+                   <li><a @click="sortOption = 'date'" :class="{ 'active': sortOption === 'date' }">Date</a></li>
+                 </ul>
+               </div>
+
+               <div class="h-6 w-px bg-base-content/10 mx-1"></div>
+
+               <div class="flex bg-base-200/50 p-1 rounded-lg border border-base-content/5">
+                 <button 
+                  class="btn btn-xs btn-ghost" 
+                  :class="{ 'bg-base-100 shadow-sm text-primary': !isGridView }"
+                  @click="isGridView = false"
+                 >
+                   <Icon name="mdi:view-list" class="w-4 h-4" />
+                 </button>
+                 <button 
+                  class="btn btn-xs btn-ghost" 
+                  :class="{ 'bg-base-100 shadow-sm text-primary': isGridView }"
+                  @click="isGridView = true"
+                 >
+                   <Icon name="mdi:view-grid" class="w-4 h-4" />
+                 </button>
+               </div>
+             </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Bulk Action Bar -->
+    <transition name="slide-down">
+      <div v-if="selectedFiles.size > 0" class="sticky top-[104px] md:top-[68px] z-30 w-full bg-primary text-primary-content shadow-xl py-3 px-4 sm:px-8">
+        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <button class="btn btn-xs btn-outline btn-ghost border-white/30 text-white" @click="toggleSelectAll">
+              {{ selectedFiles.size === sortedFiles.length ? 'Deselect All' : 'Select All' }}
+            </button>
+            <span class="text-sm font-black uppercase tracking-widest">{{ selectedFiles.size }} selected</span>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button class="btn btn-xs sm:btn-sm bg-white/10 hover:bg-white/20 border-none text-white gap-2" @click="bulkDownload">
+              <Icon name="mdi:download" class="w-4 h-4" /> Download
+            </button>
+            <button class="btn btn-xs sm:btn-sm bg-white/10 hover:bg-white/20 border-none text-white gap-2" @click="openBulkTagModal">
+              <Icon name="mdi:tag-plus" class="w-4 h-4" /> Tags
+            </button>
+            <button class="btn btn-xs sm:btn-sm bg-white/10 hover:bg-white/20 border-none text-white gap-2" @click="openMoveModal()">
+              <Icon name="mdi:folder-move" class="w-4 h-4" /> Move
+            </button>
+            <button class="btn btn-xs sm:btn-sm bg-error/20 hover:bg-error/40 border-none text-white gap-2" @click="bulkDelete">
+              <Icon name="mdi:delete" class="w-4 h-4" /> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 min-h-[70vh]">
+      
+      <!-- Skeleton Loading -->
+      <div v-if="isLoading" :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'space-y-3'">
+        <div v-for="i in 12" :key="i" class="flex flex-col gap-3">
+          <div :class="isGridView ? 'aspect-square rounded-2xl bg-base-300 animate-pulse' : 'h-16 rounded-xl bg-base-300 animate-pulse'"></div>
+          <div v-if="isGridView" class="h-4 w-3/4 bg-base-300 animate-pulse rounded mx-auto"></div>
+        </div>
+      </div>
+
+      <!-- File Grid -->
+      <div 
+        v-else-if="sortedFiles.length"
+        id="file-grid-container"
+        :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-3'"
+      >
+        <div 
+          v-for="(file, index) in sortedFiles" 
+          :key="file.name" 
+          class="group relative"
+        >
+          <template v-if="isFileVisible(index)">
+            <!-- Grid Item -->
+            <div v-if="isGridView" 
+                 class="flex flex-col gap-2 transition-all duration-300"
+            >
+              <!-- Thumbnail Container -->
+              <div 
+                class="relative aspect-square rounded-2xl bg-base-100 border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex items-center justify-center group/item ring-primary/30"
+                :class="{ 'ring-2': selectedFiles.has(file.name) }"
+                @click="onFileClick($event, file)" 
+                @contextmenu.prevent="handleContextMenu($event, file)"
+              >
+                <!-- Selection Checkbox (Top Left) -->
+                <div class="absolute top-2 left-2 z-20 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">
+                  <input 
+                    type="checkbox" 
+                    class="checkbox checkbox-sm checkbox-primary bg-base-100/80 backdrop-blur-md" 
+                    :checked="selectedFiles.has(file.name)" 
+                    @change="toggleSelection(file.name)" 
+                    @click.stop 
+                  />
+                </div>
+
+                <!-- Shared Indicator (Top Right) -->
+                <div class="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
+                  <div v-if="file.meta.isPublic" 
+                       class="bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
+                       title="Copy Shared Link"
+                       @click.stop="copyPublicLinkForFile(file)">
+                    <Icon name="mdi:share-variant" class="w-4 h-4" />
+                  </div>
+                  <div class="bg-base-100/80 text-orange-500 w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
+                       title="Remove from Favorite"
+                       @click.stop="toggleFavourite(file)">
+                    <Icon name="mdi:star" class="w-4 h-4" />
+                  </div>
+                </div>
+
+                <!-- File Content -->
+                <template v-if="file.isFolder">
+                  <Icon name="vscode-icons:default-folder" class="w-16 h-16 group-hover/item:scale-110 transition-transform duration-500" />
+                </template>
+                <template v-else>
+                  <img v-if="hasThumbnail(file.name)" 
+                       :src="getThumbnailUrl(file.name)" 
+                       class="w-full h-full object-cover transition-transform duration-700 group-hover/item:scale-110" 
+                       alt="" 
+                       data-is-thumbnail="true"
+                       loading="lazy" />
+                  <Icon v-else 
+                        class="w-16 h-16 group-hover/item:scale-110 transition-transform duration-500" 
+                        :name="getIconForExtension(file.name)" 
+                        data-is-thumbnail="true" />
+                </template>
+
+                <!-- Hover Action Overlay -->
+                <div class="absolute inset-0 bg-black/5 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none"></div>
+              </div>
+
+              <!-- Grid Metadata -->
+              <div class="px-1 text-center h-[48px] flex flex-col justify-center">
+                <div class="min-w-0 px-1">
+                  <input v-if="editingName === file.name" 
+                         v-model="newName" 
+                         class="input input-xs input-bordered w-full text-center" 
+                         @keyup.enter="saveRename(file.name)" 
+                         @blur="saveRename(file.name)" 
+                         @click.stop />
+                  <h3 v-else class="text-xs font-bold truncate block group-hover:text-primary transition-colors leading-tight">{{ file.name.split('/').pop() }}</h3>
+                  <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider mt-0.5">
+                    <span>{{ formatSize(file.size) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modernized List Item -->
+            <div v-else 
+                 class="flex items-center gap-4 p-3 bg-base-100 rounded-xl border border-base-content/5 hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer group/row ring-primary/30 h-[64px]"
+                 :class="{ 'ring-1 bg-primary/5 border-primary/20': selectedFiles.has(file.name) }"
+                 @click="onFileClick($event, file)" 
+                 @contextmenu.prevent="handleContextMenu($event, file)"
+            >
+              <div class="flex items-center justify-center shrink-0">
+                <input type="checkbox" 
+                       class="checkbox checkbox-sm checkbox-primary" 
+                       :checked="selectedFiles.has(file.name)" 
+                       @change="toggleSelection(file.name)" 
+                       @click.stop />
+              </div>
+              
+              <div class="flex items-center justify-center shrink-0 w-8 h-8">
+                <Icon class="w-6 h-6" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
+              </div>
+
+              <div class="flex-grow flex items-center justify-between min-w-0">
+                <div class="flex-grow min-w-0 mr-4 flex flex-col">
+                  <input v-if="editingName === file.name" 
+                         v-model="newName" 
+                         class="input input-sm input-bordered w-full" 
+                         @keyup.enter="saveRename(file.name)" 
+                         @blur="saveRename(file.name)" 
+                         @click.stop />
+                  <h3 v-else class="text-sm font-bold truncate group-hover/row:text-primary transition-colors m-0 leading-none">{{ file.name.split('/').pop() }}</h3>
+                  <span class="text-[10px] font-bold text-base-content/20 truncate">{{ file.name }}</span>
+                </div>
+                
+                <div class="flex items-center gap-6 text-[11px] font-bold text-base-content/40 uppercase tracking-widest shrink-0">
+                  <div class="flex items-center gap-2">
+                    <div v-if="file.meta.isPublic" 
+                         class="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 text-success hover:bg-success hover:text-white transition-all"
+                         title="Copy Shared Link"
+                         @click.stop="copyPublicLinkForFile(file)">
+                      <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
+                    </div>
+                    <div class="flex items-center justify-center w-6 h-6 rounded-full bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white transition-all"
+                         title="Remove from Favorite"
+                         @click.stop="toggleFavourite(file)">
+                      <Icon name="mdi:star" class="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  
+                  <span class="hidden sm:inline w-20 text-right">{{ formatSize(file.size) }}</span>
+                  <span class="hidden md:inline w-24 text-right">{{ new Date(file.lastModified).toLocaleDateString() }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <div v-else :class="isGridView ? 'flex flex-col gap-2' : 'h-[64px] bg-base-100/30 rounded-xl border border-dashed border-base-content/5'">
+            <div v-if="isGridView" class="aspect-square bg-base-100/30 rounded-2xl border border-dashed border-base-content/5"></div>
+            <div v-if="isGridView" class="h-[48px]"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else class="flex flex-col items-center justify-center py-32 text-center">
+        <div class="bg-base-200/50 p-8 rounded-full mb-6">
+          <Icon name="mdi:star-outline" class="w-20 h-20 text-base-content/10" />
+        </div>
+        <h3 class="text-2xl font-black tracking-tight">Your star collection is empty</h3>
+        <p class="text-base-content/50 max-w-xs mt-2 font-medium">Favorite files and folders to see them here for lightning-fast access.</p>
+        <NuxtLink to="/files" class="btn btn-primary mt-8 px-8 rounded-full shadow-lg shadow-primary/20">
+          Go to Files
+        </NuxtLink>
+      </div>
+    </main>
+
+    <!-- Context Menu -->
+    <transition name="fade">
+      <div v-if="showContextMenu" 
+           class="fixed bg-base-100 shadow-2xl rounded-2xl border border-base-content/10 z-[100] py-2 min-w-[200px] backdrop-blur-xl bg-base-100/90"
+           :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }"
+           @click.stop>
+        <ul class="menu menu-compact p-0 font-bold text-xs uppercase tracking-wider">
+          <li><a class="py-3 px-4 hover:text-primary transition-colors" @click="handleContextAction('open')"><Icon name="mdi:open-in-new" class="w-4 h-4" /> Open Original</a></li>
+          <li v-if="contextMenuFile && isVideoFile(contextMenuFile.name)">
+            <a class="py-3 px-4 hover:text-primary transition-colors" @click="handleContextAction('media')">
+              <Icon name="mdi:play-box-multiple-outline" class="w-4 h-4" /> Media Tab
+            </a>
+          </li>
+          <div class="h-px bg-base-content/5 mx-2 my-1"></div>
+          <li><a class="py-3 px-4" @click="handleContextAction('rename')"><Icon name="mdi:pencil" class="w-4 h-4 text-blue-500" /> Rename</a></li>
+          <li><a class="py-3 px-4" @click="handleContextAction('move')"><Icon name="mdi:folder-move" class="w-4 h-4 text-primary" /> Move</a></li>
+          <li><a class="py-3 px-4" @click="handleContextAction('favourite')">
+            <Icon name="mdi:star" class="w-4 h-4 text-orange-500" /> Unstar
+          </a></li>
+          <li><a class="py-3 px-4" @click="handleContextAction('download')"><Icon name="mdi:download" class="w-4 h-4 text-success" /> Download</a></li>
+          <div class="h-px bg-base-content/5 mx-2 my-1"></div>
+          <li><a class="py-3 px-4 text-error" @click="handleContextAction('delete')"><Icon name="mdi:delete" class="w-4 h-4" /> Delete</a></li>
+        </ul>
+      </div>
+    </transition>
+
+    <!-- File Info Modal -->
+    <div class="modal backdrop-blur-md" :class="{ 'modal-open': showFileInfoModal }" @click="closeFileModal">
+      <div class="modal-box rounded-3xl shadow-2xl p-0 max-w-lg border border-base-content/5 overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
+        <div class="bg-primary/5 p-8 border-b border-base-content/5 shrink-0">
+          <div class="flex items-center gap-6">
+            <div class="bg-base-100 p-4 rounded-2xl shadow-sm ring-1 ring-base-content/5">
+              <Icon
+                  :name="selectedFile?.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(selectedFile?.name || '')"
+                  class="w-12 h-12"
+              />
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-black text-xl tracking-tight truncate">{{ selectedFile?.name.split('/').pop() }}</h3>
+              <p class="text-[10px] font-bold text-base-content/20 truncate mb-1">{{ selectedFile?.name }}</p>
+              <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest">
+                {{ selectedFile?.isFolder ? 'Folder' : 'Document' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="selectedFile" class="p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
+          <div class="grid grid-cols-2 gap-6">
+            <div class="flex flex-col gap-1">
+              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Size</span>
+              <span class="text-sm font-bold">{{ formatSize(selectedFile.size) }}</span>
+            </div>
+            <div class="flex flex-col gap-1 text-right">
+              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Modified</span>
+              <span class="text-sm font-bold">{{ new Date(selectedFile.lastModified).toLocaleDateString() }}</span>
+            </div>
+          </div>
+
+          <div v-if="selectedFile.meta.tags.length || true">
+             <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-3">Tags</span>
+             <div class="flex flex-wrap gap-2 items-center">
+                <span v-for="tag in selectedFile.meta.tags"
+                      :key="tag.name"
+                      class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm group/tag"
+                      :style="{ backgroundColor: tag.color }"> 
+                  {{ tag.name }} 
+                  <Icon name="mdi:close" 
+                        class="w-0 group-hover/tag:w-3 h-3 ml-0 group-hover/tag:ml-1 cursor-pointer transition-all" 
+                        @click.stop="removeTag(tag)" />
+                </span>
+                
+                <button
+                  class="btn btn-ghost btn-xs bg-base-200/50 hover:bg-base-content/10 border border-base-content/5 rounded-full px-3 transition-all"
+                  @click="showTagModal = true"
+                >
+                  <Icon name="mdi:tag-plus-outline" class="w-4 h-4 mr-1 text-primary" /> 
+                  <span class="font-bold text-[10px] uppercase tracking-wide">Add Tag</span>
+                </button>
+             </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Description</span>
+              <button v-if="!isEditingDescription" class="btn btn-ghost btn-xs rounded-lg" @click="startEditDescription">
+                <Icon name="mdi:pencil" class="w-3 h-3 mr-1" /> Edit
+              </button>
+            </div>
+            
+            <div v-if="isEditingDescription" class="space-y-3">
+              <textarea
+                  v-model="editableDescription"
+                  class="textarea textarea-bordered w-full h-24 bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm rounded-xl"
+                  placeholder="Enter description..."
+              ></textarea>
+              <div class="flex justify-end gap-2">
+                <button class="btn btn-ghost btn-xs" @click="isEditingDescription = false">Cancel</button>
+                <button class="btn btn-primary btn-xs px-4" @click="saveDescription">Save</button>
+              </div>
+            </div>
+            <div v-else>
+              <div v-if="selectedFile.meta.description" class="bg-base-200/50 p-4 rounded-xl text-sm font-medium leading-relaxed text-base-content/80 whitespace-pre-line">
+                {{ selectedFile.meta.description }}
+              </div>
+              <button v-else class="btn btn-ghost btn-sm w-full border border-dashed border-base-content/10 rounded-xl italic font-bold text-base-content/30 text-xs" @click="startEditDescription">
+                <Icon name="mdi:plus" class="w-4 h-4 mr-1" /> Add details
+              </button>
+            </div>
+          </div>
+
+          <div class="h-px bg-base-content/5"></div>
+
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-sm font-black tracking-tight">Favorite</span>
+                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Currently in your favorites</p>
+              </div>
+              <button 
+                class="btn btn-sm btn-ghost btn-circle text-orange-500"
+                @click="toggleFavourite(selectedFile)"
+              >
+                <Icon name="mdi:star" class="w-6 h-6" />
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-sm font-black tracking-tight">Public Access</span>
+                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Enable to share via link</p>
+              </div>
+              <input type="checkbox" class="toggle toggle-success toggle-sm" :checked="selectedFile.meta.isPublic" @change="togglePublicAccess" />
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))" class="pt-4">
+             <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-3">Quick Preview</span>
+             <div :key="selectedFile.name" class="rounded-2xl overflow-hidden shadow-sm ring-1 ring-base-content/10 bg-base-200 flex items-center justify-center aspect-video">
+                <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
+                  <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
+                </video>
+                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-cover" />
+             </div>
+          </div>
+        </div>
+
+        <div class="p-6 bg-base-200/50 flex flex-wrap gap-2 justify-center shrink-0">
+          <button class="btn btn-sm btn-error btn-outline border-none hover:bg-error/20 rounded-xl px-4" @click="deleteFile(selectedFile)">
+            <Icon name="mdi:delete" class="w-4 h-4 mr-1" /> Delete
+          </button>
+          <button class="btn btn-sm bg-base-100 hover:bg-base-200 border border-base-content/10 rounded-xl px-4" @click="downloadFile(selectedFile)">
+            <Icon name="mdi:download" class="w-4 h-4 mr-1" /> Download
+          </button>
+          <button class="btn btn-sm bg-base-100 hover:bg-base-200 border border-base-content/10 rounded-xl px-4" @click="copyFileLinkStatic(selectedFile)">
+            <Icon name="mdi:link" class="w-4 h-4 mr-1" /> Link
+          </button>
+          <button class="btn btn-sm btn-primary rounded-xl px-6" @click="closeFileModal">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div class="modal image-viewer-modal backdrop-blur-md" :class="{ 'modal-open': showImageViewerModal }" @click="closeImageViewer">
+      <div class="modal-box-image p-4 bg-transparent border-none shadow-none" @click.stop>
+        <div class="relative group">
+          <img :src="selectedImageUrl" alt="Full size preview" class="max-h-[85vh] max-w-[90vw] rounded-2xl shadow-2xl ring-1 ring-white/10" />
+          <button class="btn btn-circle btn-sm absolute -top-4 -right-4 bg-base-100 shadow-xl border-none" @click="closeImageViewer">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Move Modal -->
+    <div v-if="showMoveModal" class="modal modal-open backdrop-blur-md">
+      <div class="modal-box rounded-3xl shadow-2xl p-0 max-w-lg border border-base-content/5 overflow-hidden flex flex-col max-h-[80vh]">
+        <div class="bg-primary/5 p-6 border-b border-base-content/5 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="bg-primary/10 p-2 rounded-xl">
+              <Icon name="mdi:folder-move" class="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 class="font-black text-lg tracking-tight">Move Items</h3>
+              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Select destination folder</p>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm btn-circle" @click="showMoveModal = false">
+            <Icon name="mdi:close" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="p-4 bg-base-200/30 border-b border-base-content/5 flex items-center justify-between gap-2 overflow-x-auto shrink-0 no-scrollbar">
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <button class="btn btn-xs btn-ghost gap-1 px-2 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider" @click="fetchPickerFolders('')">Root</button>
+            <template v-for="(part, index) in pickerCurrentPath.split('/')" :key="index">
+              <Icon v-if="part" name="mdi:chevron-right" class="w-3 h-3 opacity-30" />
+              <button 
+                v-if="part"
+                class="btn btn-xs btn-ghost gap-1 px-2 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider max-w-[120px] truncate"
+                @click="fetchPickerFolders(pickerCurrentPath.split('/').slice(0, index + 1).join('/'))"
+              >
+                {{ part }}
+              </button>
+            </template>
+          </div>
+          <button class="btn btn-xs btn-ghost btn-circle" @click="showPickerCreateFolderInput = !showPickerCreateFolderInput">
+            <Icon name="mdi:folder-plus" class="w-4 h-4 text-primary" />
+          </button>
+        </div>
+
+        <div v-if="showPickerCreateFolderInput" class="p-4 bg-primary/5 border-b border-base-content/5 animate-in slide-in-from-top-2 duration-200">
+          <div class="flex gap-2">
+            <input v-model="newPickerFolderName" type="text" placeholder="Folder name..." class="input input-sm input-bordered flex-1 bg-base-100 font-bold text-xs rounded-xl" @keyup.enter="executePickerCreateFolder" autoFocus />
+            <button class="btn btn-sm btn-primary rounded-xl px-4 font-bold text-[10px] uppercase" @click="executePickerCreateFolder">Create</button>
+            <button class="btn btn-sm btn-ghost btn-circle" @click="showPickerCreateFolderInput = false"><Icon name="mdi:close" class="w-4 h-4" /></button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-2 min-h-[300px] custom-scrollbar">
+          <div v-if="pickerCurrentPath" class="flex items-center gap-3 p-3 rounded-xl hover:bg-base-200 cursor-pointer group" @click="navigatePickerUp">
+            <Icon name="mdi:arrow-up-bold-outline" class="w-5 h-5 text-base-content/30 group-hover:text-primary" />
+            <span class="text-sm font-bold">Go Up</span>
+          </div>
+          <div v-for="folder in pickerFolders" :key="folder.name" class="flex items-center gap-3 p-3 rounded-xl hover:bg-base-200 cursor-pointer group" @click="navigatePicker(folder.name)">
+            <Icon name="vscode-icons:default-folder" class="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <div class="flex-grow min-w-0"><span class="text-sm font-bold truncate block">{{ folder.name }}</span></div>
+            <Icon name="mdi:chevron-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 text-primary" />
+          </div>
+        </div>
+
+        <div class="p-4 bg-base-100 border-t border-base-content/5 flex items-center justify-between gap-4 shrink-0">
+          <div class="min-w-0 flex-1">
+            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-base-content/30 mb-1">Destination</p>
+            <p class="text-xs font-black truncate text-primary">/{{ pickerCurrentPath || 'Root' }}</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-sm px-6 rounded-xl font-bold uppercase tracking-wider text-[10px]" @click="showMoveModal = false">Cancel</button>
+            <button class="btn btn-sm btn-primary px-8 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20" @click="executeMove" :disabled="isMoving">
+              <span v-if="isMoving" class="loading loading-spinner loading-xs"></span>
+              Move Here
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tag Modal -->
+    <div v-if="showTagModal" class="modal modal-open backdrop-blur-md">
+      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-base-content/5">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="bg-primary/10 p-3 rounded-2xl">
+            <Icon name="mdi:tag-multiple" class="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h3 class="font-black text-xl tracking-tight">Manage Tags</h3>
+            <p class="text-[11px] font-bold text-base-content/40 uppercase tracking-widest">Label your favorites</p>
+          </div>
+        </div>
+
+        <div v-if="taggingProgress" class="text-center py-10">
+          <div class="loading loading-spinner loading-lg text-primary mb-4"></div>
+          <p class="font-black text-sm uppercase tracking-widest text-base-content/60">Applying tags... {{ taggingProgress.current }} / {{ taggingProgress.total }}</p>
+        </div>
+        <div v-else-if="showNewTagForm" class="space-y-6">
+          <div class="form-control">
+            <label class="label mb-1"><span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Tag Name</span></label>
+            <input v-model="newTagName" type="text" placeholder="Work, Personal, Invoices..." class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl" />
+          </div>
+          <div class="form-control">
+            <label class="label mb-1"><span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Color Identity</span></label>
+            <div class="flex gap-4">
+              <input v-model="newTagColor" type="color" class="w-16 h-12 rounded-xl cursor-pointer border-none bg-base-200/50" />
+              <div class="flex-grow h-12 rounded-xl flex items-center px-4 font-bold text-sm bg-base-200/50 border border-dashed border-base-content/10" :style="{ color: newTagColor }">Preview Style</div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-3 mt-10">
+            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="bulkAddTags">Create & Apply</button>
+            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = false">Use Existing</button>
+            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
+          </div>
+        </div>
+        <div v-else class="space-y-6">
+          <div class="form-control">
+            <label class="label mb-3"><span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Select Existing Tags</span></label>
+            <div class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+              <div v-for="tag in predefinedTags" :key="tag.name" class="p-4 rounded-xl cursor-pointer text-center font-bold text-xs transition-all border-2" :style="{ borderColor: tag.color, backgroundColor: isTagSelected(tag) ? tag.color : 'transparent', color: isTagSelected(tag) ? 'white' : tag.color }" @click="toggleTagSelection(tag)">{{ tag.name }}</div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-3 mt-10">
+            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="bulkAddTags">Apply Selection</button>
+            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = true">New Identity</button>
+            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s ease-out; }
+.slide-down-enter-from, .slide-down-leave-to { transform: translateY(-100%); opacity: 0; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.image-viewer-modal { background-color: rgba(0, 0, 0, 0.4); display: flex !important; align-items: center; justify-content: center; z-index: 10000; }
+.modal-box-image img { user-select: none; }
+</style>

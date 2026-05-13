@@ -29,6 +29,17 @@ const isEditingDescription = ref(false)
 const editableDescription = ref('')
 const searchQuery = ref('')
 
+const formatSize = (bytes: number) => {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let value = bytes
+  let unitIndex = 0
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex++
+  }
+  return `${value.toFixed(1)} ${units[unitIndex]}`
+}
+
 const sortOption = useCookie<'name' | 'size' | 'date'>('file-sort-option', {
   default: () => 'name',
   maxAge: 60 * 60 * 24 * 365 // 1 year
@@ -1243,8 +1254,7 @@ const toggleFavourite = async (file: File) => {
                          @click.stop />
                   <h3 v-else class="text-xs font-bold truncate block group-hover:text-primary transition-colors leading-tight">{{ file.name }}</h3>
                   <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider mt-0.5">
-                    <span v-if="!file.isFolder">{{ (file.size / 1024 / 1024).toFixed(1) }} MB</span>
-                    <span v-else>Folder</span>
+                    <span>{{ formatSize(file.size) }}</span>
                   </div>
                 </div>
               </div>
@@ -1301,8 +1311,7 @@ const toggleFavourite = async (file: File) => {
                     </div>
                   </div>
                   
-                  <span v-if="!file.isFolder" class="hidden sm:inline w-20 text-right">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
-                  <span v-else class="hidden sm:inline w-20 text-right">Folder</span>
+                  <span class="hidden sm:inline w-20 text-right">{{ formatSize(file.size) }}</span>
                   
                   <span class="hidden md:inline w-24 text-right">{{ new Date(file.lastModified).toLocaleDateString() }}</span>
                 </div>
@@ -1403,7 +1412,7 @@ const toggleFavourite = async (file: File) => {
           <div class="grid grid-cols-2 gap-6">
             <div class="flex flex-col gap-1">
               <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Size</span>
-              <span class="text-sm font-bold">{{ selectedFile.isFolder ? '--' : (selectedFile.size / 1024 / 1024).toFixed(2) + ' MB' }}</span>
+              <span class="text-sm font-bold">{{ formatSize(selectedFile.size) }}</span>
             </div>
             <div class="flex flex-col gap-1 text-right">
               <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Modified</span>

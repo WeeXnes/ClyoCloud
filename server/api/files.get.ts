@@ -22,6 +22,34 @@ export default defineEventHandler(async (event): Promise<File[]> => {
             })
         }
 
+        const sizeCache = new Map<string, { size: number; timestamp: number }>()
+        const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+        async function getDirSize(dirPath: string): Promise<number> {
+            const cached = sizeCache.get(dirPath)
+            if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+                return cached.size
+            }
+
+            let totalSize = 0
+            try {
+                const files = await fs.readdir(dirPath, { withFileTypes: true })
+                for (const file of files) {
+                    const filePath = path.join(dirPath, file.name)
+                    if (file.isDirectory()) {
+                        totalSize += await getDirSize(filePath)
+                    } else if (file.isFile()) {
+                        const stats = await fs.stat(filePath)
+                        totalSize += stats.size
+                    }
+                }
+                sizeCache.set(dirPath, { size: totalSize, timestamp: Date.now() })
+            } catch (err) {
+                console.error(`Error calculating size for ${dirPath}:`, err)
+            }
+            return totalSize
+        }
+
         const fileNames = await fs.readdir(fullPath)
         const filteredFileNames = fileNames.filter((name) => !name.endsWith('.cloudinfo') && !name.startsWith('.'))
 
@@ -30,6 +58,12 @@ export default defineEventHandler(async (event): Promise<File[]> => {
                 const filePath = path.join(fullPath, name)
                 const stats = await fs.stat(filePath)
                 const extension = path.extname(name)
+                const isFolder = stats.isDirectory()
+
+                let size = stats.size
+                if (isFolder) {
+                    size = await getDirSize(filePath)
+                }
 
                 const cloudInfoFileName = `${name.substring(0, 100)}.cloudinfo`
                 const cloudInfoPath = path.join(fullPath, cloudInfoFileName)
@@ -47,10 +81,10 @@ export default defineEventHandler(async (event): Promise<File[]> => {
 
                 return {
                     name,
-                    size: stats.size,
+                    size,
                     type: extension,
                     lastModified: stats.mtime.getTime(),
-                    isFolder: stats.isDirectory(),
+                    isFolder,
                     meta,
                 }
             })
