@@ -505,8 +505,7 @@ const deleteFile = async (file: File) => {
 }
 
 const uploadFile = async () => {
-  if (!selectedFilesForUpload.value) {
-    uploadError.value = 'No file selected'
+  if (!selectedFilesForUpload.value || selectedFilesForUpload.value.length === 0) {
     return
   }
 
@@ -577,7 +576,7 @@ const uploadFile = async () => {
 }
 
 const handleDrop = (event: DragEvent) => {
-  if (event.dataTransfer?.files) {
+  if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
     selectedFilesForUpload.value = event.dataTransfer.files
     uploadFile()
   }
