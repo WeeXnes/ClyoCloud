@@ -241,6 +241,7 @@ function setPage(page: number | string) {
               :src="getThumbnailUrl(video.fullPath)"
               class="h-full w-full object-cover transition-transform duration-500 group-hover/thumb:scale-110"
               alt=""
+              loading="lazy"
             />
             <div v-else class="flex h-full w-full items-center justify-center">
               <Icon name="mdi:video-off-outline" class="w-12 h-12 text-base-content/20" />

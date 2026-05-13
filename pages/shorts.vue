@@ -18,13 +18,30 @@ const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 
 const observer = ref<IntersectionObserver | null>(null)
+const containerRefs = ref<HTMLElement[]>([])
 const videoRefs = ref<HTMLVideoElement[]>([])
+const currentIndex = ref(0)
 
 const supportedExtensions = ['.mp4', '.webm', '.mov', '.mkv']
+
+const handleScroll = (event: Event) => {
+  const container = event.target as HTMLElement
+  const index = Math.round(container.scrollTop / container.clientHeight)
+  if (currentIndex.value !== index) {
+    currentIndex.value = index
+  }
+}
+
+const isVideoVisible = (index: number) => {
+  // Render current, previous, and next video for smooth transition
+  return Math.abs(index - currentIndex.value) <= 1
+}
 
 const fetchVideos = async () => {
   try {
     isLoading.value = true
+    containerRefs.value = []
+    videoRefs.value = []
     const response = await fetch('/api/videos', { credentials: 'include' })
     if (!response.ok) throw new Error('Failed to fetch videos')
     const allVideos: Video[] = await response.json()
@@ -62,7 +79,8 @@ const toggleMute = () => {
 }
 
 const togglePlayPause = () => {
-  const activeVideo = videoRefs.value.find(v => (v as any)._videoData?.fullPath === currentVisibleVideo.value?.fullPath)
+  const activeContainer = containerRefs.value[currentIndex.value]
+  const activeVideo = activeContainer?.querySelector('video')
   if (!activeVideo) return
 
   if (activeVideo.paused) {
@@ -185,11 +203,17 @@ const addTags = async () => {
   }
 }
 
-const setVideoRef = (el: any, video: Video) => {
+const setVideoRef = (el: any) => {
+  if (el && !videoRefs.value.includes(el)) {
+    videoRefs.value.push(el)
+  }
+}
+
+const setContainerRef = (el: any, video: Video) => {
   if (el) {
     el._videoData = video
-    if (!videoRefs.value.includes(el)) {
-      videoRefs.value.push(el)
+    if (!containerRefs.value.includes(el)) {
+      containerRefs.value.push(el)
     }
   }
 }
@@ -199,25 +223,28 @@ onMounted(async () => {
 
   observer.value = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      const video = entry.target as any
+      const container = entry.target as any
+      const video = container.querySelector('video')
       if (entry.isIntersecting) {
-        currentVisibleVideo.value = video._videoData
+        currentVisibleVideo.value = container._videoData
         isPaused.value = false
-        video.currentTime = 0
-        video.play().catch((e: any) => console.warn('Autoplay prevented:', e))
+        if (video) {
+          video.currentTime = 0
+          video.play().catch((e: any) => console.warn('Autoplay prevented:', e))
+        }
       } else {
-        video.pause()
+        if (video) video.pause()
       }
     })
   }, {
     threshold: 0.8 // Trigger when 80% of the video is visible
   })
 
-  // Watch for video elements being added to DOM
+  // Watch for container elements being added to DOM
   nextTick(() => {
-    videoRefs.value.forEach(video => {
-      if (video && observer.value) {
-        observer.value.observe(video)
+    containerRefs.value.forEach(container => {
+      if (container && observer.value) {
+        observer.value.observe(container)
       }
     })
   })
@@ -279,22 +306,31 @@ const refresh = () => {
     <div 
       v-else-if="videos.length" 
       class="h-full w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar"
+      @scroll.passive="handleScroll"
     >
       <div 
-        v-for="video in videos" 
+        v-for="(video, index) in videos" 
         :key="video.fullPath" 
+        :ref="el => setContainerRef(el, video)"
         class="h-[100dvh] w-full snap-center relative flex items-center justify-center bg-black cursor-pointer"
         @click="togglePlayPause"
       >
-        <video
-          :ref="el => setVideoRef(el, video)"
-          class="h-full w-full object-contain"
-          loop
-          playsinline
-          :muted="isMuted"
-        >
-          <source :src="getStreamUrl(video.fullPath)" :type="getSourceType(video.name)" />
-        </video>
+        <template v-if="isVideoVisible(index)">
+          <video
+            :ref="el => setVideoRef(el, video)"
+            class="h-full w-full object-contain"
+            loop
+            playsinline
+            :muted="isMuted"
+          >
+            <source :src="getStreamUrl(video.fullPath)" :type="getSourceType(video.name)" />
+          </video>
+        </template>
+        
+        <!-- Placeholder for non-rendered videos -->
+        <div v-else class="h-full w-full flex items-center justify-center bg-black">
+          <span class="loading loading-spinner loading-md text-white/20"></span>
+        </div>
 
         <!-- Pause Overlay -->
         <transition name="fade">
