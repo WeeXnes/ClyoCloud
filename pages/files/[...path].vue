@@ -339,18 +339,32 @@ const bulkAddTags = async () => {
       }
       
       const currentTags = file.meta.tags || []
-      
-      // Filter out duplicates (case-insensitive)
-      const tagsToActuallyAdd = tagsToAdd.filter(newTag => 
-        !currentTags.some(existingTag => existingTag.name.toLowerCase() === newTag.name.toLowerCase())
-      )
+      let updatedTags = []
 
-      if (tagsToActuallyAdd.length === 0) {
-        taggingProgress.value.current++
-        continue
+      if (!showNewTagForm.value && targetFileNames.length === 1) {
+        // For single file, sync tags exactly (allows removal)
+        const isSame = currentTags.length === tagsToAdd.length && 
+                      currentTags.every(ct => tagsToAdd.some(ta => ta.name === ct.name))
+        
+        if (isSame) {
+          taggingProgress.value.current++
+          continue
+        }
+        updatedTags = tagsToAdd
+      } else {
+        // For bulk or new tag, strictly additive
+        const tagsToActuallyAdd = tagsToAdd.filter(newTag => 
+          !currentTags.some(existingTag => existingTag.name.toLowerCase() === newTag.name.toLowerCase())
+        )
+
+        if (tagsToActuallyAdd.length === 0) {
+          taggingProgress.value.current++
+          continue
+        }
+
+        updatedTags = [...currentTags, ...tagsToActuallyAdd]
       }
-
-      const updatedTags = [...currentTags, ...tagsToActuallyAdd]
+      
       const filePath = folderPath ? `${folderPath}/${name}` : name
       
       const response = await fetch('/api/file-meta', {

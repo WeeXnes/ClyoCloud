@@ -172,20 +172,35 @@ const addTags = async () => {
 
   try {
     const currentTags = currentVisibleVideo.value.meta.tags || []
-    const tagsToActuallyAdd = tagsToAdd.filter(newTag => 
-      !currentTags.some(existingTag => existingTag.name.toLowerCase() === newTag.name.toLowerCase())
-    )
+    let updatedTags = []
 
-    if (tagsToActuallyAdd.length === 0) {
-       createNotification('Tags already exist', NotificationType.INFO)
-       closeTagModal()
-       return
+    if (!showNewTagForm.value) {
+      // For single video, sync tags exactly (allows removal)
+      const isSame = currentTags.length === tagsToAdd.length && 
+                    currentTags.every(ct => tagsToAdd.some(ta => ta.name === ct.name))
+
+      if (isSame) {
+        createNotification('Tags already up to date', NotificationType.INFO)
+        closeTagModal()
+        return
+      }
+      updatedTags = tagsToAdd
+    } else {
+      // For new tag, strictly additive
+      const tagsToActuallyAdd = tagsToAdd.filter(newTag => 
+        !currentTags.some(existingTag => existingTag.name.toLowerCase() === newTag.name.toLowerCase())
+      )
+
+      if (tagsToActuallyAdd.length === 0) {
+        createNotification('Tags already exist', NotificationType.INFO)
+        closeTagModal()
+        return
+      }
+
+      updatedTags = [...currentTags, ...tagsToActuallyAdd]
     }
 
-    const updatedTags = [...currentTags, ...tagsToActuallyAdd]
-    
-    const response = await fetch('/api/file-meta', {
-      method: 'POST',
+    const response = await fetch('/api/file-meta', {      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fullPath: currentVisibleVideo.value.fullPath,
