@@ -271,6 +271,8 @@ const fetchPredefinedTags = async () => {
   }
 }
 
+const taggingProgress = ref<{ current: number, total: number } | null>(null)
+
 const bulkAddTags = async () => {
   let tagsToAdd: Tag[] = []
   if (showNewTagForm.value) {
@@ -303,9 +305,14 @@ const bulkAddTags = async () => {
       return
     }
 
+    taggingProgress.value = { current: 0, total: targetFileNames.length }
+
     for (const name of targetFileNames) {
       const file = files.value.find(f => f.name === name)
-      if (!file) continue
+      if (!file) {
+        taggingProgress.value.current++
+        continue
+      }
       
       const currentTags = file.meta.tags || []
       
@@ -314,7 +321,10 @@ const bulkAddTags = async () => {
         !currentTags.some(existingTag => existingTag.name.toLowerCase() === newTag.name.toLowerCase())
       )
 
-      if (tagsToActuallyAdd.length === 0) continue
+      if (tagsToActuallyAdd.length === 0) {
+        taggingProgress.value.current++
+        continue
+      }
 
       const updatedTags = [...currentTags, ...tagsToActuallyAdd]
       const filePath = folderPath ? `${folderPath}/${name}` : name
@@ -333,6 +343,7 @@ const bulkAddTags = async () => {
       if (selectedFile.value && name === selectedFile.value.name) {
         selectedFile.value.meta.tags = updatedTags
       }
+      taggingProgress.value.current++
     }
 
     createNotification('Tags added successfully', NotificationType.SUCCESS)
@@ -341,6 +352,8 @@ const bulkAddTags = async () => {
   } catch (err) {
     console.error('Error adding tags:', err)
     createNotification('Failed to add tags', NotificationType.ERROR)
+  } finally {
+    taggingProgress.value = null
   }
 }
 
@@ -1627,7 +1640,13 @@ const toggleFavourite = async (file: File) => {
           </div>
         </div>
 
-        <div v-if="showNewTagForm" class="space-y-6">
+        <div v-if="taggingProgress" class="text-center py-10">
+          <div class="loading loading-spinner loading-lg text-primary mb-4"></div>
+          <p class="font-black text-sm uppercase tracking-widest text-base-content/60">
+            Applying tags... {{ taggingProgress.current }} / {{ taggingProgress.total }}
+          </p>
+        </div>
+        <div v-else-if="showNewTagForm" class="space-y-6">
           <div class="form-control">
             <label class="label mb-1">
               <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Tag Name</span>
