@@ -1501,6 +1501,25 @@ const toggleFavourite = async (file: File) => {
 
         <!-- Scrollable Content -->
         <div v-if="selectedFile" class="p-8 space-y-10 overflow-y-auto flex-1 custom-scrollbar">
+          <!-- Main Visual Preview (Emphasized) -->
+          <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))" class="w-full">
+             <div class="flex items-center gap-2 mb-4">
+                <Icon name="mdi:eye-outline" class="w-4 h-4 text-primary/60" />
+                <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Visual Asset Preview</span>
+             </div>
+             <div :key="selectedFile.name" class="rounded-[2rem] overflow-hidden shadow-2xl ring-1 ring-base-content/5 bg-black flex items-center justify-center aspect-video group/preview relative">
+                <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
+                  <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
+                </video>
+                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-contain transition-transform duration-700 group-hover/preview:scale-105" />
+                <div class="absolute top-6 right-6 z-10 opacity-0 group-hover/preview:opacity-100 transition-opacity">
+                   <button class="btn btn-circle btn-md bg-white/20 hover:bg-white/40 border-none text-white backdrop-blur-xl shadow-2xl" @click="isImageFile(selectedFile.name) ? (selectedImageUrl = getStaticUrl(selectedFile), showImageViewerModal = true) : null">
+                      <Icon name="mdi:fullscreen" class="w-6 h-6" />
+                   </button>
+                </div>
+             </div>
+          </div>
+
           <!-- Stats Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
@@ -1619,25 +1638,6 @@ const toggleFavourite = async (file: File) => {
                     </button>
                   </div>
                 </transition>
-              </div>
-
-              <!-- Preview Section -->
-              <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))">
-                 <div class="flex items-center gap-2 mb-4">
-                    <Icon name="mdi:eye-outline" class="w-4 h-4 text-primary/60" />
-                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Quick View</span>
-                 </div>
-                 <div :key="selectedFile.name" class="rounded-3xl overflow-hidden shadow-xl ring-1 ring-base-content/5 bg-black/90 flex items-center justify-center aspect-video group/preview relative">
-                    <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
-                      <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
-                    </video>
-                    <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-cover transition-transform duration-700 group-hover/preview:scale-110" />
-                    <div class="absolute top-4 right-4 z-10 opacity-0 group-hover/preview:opacity-100 transition-opacity">
-                       <button class="btn btn-circle btn-sm bg-black/50 border-none text-white backdrop-blur-md" @click="isImageFile(selectedFile.name) ? (selectedImageUrl = getStaticUrl(selectedFile), showImageViewerModal = true) : null">
-                          <Icon name="mdi:fullscreen" class="w-4 h-4" />
-                       </button>
-                    </div>
-                 </div>
               </div>
             </div>
           </div>
