@@ -403,6 +403,10 @@ const pickerCurrentPath = ref('')
 const pickerFolders = ref<File[]>([])
 const isMoving = ref(false)
 
+const showPickerCreateFolderInput = ref(false)
+const newPickerFolderName = ref('')
+const lastSelectedIndex = ref(-1)
+
 const scrollIndex = ref(0)
 const itemsPerRow = ref(6) // Default for XL, updated on resize
 
@@ -478,6 +482,8 @@ const fetchPickerFolders = async (path: string) => {
 
 const navigatePicker = (folderName: string) => {
   const newPath = pickerCurrentPath.value ? `${pickerCurrentPath.value}/${folderName}` : folderName
+  showPickerCreateFolderInput.value = false
+  newPickerFolderName.value = ''
   fetchPickerFolders(newPath)
 }
 
@@ -486,7 +492,33 @@ const navigatePickerUp = () => {
   const parts = pickerCurrentPath.value.split('/')
   parts.pop()
   const newPath = parts.join('/')
+  showPickerCreateFolderInput.value = false
+  newPickerFolderName.value = ''
   fetchPickerFolders(newPath)
+}
+
+const executePickerCreateFolder = async () => {
+  if (!newPickerFolderName.value.trim()) {
+    createNotification('Folder name is required', NotificationType.WARNING)
+    return
+  }
+
+  try {
+    const response = await fetch('/api/folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newPickerFolderName.value, path: pickerCurrentPath.value }),
+    })
+    if (!response.ok) throw new Error('Failed to create folder')
+    
+    await fetchPickerFolders(pickerCurrentPath.value)
+    showPickerCreateFolderInput.value = false
+    newPickerFolderName.value = ''
+    createNotification('Folder created successfully', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to create folder', NotificationType.ERROR)
+  }
 }
 
 const executeMove = async () => {
@@ -512,6 +544,49 @@ const executeMove = async () => {
     createNotification('Failed to move items', NotificationType.ERROR)
   } finally {
     isMoving.value = false
+  }
+}
+
+const handleKeydown = (event: KeyboardEvent) => {
+  // Ignore shortcuts if the user is typing in an input or textarea
+  const target = event.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+    if (event.key === 'Escape') {
+      target.blur()
+    }
+    return
+  }
+
+  // Escape: Close all modals
+  if (event.key === 'Escape') {
+    showFileInfoModal.value = false
+    showCreateFolderModal.value = false
+    showImageViewerModal.value = false
+    showTagModal.value = false
+    showMoveModal.value = false
+    showPickerCreateFolderInput.value = false
+    selectedFile.value = null
+    editingName.value = null
+  }
+
+  // Ctrl+A: Select all
+  if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+    event.preventDefault()
+    toggleSelectAll()
+  }
+
+  // Delete: Bulk delete
+  if (event.key === 'Delete' && selectedFiles.value.size > 0) {
+    bulkDelete()
+  }
+
+  // Enter: Open selected file/folder (if exactly one or selection mode just started)
+  if (event.key === 'Enter') {
+    if (selectedFiles.value.size === 1) {
+      const fileName = Array.from(selectedFiles.value)[0]
+      const file = files.value.find(f => f.name === fileName)
+      if (file) onFileClick(new MouseEvent('click'), file)
+    }
   }
 }
 
@@ -575,15 +650,16 @@ onMounted(async () => {
   updateItemsPerRow()
   window.addEventListener('resize', updateItemsPerRow)
   window.addEventListener('scroll', handleMainScroll, { passive: true })
-  
+  window.addEventListener('keydown', handleKeydown)
+
   window.addEventListener('click', () => {
     showContextMenu.value = false
   })
 })
-
 onUnmounted(() => {
   window.removeEventListener('resize', updateItemsPerRow)
   window.removeEventListener('scroll', handleMainScroll)
+  window.removeEventListener('keydown', handleKeydown)
 })
 
 watch(() => useRoute().params.path, async () => {
@@ -758,9 +834,30 @@ const getThumbnailUrl = (filename: string) => {
   return `${baseUrl}/thumbnail/${joinedPath}/${encodeURIComponent(filename)}`
 }
 
-const onFileClick = (event: Event, file: File) => {
+const onFileClick = (event: MouseEvent, file: File) => {
+  const currentIndex = sortedFiles.value.findIndex(f => f.name === file.name)
+  
+  // Shift + Click Selection
+  if (event.shiftKey && lastSelectedIndex.value !== -1) {
+    const start = Math.min(lastSelectedIndex.value, currentIndex)
+    const end = Math.max(lastSelectedIndex.value, currentIndex)
+    
+    for (let i = start; i <= end; i++) {
+      selectedFiles.value.add(sortedFiles.value[i].name)
+    }
+    lastSelectedIndex.value = currentIndex
+    return
+  }
+
+  lastSelectedIndex.value = currentIndex
+
   // If we are in selection mode, toggle selection instead of opening
-  if (selectedFiles.value.size > 0) {
+  if (selectedFiles.value.size > 0 && !event.ctrlKey && !event.metaKey) {
+    toggleSelection(file.name)
+    return
+  }
+
+  if (event.ctrlKey || event.metaKey) {
     toggleSelection(file.name)
     return
   }
@@ -1563,23 +1660,53 @@ const toggleFavourite = async (file: File) => {
           </button>
         </div>
 
-        <div class="p-4 bg-base-200/30 border-b border-base-content/5 flex items-center gap-2 overflow-x-auto shrink-0 no-scrollbar">
-          <button 
-            class="btn btn-xs btn-ghost gap-1 px-2 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider"
-            @click="fetchPickerFolders('')"
-          >
-            Root
-          </button>
-          <template v-for="(part, index) in pickerCurrentPath.split('/')" :key="index">
-            <Icon v-if="part" name="mdi:chevron-right" class="w-3 h-3 opacity-30" />
+        <div class="p-4 bg-base-200/30 border-b border-base-content/5 flex items-center justify-between gap-2 overflow-x-auto shrink-0 no-scrollbar">
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
             <button 
-              v-if="part"
-              class="btn btn-xs btn-ghost gap-1 px-2 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider max-w-[120px] truncate"
-              @click="fetchPickerFolders(pickerCurrentPath.split('/').slice(0, index + 1).join('/'))"
+              class="btn btn-xs btn-ghost gap-1 px-2 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider"
+              @click="fetchPickerFolders('')"
             >
-              {{ part }}
+              Root
             </button>
-          </template>
+            <template v-for="(part, index) in pickerCurrentPath.split('/')" :key="index">
+              <Icon v-if="part" name="mdi:chevron-right" class="w-3 h-3 opacity-30" />
+              <button 
+                v-if="part"
+                class="btn btn-xs btn-ghost gap-1 px-2 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider max-w-[120px] truncate"
+                @click="fetchPickerFolders(pickerCurrentPath.split('/').slice(0, index + 1).join('/'))"
+              >
+                {{ part }}
+              </button>
+            </template>
+          </div>
+
+          <button 
+            class="btn btn-xs btn-ghost btn-circle"
+            @click="showPickerCreateFolderInput = !showPickerCreateFolderInput"
+            title="Create New Folder"
+          >
+            <Icon name="mdi:folder-plus" class="w-4 h-4 text-primary" />
+          </button>
+        </div>
+
+        <!-- Inline New Folder Input -->
+        <div v-if="showPickerCreateFolderInput" class="p-4 bg-primary/5 border-b border-base-content/5 animate-in slide-in-from-top-2 duration-200">
+          <div class="flex gap-2">
+            <input 
+              v-model="newPickerFolderName"
+              type="text"
+              placeholder="Folder name..."
+              class="input input-sm input-bordered flex-1 bg-base-100 font-bold text-xs rounded-xl"
+              @keyup.enter="executePickerCreateFolder"
+              autoFocus
+            />
+            <button class="btn btn-sm btn-primary rounded-xl px-4 font-bold text-[10px] uppercase" @click="executePickerCreateFolder">
+              Create
+            </button>
+            <button class="btn btn-sm btn-ghost btn-circle" @click="showPickerCreateFolderInput = false">
+              <Icon name="mdi:close" class="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-2 min-h-[300px] custom-scrollbar">
