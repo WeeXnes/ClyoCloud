@@ -3,6 +3,32 @@ import fs from 'fs/promises'
 import path from 'path'
 import type { File, FileMeta } from '~/types/File'
 
+const sizeCache = new Map<string, { size: number; timestamp: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+async function getDirSize(dirPath: string): Promise<number> {
+    const cached = sizeCache.get(dirPath)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.size
+    }
+
+    let totalSize = 0
+    try {
+        const files = await fs.readdir(dirPath, { withFileTypes: true })
+        for (const file of files) {
+            const filePath = path.join(dirPath, file.name)
+            if (file.isDirectory()) {
+                totalSize += await getDirSize(filePath)
+            } else if (file.isFile()) {
+                const stats = await fs.stat(filePath)
+                totalSize += stats.size
+            }
+        }
+        sizeCache.set(dirPath, { size: totalSize, timestamp: Date.now() })
+    } catch (err) {}
+    return totalSize
+}
+
 export default defineEventHandler(async (event): Promise<File[]> => {
     try {
         if (!event.context.user) {
@@ -20,7 +46,6 @@ export default defineEventHandler(async (event): Promise<File[]> => {
         async function scanDir(currentPath: string, relativePath: string) {
             const entries = await fs.readdir(currentPath, { withFileTypes: true })
             
-            // Map entries to their metadata and check for favorites
             for (const entry of entries) {
                 if (entry.name.startsWith('.') || entry.name.endsWith('.cloudinfo')) continue
 
@@ -28,9 +53,7 @@ export default defineEventHandler(async (event): Promise<File[]> => {
                 const relPath = relativePath ? `${relativePath}/${entry.name}` : entry.name
                 
                 if (entry.isDirectory()) {
-                    // Check if the directory itself is a favorite
                     await checkFavorite(fullPath, relPath, true)
-                    // Recurse into directory
                     await scanDir(fullPath, relPath)
                 } else if (entry.isFile()) {
                     await checkFavorite(fullPath, relPath, false)
@@ -57,7 +80,7 @@ export default defineEventHandler(async (event): Promise<File[]> => {
                     }
 
                     favoriteFiles.push({
-                        name: relPath, // Use relative path as name in Favorites view
+                        name: relPath,
                         size,
                         type: path.extname(baseName),
                         lastModified: stats.mtime.getTime(),
@@ -65,30 +88,7 @@ export default defineEventHandler(async (event): Promise<File[]> => {
                         meta,
                     })
                 }
-            } catch (err) {
-                // No cloudinfo or invalid JSON, skip
-            }
-        }
-
-        const sizeCache = new Map<string, number>()
-        async function getDirSize(dirPath: string): Promise<number> {
-            if (sizeCache.has(dirPath)) return sizeCache.get(dirPath)!
-            
-            let totalSize = 0
-            try {
-                const files = await fs.readdir(dirPath, { withFileTypes: true })
-                for (const file of files) {
-                    const filePath = path.join(dirPath, file.name)
-                    if (file.isDirectory()) {
-                        totalSize += await getDirSize(filePath)
-                    } else if (file.isFile()) {
-                        const stats = await fs.stat(filePath)
-                        totalSize += stats.size
-                    }
-                }
-                sizeCache.set(dirPath, totalSize)
             } catch (err) {}
-            return totalSize
         }
 
         await scanDir(userStoragePath, '')

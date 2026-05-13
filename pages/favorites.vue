@@ -627,7 +627,9 @@ const isImageFile = (filename: string) => {
 const getThumbnailUrl = (fullPath: string) => {
   const url = useRequestURL()
   const baseUrl = url.origin
-  return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
+  const segments = fullPath.split('/')
+  const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
+  return `${baseUrl}/thumbnail/${encodedPath}`
 }
 
 const onFileClick = (event: MouseEvent, file: File) => {
@@ -659,7 +661,9 @@ const onFileClick = (event: MouseEvent, file: File) => {
   const isThumbnail = target.dataset.isThumbnail === 'true'
 
   if (file.isFolder) {
-    navigateTo(`/files/${encodeURIComponent(file.name)}`)
+    const segments = file.name.split('/')
+    const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
+    navigateTo(`/files/${encodedPath}`)
   } else if (isImageFile(file.name) && isThumbnail) {
     selectedImageUrl.value = getStaticUrl(file)
     showImageViewerModal.value = true
@@ -676,7 +680,9 @@ const getStaticUrl = (file: File) => {
   const baseUrl = url.origin
   const isVideo = isVideoFile(file.name)
   const endpoint = isVideo ? '/stream' : '/file'
-  return `${baseUrl}${endpoint}/${encodeURIComponent(file.name)}`
+  const segments = file.name.split('/')
+  const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
+  return `${baseUrl}${endpoint}/${encodedPath}`
 }
 
 const copyFileLinkStatic = async (file: File) => {

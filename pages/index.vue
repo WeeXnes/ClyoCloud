@@ -35,24 +35,85 @@ interface ActivityEntry {
 
 const stats = ref<Stats | null>(null)
 const activities = ref<ActivityEntry[]>([])
+const storageMapData = ref<any>(null)
 const isLoading = ref(true)
 let refreshInterval: any = null
 
 const fetchStats = async (silent = false) => {
   if (!silent) isLoading.value = true
   try {
-    const [statsData, activityData] = await Promise.all([
+    const [statsData, activityData, storageMap] = await Promise.all([
       $fetch<Stats>('/api/stats'),
-      $fetch<ActivityEntry[]>('/api/activity')
+      $fetch<ActivityEntry[]>('/api/activity'),
+      $fetch<any>('/api/storage-map')
     ])
     stats.value = statsData
     activities.value = activityData
+    storageMapData.value = storageMap
   } catch (err) {
     console.error('Failed to fetch dashboard data:', err)
   } finally {
     if (!silent) isLoading.value = false
   }
 }
+
+// Sunburst Logic
+const hoveredNode = ref<any>(null)
+
+const getSunburstPaths = (node: any, radius: number = 100) => {
+  const paths: any[] = []
+  if (!node || !node.children) return paths
+
+  const totalSize = node.size
+  let currentAngle = 0
+
+  const processNode = (n: any, startAngle: number, endAngle: number, level: number) => {
+    const innerRadius = level * 40
+    const outerRadius = (level + 1) * 40
+    
+    // Convert angles to radians
+    const startRad = (startAngle - 90) * Math.PI / 180
+    const endRad = (endAngle - 90) * Math.PI / 180
+
+    const x1 = Math.cos(startRad) * innerRadius
+    const y1 = Math.sin(startRad) * innerRadius
+    const x2 = Math.cos(endRad) * innerRadius
+    const y2 = Math.sin(endRad) * innerRadius
+    const x3 = Math.cos(endRad) * outerRadius
+    const y3 = Math.sin(endRad) * outerRadius
+    const x4 = Math.cos(startRad) * outerRadius
+    const y4 = Math.sin(startRad) * outerRadius
+
+    const largeArc = (endAngle - startAngle) > 180 ? 1 : 0
+
+    const d = `M ${x1} ${y1} L ${x4} ${y4} A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x3} ${y3} L ${x2} ${y2} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x1} ${y1} Z`
+    
+    paths.push({
+      d,
+      name: n.name,
+      size: n.size,
+      level,
+      color: `hsl(${220 + level * 20}, ${70 - level * 10}%, ${50 + level * 5}%)`
+    })
+
+    if (n.children && level < 3) {
+      let childStartAngle = startAngle
+      const angleWidth = endAngle - startAngle
+      for (const child of n.children) {
+        const childAngleWidth = (child.size / n.size) * angleWidth
+        processNode(child, childStartAngle, childStartAngle + childAngleWidth, level + 1)
+        childStartAngle += childAngleWidth
+      }
+    }
+  }
+
+  processNode(node, 0, 360, 0)
+  return paths
+}
+
+const sunburstPaths = computed(() => {
+  return getSunburstPaths(storageMapData.value)
+})
 
 const getActionIcon = (action: string) => {
   switch (action) {
@@ -308,6 +369,64 @@ onUnmounted(() => {
                     <span class="text-base font-bold text-base-content/60">{{ formatSize(stats?.ram.total || 0) }}</span>
                   </div>
                </div>
+            </div>
+          </section>
+
+          <!-- Storage Map Card (Sunburst) -->
+          <section class="flex-1 bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col min-h-[500px]">
+            <div class="flex items-center justify-between mb-8 shrink-0">
+               <div class="flex items-center gap-4">
+                 <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <Icon name="mdi:chart-donut" class="text-primary w-6 h-6" />
+                 </div>
+                 <div>
+                   <h3 class="font-black text-lg tracking-tight">Storage Visualization</h3>
+                   <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Disk Space Map</p>
+                 </div>
+               </div>
+            </div>
+
+            <div v-if="isLoading" class="flex-1 flex items-center justify-center">
+              <div class="w-48 h-48 rounded-full bg-base-200 animate-pulse"></div>
+            </div>
+            <div v-else class="flex-1 flex flex-col md:flex-row items-center justify-center gap-10">
+              <div class="relative w-64 h-64 sm:w-80 sm:h-80 shrink-0">
+                <svg viewBox="-160 -160 320 320" class="w-full h-full transform transition-transform duration-700 hover:rotate-12">
+                  <path 
+                    v-for="(path, index) in sunburstPaths" 
+                    :key="index"
+                    :d="path.d"
+                    :fill="path.color"
+                    class="transition-all duration-300 hover:opacity-80 hover:scale-[1.02] cursor-pointer"
+                    @mouseenter="hoveredNode = path"
+                    @mouseleave="hoveredNode = null"
+                  />
+                  <!-- Center text -->
+                  <circle cx="0" cy="0" r="35" fill="white" class="opacity-10" />
+                </svg>
+              </div>
+
+              <div class="flex-1 space-y-4 text-center md:text-left">
+                <div v-if="hoveredNode" class="animate-in fade-in slide-in-from-right-4 duration-300">
+                  <h4 class="font-black text-xl tracking-tight text-primary truncate max-w-[300px] mx-auto md:mx-0">{{ hoveredNode.name }}</h4>
+                  <p class="text-2xl font-black tracking-tighter mt-1">{{ formatSize(hoveredNode.size) }}</p>
+                  <p class="text-[10px] font-black uppercase tracking-[0.2em] text-base-content/30 mt-2">Level {{ hoveredNode.level + 1 }} Depth</p>
+                </div>
+                <div v-else class="opacity-30">
+                  <h4 class="font-black text-lg">Explore Storage</h4>
+                  <p class="text-xs font-bold uppercase tracking-widest">Hover over segments to see details</p>
+                </div>
+                <div class="pt-6 grid grid-cols-2 gap-4">
+                  <div class="bg-base-200/50 p-4 rounded-2xl border border-base-content/5">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-1">Files</span>
+                    <span class="text-sm font-bold">{{ stats?.used ? 'Analyzed' : '...' }}</span>
+                  </div>
+                  <div class="bg-base-200/50 p-4 rounded-2xl border border-base-content/5">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-1">Efficiency</span>
+                    <span class="text-sm font-bold">Optimal</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
         </div>
