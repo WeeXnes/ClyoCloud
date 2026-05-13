@@ -896,7 +896,9 @@ const toggleFavourite = async (file: File) => {
       </div>
     </transition>
 
-    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 min-h-[70vh]"
+          @dragover.prevent 
+          @drop.prevent="handleDrop">
       
       <!-- Skeleton Loading -->
       <div v-if="isLoading" :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'space-y-3'">
@@ -909,8 +911,6 @@ const toggleFavourite = async (file: File) => {
       <!-- File Grid -->
       <div 
         v-else-if="sortedFiles.length"
-        @dragover.prevent 
-        @drop.prevent="handleDrop"
         :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-3'"
       >
         <div 
