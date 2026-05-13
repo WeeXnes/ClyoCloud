@@ -395,16 +395,16 @@ const refresh = () => {
       </div>
     </div>
 
-    <!-- Tag Modal (Enhanced) -->
+    <!-- Tag Modal (Overhauled - matches File Browser) -->
     <div v-if="showTagModal" class="modal modal-open backdrop-blur-md z-[60]">
       <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-white/10 bg-base-900 text-white">
-        <div class="flex items-center gap-3 mb-6">
+        <div class="flex items-center gap-3 mb-8">
           <div class="bg-primary/20 p-3 rounded-2xl">
-            <Icon name="mdi:tag-plus" class="w-6 h-6 text-primary" />
+            <Icon name="mdi:tag-multiple" class="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h3 class="font-black text-xl tracking-tight">Tag this video</h3>
-            <p class="text-xs font-medium opacity-50">Add labels to organize your collection.</p>
+            <h3 class="font-black text-xl tracking-tight">Manage Tags</h3>
+            <p class="text-[11px] font-bold opacity-40 uppercase tracking-widest">Label your content for quick discovery</p>
           </div>
         </div>
 
@@ -416,7 +416,7 @@ const refresh = () => {
             <input
               v-model="newTagName"
               type="text"
-              placeholder="e.g. Vacation, Cinematic..."
+              placeholder="Work, Personal, Invoices..."
               class="input input-bordered w-full bg-white/5 focus:bg-white/10 transition-all font-bold text-sm h-12 rounded-xl border-white/10 text-white"
             />
           </div>
@@ -431,31 +431,31 @@ const refresh = () => {
                 class="w-16 h-12 rounded-xl cursor-pointer border-none bg-white/5"
               />
               <div class="flex-grow h-12 rounded-xl flex items-center px-4 font-bold text-sm bg-white/5 border border-dashed border-white/20" :style="{ color: newTagColor }">
-                 {{ newTagColor }} Preview
+                 Preview Style
               </div>
             </div>
           </div>
-          <div class="flex flex-col gap-3 mt-8">
-            <button class="btn btn-primary h-12 rounded-xl shadow-lg shadow-primary/20" @click="addTags">Create & Add Tag</button>
-            <button class="btn btn-ghost btn-sm h-12 rounded-xl" @click="showNewTagForm = false">Choose from library</button>
-            <button class="btn btn-ghost btn-sm h-12 rounded-xl" @click="closeTagModal">Dismiss</button>
+          <div class="flex flex-col gap-3 mt-10">
+            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="addTags">Create & Apply</button>
+            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = false">Use Existing</button>
+            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>
 
         <div v-else class="space-y-6">
           <div class="form-control">
             <label class="label mb-3">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest opacity-50 text-white">Library Selection</span>
+              <span class="label-text font-black text-[10px] uppercase tracking-widest opacity-50 text-white">Select Existing Tags</span>
             </label>
             <div class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
               <div
                 v-for="tag in predefinedTags"
                 :key="tag.name"
-                class="p-3 rounded-xl cursor-pointer text-center font-bold text-xs transition-all ring-1 ring-inset"
+                class="p-4 rounded-xl cursor-pointer text-center font-bold text-xs transition-all border-2"
                 :style="{ 
+                  borderColor: tag.color,
                   backgroundColor: isTagSelected(tag) ? tag.color : 'transparent', 
-                  color: isTagSelected(tag) ? 'white' : tag.color,
-                  ringColor: tag.color
+                  color: isTagSelected(tag) ? 'white' : tag.color
                 }"
                 @click="toggleTagSelection(tag)"
               >
@@ -463,10 +463,10 @@ const refresh = () => {
               </div>
             </div>
           </div>
-          <div class="flex flex-col gap-3 mt-8">
-            <button class="btn btn-primary h-12 rounded-xl shadow-lg shadow-primary/20" @click="addTags">Apply Selected Tags</button>
-            <button class="btn btn-ghost btn-sm h-12 rounded-xl" @click="showNewTagForm = true">Create new identity</button>
-            <button class="btn btn-ghost btn-sm h-12 rounded-xl" @click="closeTagModal">Dismiss</button>
+          <div class="flex flex-col gap-3 mt-10">
+            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="addTags">Apply Selection</button>
+            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = true">New Identity</button>
+            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>
       </div>
