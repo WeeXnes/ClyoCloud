@@ -11,6 +11,7 @@ const currentVideo = ref<Video | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const showTagModal = ref(false)
+const showShareModal = ref(false)
 const selectedTags = ref<Tag[]>([])
 const predefinedTags = ref<Tag[]>([])
 const showNewTagForm = ref(true)
@@ -77,6 +78,33 @@ const downloadVideo = () => {
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
+}
+
+const togglePublicAccess = async (event: Event) => {
+  if (!currentVideo.value) return
+  const isPublic = (event.target as HTMLInputElement).checked
+  
+  try {
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        fullPath: currentVideo.value.fullPath, 
+        isPublic 
+      }),
+    })
+    
+    if (!response.ok) throw new Error('Failed to update visibility')
+    
+    currentVideo.value.meta.isPublic = isPublic
+    createNotification(`Public access ${isPublic ? 'enabled' : 'disabled'}`, NotificationType.INFO)
+    
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update public access', NotificationType.ERROR)
+    // Reset toggle state
+    ;(event.target as HTMLInputElement).checked = !isPublic
+  }
 }
 
 const toggleFavourite = async (video: Video) => {
@@ -436,7 +464,7 @@ watch(() => route.params.path, () => {
                      <Icon name="mdi:download" class="w-4 h-4" />
                      Download
                    </button>
-                   <button class="btn btn-sm btn-primary gap-2 rounded-full px-4 shadow-lg" @click="copyPublicLinkForVideo">
+                   <button class="btn btn-sm btn-primary gap-2 rounded-full px-4 shadow-lg" @click="showShareModal = true">
                      <Icon name="mdi:share-variant" class="w-4 h-4" />
                      Share
                    </button>
@@ -586,6 +614,52 @@ watch(() => route.params.path, () => {
               <Icon name="mdi:video-off-outline" class="w-8 h-8 text-base-content/20 mx-auto mb-3" />
               <p class="text-xs font-bold text-base-content/40 uppercase tracking-wider">No similar videos found</p>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div v-if="showShareModal" class="modal modal-open backdrop-blur-md">
+      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-md border border-base-content/5">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="bg-primary/10 p-3 rounded-2xl">
+            <Icon name="mdi:share-variant" class="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h3 class="font-black text-xl tracking-tight">Share Video</h3>
+            <p class="text-xs font-medium text-base-content/50">Manage how others access this video.</p>
+          </div>
+        </div>
+
+        <div v-if="currentVideo" class="space-y-6">
+          <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-2xl border border-base-content/5">
+            <div>
+              <span class="text-sm font-black tracking-tight">Public Access</span>
+              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Enable to share via link</p>
+            </div>
+            <input 
+              type="checkbox" 
+              class="toggle toggle-success toggle-sm" 
+              :checked="currentVideo.meta.isPublic" 
+              @change="togglePublicAccess" 
+            />
+          </div>
+
+          <transition name="fade">
+            <div v-if="currentVideo.meta.isPublic" class="space-y-4">
+              <div class="bg-success/10 p-4 rounded-2xl flex flex-col gap-3 border border-success/20">
+                <p class="text-[11px] font-bold text-success-content/70">Anyone with the link can view this video.</p>
+                <button class="btn btn-sm btn-success text-white w-full rounded-xl shadow-lg shadow-success/20 h-11" @click="copyPublicLinkForVideo">
+                  <Icon name="mdi:content-copy" class="w-4 h-4 mr-2" />
+                  Copy Public Link
+                </button>
+              </div>
+            </div>
+          </transition>
+
+          <div class="flex flex-col gap-3 pt-4">
+            <button class="btn btn-ghost h-12 rounded-xl" @click="showShareModal = false">Close</button>
           </div>
         </div>
       </div>
