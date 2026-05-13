@@ -1493,7 +1493,6 @@ const toggleFavourite = async (file: File) => {
                       :class="selectedFile?.isFolder ? 'badge-primary' : 'badge-ghost'">
                   {{ selectedFile?.isFolder ? 'Folder' : 'Document' }}
                 </span>
-                <span class="text-[10px] font-bold text-base-content/30 uppercase tracking-[0.2em] ml-2">Internal Asset</span>
               </div>
             </div>
           </div>
@@ -1505,33 +1504,28 @@ const toggleFavourite = async (file: File) => {
           <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))" class="w-full">
              <div class="flex items-center gap-2 mb-4">
                 <Icon name="mdi:eye-outline" class="w-4 h-4 text-primary/60" />
-                <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Visual Asset Preview</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">File Preview</span>
              </div>
              <div :key="selectedFile.name" class="rounded-[2rem] overflow-hidden shadow-2xl ring-1 ring-base-content/5 bg-black flex items-center justify-center aspect-video group/preview relative">
                 <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
                   <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
                 </video>
-                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-contain transition-transform duration-700 group-hover/preview:scale-105" />
-                <div class="absolute top-6 right-6 z-10 opacity-0 group-hover/preview:opacity-100 transition-opacity">
-                   <button class="btn btn-circle btn-md bg-white/20 hover:bg-white/40 border-none text-white backdrop-blur-xl shadow-2xl" @click="isImageFile(selectedFile.name) ? (selectedImageUrl = getStaticUrl(selectedFile), showImageViewerModal = true) : null">
-                      <Icon name="mdi:fullscreen" class="w-6 h-6" />
-                   </button>
-                </div>
+                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-contain transition-transform duration-700 group-hover/preview:scale-105 cursor-pointer" @click="selectedImageUrl = getStaticUrl(selectedFile), showImageViewerModal = true" />
              </div>
           </div>
 
           <!-- Stats Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
-              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Total Size</span>
+              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Size</span>
               <span class="text-lg font-black tracking-tight">{{ formatSize(selectedFile.size) }}</span>
             </div>
             <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
-              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Last Updated</span>
+              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Modified</span>
               <span class="text-lg font-black tracking-tight">{{ new Date(selectedFile.lastModified).toLocaleDateString() }}</span>
             </div>
             <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
-              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Permissions</span>
+              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Access</span>
               <span class="text-lg font-black tracking-tight text-success">Read/Write</span>
             </div>
           </div>
@@ -1544,7 +1538,7 @@ const toggleFavourite = async (file: File) => {
                 <div class="flex items-center justify-between mb-4">
                   <div class="flex items-center gap-2">
                     <Icon name="mdi:text-subject" class="w-4 h-4 text-primary/60" />
-                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Description & Context</span>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Description</span>
                   </div>
                   <button v-if="!isEditingDescription" class="btn btn-ghost btn-xs rounded-lg opacity-0 group-hover/desc:opacity-100 transition-opacity" @click="startEditDescription">
                     <Icon name="mdi:pencil" class="w-3 h-3 mr-1" /> Edit
@@ -1559,7 +1553,7 @@ const toggleFavourite = async (file: File) => {
                   ></textarea>
                   <div class="flex justify-end gap-2">
                     <button class="btn btn-ghost btn-xs h-9 rounded-xl px-4" @click="isEditingDescription = false">Cancel</button>
-                    <button class="btn btn-primary btn-xs h-9 rounded-xl px-6" @click="saveDescription">Save Note</button>
+                    <button class="btn btn-primary btn-xs h-9 rounded-xl px-6" @click="saveDescription">Save</button>
                   </div>
                 </div>
                 <div v-else>
@@ -1568,7 +1562,7 @@ const toggleFavourite = async (file: File) => {
                   </div>
                   <button v-else class="btn btn-ghost btn-md w-full border border-dashed border-base-content/10 rounded-2xl italic font-bold text-base-content/20 text-xs hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all py-8" @click="startEditDescription">
                     <Icon name="mdi:plus" class="w-5 h-5 mb-1" />
-                    <br/> Add details about this file
+                    <br/> Add description
                   </button>
                 </div>
               </div>
@@ -1577,7 +1571,7 @@ const toggleFavourite = async (file: File) => {
               <div>
                 <div class="flex items-center gap-2 mb-4">
                   <Icon name="mdi:tag-outline" class="w-4 h-4 text-primary/60" />
-                  <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Identity Tags</span>
+                  <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Tags</span>
                 </div>
                 <div class="flex flex-wrap gap-2 items-center bg-base-200/30 p-4 rounded-2xl border border-base-content/5">
                     <span v-for="tag in (selectedFile.meta.tags || [])"
@@ -1595,7 +1589,7 @@ const toggleFavourite = async (file: File) => {
                       @click="openSingleTagModal"
                     >
                       <Icon name="mdi:plus" class="w-4 h-4 mr-1 text-primary" /> 
-                      <span class="font-bold text-[10px] uppercase tracking-wide">Assign</span>
+                      <span class="font-bold text-[10px] uppercase tracking-wide">Add</span>
                     </button>
                 </div>
               </div>
@@ -1607,7 +1601,7 @@ const toggleFavourite = async (file: File) => {
               <div class="bg-base-100 rounded-3xl p-6 border border-base-content/5 space-y-6 shadow-sm">
                 <div class="flex items-center justify-between">
                   <div>
-                    <span class="text-sm font-black tracking-tight">Favorite Status</span>
+                    <span class="text-sm font-black tracking-tight">Favorite</span>
                     <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Pin for quick access</p>
                   </div>
                   <button 
@@ -1623,15 +1617,15 @@ const toggleFavourite = async (file: File) => {
 
                 <div class="flex items-center justify-between">
                   <div>
-                    <span class="text-sm font-black tracking-tight">Public Presence</span>
-                    <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Share via secret link</p>
+                    <span class="text-sm font-black tracking-tight">Public Access</span>
+                    <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Share via link</p>
                   </div>
                   <input type="checkbox" class="toggle toggle-success toggle-sm" :checked="selectedFile.meta.isPublic" @change="togglePublicAccess" />
                 </div>
                 
                 <transition name="fade">
                   <div v-if="selectedFile.meta.isPublic" class="bg-success/5 p-4 rounded-2xl flex flex-col gap-3 border border-success/10 ring-1 ring-success/20">
-                    <p class="text-[10px] font-bold text-success uppercase tracking-widest">Active Secret Link</p>
+                    <p class="text-[10px] font-bold text-success uppercase tracking-widest">Public Link</p>
                     <button class="btn btn-sm btn-success text-white w-full rounded-xl shadow-lg shadow-success/20 h-11" @click="copyPublicLink">
                       <Icon name="mdi:content-copy" class="w-4 h-4 mr-2" />
                       Copy Link
