@@ -219,6 +219,37 @@ const isTagSelected = (tag: Tag) => {
   return selectedTags.value.some(t => t.name === tag.name)
 }
 
+const removeTag = async (tagToRemove: Tag) => {
+  if (!selectedFile.value) return
+
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const filePath = folderPath ? `${folderPath}/${selectedFile.value.name}` : selectedFile.value.name
+
+    const updatedTags = selectedFile.value.meta.tags.filter(t => t.name !== tagToRemove.name)
+
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: filePath,
+        tags: updatedTags,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to remove tag')
+
+    selectedFile.value.meta.tags = updatedTags
+    createNotification('Tag removed', NotificationType.SUCCESS)
+    await fetchFiles()
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to remove tag', NotificationType.ERROR)
+  }
+}
+
 const fetchPredefinedTags = async () => {
   try {
     const response = await fetch('/api/tags', { credentials: 'include' })
@@ -263,8 +294,18 @@ const bulkAddTags = async () => {
 
     for (const name of targetFileNames) {
       const file = files.value.find(f => f.name === name)
-      const currentTags = file?.meta.tags || []
-      const updatedTags = [...currentTags, ...tagsToAdd]
+      if (!file) continue
+      
+      const currentTags = file.meta.tags || []
+      
+      // Filter out duplicates (case-insensitive)
+      const tagsToActuallyAdd = tagsToAdd.filter(newTag => 
+        !currentTags.some(existingTag => existingTag.name.toLowerCase() === newTag.name.toLowerCase())
+      )
+
+      if (tagsToActuallyAdd.length === 0) continue
+
+      const updatedTags = [...currentTags, ...tagsToActuallyAdd]
       const filePath = folderPath ? `${folderPath}/${name}` : name
       
       const response = await fetch('/api/file-meta', {
@@ -884,7 +925,7 @@ const toggleFavourite = async (file: File) => {
               @contextmenu.prevent="handleContextMenu($event, file)"
             >
               <!-- Selection Checkbox (Top Left) -->
-              <div class="absolute top-2 left-2 z-20 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.has(file.name) }">
+              <div class="absolute top-2 left-2 z-20 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">
                 <input 
                   type="checkbox" 
                   class="checkbox checkbox-sm checkbox-primary bg-base-100/80 backdrop-blur-md" 
@@ -1106,8 +1147,13 @@ const toggleFavourite = async (file: File) => {
              <div class="flex flex-wrap gap-2 items-center">
                 <span v-for="tag in selectedFile.meta.tags"
                       :key="tag.name"
-                      class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm"
-                      :style="{ backgroundColor: tag.color }"> {{ tag.name }} </span>
+                      class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm group/tag"
+                      :style="{ backgroundColor: tag.color }"> 
+                  {{ tag.name }} 
+                  <Icon name="mdi:close" 
+                        class="w-0 group-hover/tag:w-3 h-3 ml-0 group-hover/tag:ml-1 cursor-pointer transition-all" 
+                        @click.stop="removeTag(tag)" />
+                </span>
                 
                 <button
                   class="btn btn-ghost btn-xs bg-base-200/50 hover:bg-base-content/10 border border-base-content/5 rounded-full px-3 transition-all"

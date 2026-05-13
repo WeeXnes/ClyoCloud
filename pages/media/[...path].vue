@@ -161,6 +161,32 @@ const isTagSelected = (tag: Tag) => {
   return selectedTags.value.some(t => t.name === tag.name)
 }
 
+const removeTag = async (tagToRemove: Tag) => {
+  if (!currentVideo.value) return
+
+  try {
+    const updatedTags = currentVideo.value.meta.tags.filter(t => t.name !== tagToRemove.name)
+
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: currentVideo.value.fullPath,
+        tags: updatedTags,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to remove tag')
+
+    currentVideo.value.meta.tags = updatedTags
+    createNotification('Tag removed', NotificationType.SUCCESS)
+    await fetchVideos()
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to remove tag', NotificationType.ERROR)
+  }
+}
+
 const addTag = async () => {
   let tagsToAdd: Tag[] = []
   if (showNewTagForm.value) {
@@ -184,7 +210,20 @@ const addTag = async () => {
   }
 
   try {
-    const updatedTags = [...(currentVideo.value.meta.tags || []), ...tagsToAdd]
+    const currentTags = currentVideo.value.meta.tags || []
+    
+    // Filter out duplicates (case-insensitive)
+    const tagsToActuallyAdd = tagsToAdd.filter(newTag => 
+      !currentTags.some(existingTag => existingTag.name.toLowerCase() === newTag.name.toLowerCase())
+    )
+
+    if (tagsToActuallyAdd.length === 0) {
+       createNotification('Tags already exist', NotificationType.INFO)
+       closeTagModal();
+       return;
+    }
+
+    const updatedTags = [...currentTags, ...tagsToActuallyAdd]
     
     const response = await fetch('/api/file-meta', {
       method: 'POST',
@@ -348,10 +387,13 @@ watch(() => route.params.path, () => {
                   <span
                     v-for="tag in currentVideo.meta.tags"
                     :key="tag.name"
-                    class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm"
+                    class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm group/tag"
                     :style="{ backgroundColor: tag.color }"
                   >
                     {{ tag.name }}
+                    <Icon name="mdi:close" 
+                          class="w-0 group-hover/tag:w-3 h-3 ml-0 group-hover/tag:ml-1 cursor-pointer transition-all" 
+                          @click.stop="removeTag(tag)" />
                   </span>
                 </div>
                 <button
