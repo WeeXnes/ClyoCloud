@@ -32,11 +32,6 @@ const handleScroll = (event: Event) => {
   }
 }
 
-const isVideoVisible = (index: number) => {
-  // Render current, previous, and next video for smooth transition
-  return Math.abs(index - currentIndex.value) <= 1
-}
-
 const fetchVideos = async () => {
   try {
     isLoading.value = true
