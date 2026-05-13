@@ -395,20 +395,24 @@ const itemsPerRow = ref(6) // Default for XL, updated on resize
 
 const handleMainScroll = (event: Event) => {
   const target = event.target as HTMLElement
-  // This is for list view mostly, grid view is more complex due to variable columns
-  // But we can approximate based on scroll position
   if (!isGridView.value) {
-    const itemHeight = 76 // Approximately row height with gap
+    const itemHeight = 76 // 64px height + 12px gap (gap-3)
     scrollIndex.value = Math.floor(target.scrollTop / itemHeight)
   } else {
-    const itemHeight = 220 // Approximate grid item height + gap
+    // In grid view, height is Width + metadata height (approx 48px) + gap (24px)
+    // This is still an approximation because Width varies with screen size
+    // We'll use a more generous buffer to compensate
+    const containerWidth = target.clientWidth - 48 // Account for padding
+    const itemWidth = containerWidth / itemsPerRow.value
+    const itemHeight = itemWidth + 48 + 24 
     const rowsScrolled = Math.floor(target.scrollTop / itemHeight)
     scrollIndex.value = rowsScrolled * itemsPerRow.value
   }
 }
 
 const isFileVisible = (index: number) => {
-  const buffer = isGridView.value ? itemsPerRow.value * 4 : 20
+  // Use a much larger buffer for grid view to handle the approximation better
+  const buffer = isGridView.value ? itemsPerRow.value * 12 : 40
   return Math.abs(index - scrollIndex.value) <= buffer
 }
 
@@ -1111,7 +1115,7 @@ const toggleFavourite = async (file: File) => {
               </div>
 
               <!-- Grid Metadata -->
-              <div class="px-1 text-center">
+              <div class="px-1 text-center h-[48px] flex flex-col justify-center">
                 <div class="min-w-0 px-1">
                   <input v-if="editingName === file.name" 
                          v-model="newName" 
@@ -1119,7 +1123,7 @@ const toggleFavourite = async (file: File) => {
                          @keyup.enter="saveRename(file.name)" 
                          @blur="saveRename(file.name)" 
                          @click.stop />
-                  <h3 v-else class="text-xs font-bold truncate block group-hover:text-primary transition-colors">{{ file.name }}</h3>
+                  <h3 v-else class="text-xs font-bold truncate block group-hover:text-primary transition-colors leading-tight">{{ file.name }}</h3>
                   <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider mt-0.5">
                     <span v-if="!file.isFolder">{{ (file.size / 1024 / 1024).toFixed(1) }} MB</span>
                     <span v-else>Folder</span>
@@ -1130,7 +1134,7 @@ const toggleFavourite = async (file: File) => {
 
             <!-- Modernized List Item (Oriented on old view) -->
             <div v-else 
-                 class="flex items-center gap-4 p-3 bg-base-100 rounded-xl border border-base-content/5 hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer group/row ring-primary/30 min-h-[64px]"
+                 class="flex items-center gap-4 p-3 bg-base-100 rounded-xl border border-base-content/5 hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer group/row ring-primary/30 h-[64px]"
                  :class="{ 'ring-1 bg-primary/5 border-primary/20': selectedFiles.has(file.name) }"
                  @click="onFileClick($event, file)" 
                  @contextmenu.prevent="handleContextMenu($event, file)"
@@ -1189,7 +1193,10 @@ const toggleFavourite = async (file: File) => {
           </template>
 
           <!-- Placeholder to maintain height for non-rendered items -->
-          <div v-else :class="isGridView ? 'aspect-square bg-base-100/30 rounded-2xl border border-dashed border-base-content/5' : 'h-[64px] bg-base-100/30 rounded-xl border border-dashed border-base-content/5'"></div>
+          <div v-else :class="isGridView ? 'flex flex-col gap-2' : 'h-[64px] bg-base-100/30 rounded-xl border border-dashed border-base-content/5'">
+            <div v-if="isGridView" class="aspect-square bg-base-100/30 rounded-2xl border border-dashed border-base-content/5"></div>
+            <div v-if="isGridView" class="h-[48px]"></div>
+          </div>
         </div>
       </div>
 
