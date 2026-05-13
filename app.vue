@@ -56,6 +56,12 @@
                     <span>Media Tab</span>
                   </NuxtLink>
                 </li>
+                <li>
+                  <NuxtLink to="/shorts" class="nav-link" active-class="active">
+                    <Icon name="mdi:video-vertical" class="w-5 h-5" />
+                    <span>Shorts</span>
+                  </NuxtLink>
+                </li>
               </ul>
             </div>
 
