@@ -224,6 +224,19 @@ const openBulkTagModal = () => {
   showTagModal.value = true
 }
 
+const openSingleTagModal = () => {
+  if (selectedFile.value) {
+    selectedTags.value = selectedFile.value.meta.tags ? [...selectedFile.value.meta.tags] : []
+    showNewTagForm.value = false
+  } else {
+    selectedTags.value = []
+    showNewTagForm.value = true
+  }
+  newTagName.value = ''
+  newTagColor.value = '#4B5EAA'
+  showTagModal.value = true
+}
+
 const closeTagModal = () => {
   showTagModal.value = false
 }
@@ -1435,9 +1448,8 @@ const toggleFavourite = async (file: File) => {
                 
                 <button
                   class="btn btn-ghost btn-xs bg-base-200/50 hover:bg-base-content/10 border border-base-content/5 rounded-full px-3 transition-all"
-                  @click="showTagModal = true"
-                >
-                  <Icon name="mdi:tag-plus-outline" class="w-4 h-4 mr-1 text-primary" /> 
+                  @click="openSingleTagModal"
+                >                  <Icon name="mdi:tag-plus-outline" class="w-4 h-4 mr-1 text-primary" /> 
                   <span class="font-bold text-[10px] uppercase tracking-wide">Add Tag</span>
                 </button>
              </div>

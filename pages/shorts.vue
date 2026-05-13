@@ -117,8 +117,8 @@ const toggleFavourite = async (video: Video) => {
 
 const openTagModal = async () => {
   if (!currentVisibleVideo.value) return
-  selectedTags.value = []
-  showNewTagForm.value = true
+  selectedTags.value = currentVisibleVideo.value.meta.tags ? [...currentVisibleVideo.value.meta.tags] : []
+  showNewTagForm.value = false
   newTagName.value = ''
   newTagColor.value = '#4B5EAA'
   showTagModal.value = true

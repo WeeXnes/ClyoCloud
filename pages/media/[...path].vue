@@ -219,8 +219,8 @@ const goToVideo = (fullPath: string) => {
 }
 
 const openTagModal = () => {
-  selectedTags.value = []
-  showNewTagForm.value = true
+  selectedTags.value = currentVideo.value?.meta.tags ? [...currentVideo.value.meta.tags] : []
+  showNewTagForm.value = false
   newTagName.value = ''
   newTagColor.value = '#4B5EAA'
   showTagModal.value = true
