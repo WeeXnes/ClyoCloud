@@ -607,6 +607,12 @@ const getThumbnailUrl = (filename: string) => {
 }
 
 const onFileClick = (event: Event, file: File) => {
+  // If we are in selection mode, toggle selection instead of opening
+  if (selectedFiles.value.size > 0) {
+    toggleSelection(file.name)
+    return
+  }
+
   const target = event.target as HTMLElement
   const isThumbnail = target.dataset.isThumbnail === 'true'
 
