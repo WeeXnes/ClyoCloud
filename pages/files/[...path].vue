@@ -206,6 +206,62 @@ const bulkDownload = () => {
   window.location.href = `/api/bulk-download?files=${encodeURIComponent(filesQuery)}&path=${encodeURIComponent(folderPath)}`
 }
 
+const showBulkRenameModal = ref(false)
+const bulkRenameBaseName = ref('')
+const bulkRenameStartNumber = ref(1)
+const isBulkRenaming = ref(false)
+
+const openBulkRenameModal = () => {
+  bulkRenameBaseName.value = ''
+  bulkRenameStartNumber.value = 1
+  showBulkRenameModal.value = true
+}
+
+const executeBulkRename = async () => {
+  if (!bulkRenameBaseName.value.trim()) {
+    createNotification('Base name is required', NotificationType.WARNING)
+    return
+  }
+
+  isBulkRenaming.value = true
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    
+    const sortedFileNames = Array.from(selectedFiles.value).sort()
+    let count = bulkRenameStartNumber.value
+
+    for (const oldName of sortedFileNames) {
+      const file = files.value.find(f => f.name === oldName)
+      if (!file) continue
+
+      const ext = oldName.includes('.') ? `.${oldName.split('.').pop()}` : ''
+      const newName = `${bulkRenameBaseName.value}_${count}${ext}`
+      
+      const oldPath = folderPath ? `${folderPath}/${oldName}` : oldName
+
+      const response = await fetch('/api/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPath, newName }),
+      })
+
+      if (!response.ok) throw new Error(`Failed to rename ${oldName}`)
+      count++
+    }
+
+    createNotification('Bulk rename successful', NotificationType.SUCCESS)
+    selectedFiles.value.clear()
+    await fetchFiles()
+    showBulkRenameModal.value = false
+  } catch (err) {
+    console.error(err)
+    createNotification('Bulk rename failed', NotificationType.ERROR)
+  } finally {
+    isBulkRenaming.value = false
+  }
+}
 const isGridViewCookie = useCookie<boolean>('isGridView', { 
   default: () => false,
   maxAge: 60 * 60 * 24 * 365 // 1 year
@@ -1173,6 +1229,9 @@ const toggleFavourite = async (file: File) => {
             <button class="btn btn-xs sm:btn-sm bg-white/10 hover:bg-white/20 border-none text-white gap-2" @click="bulkDownload">
               <Icon name="mdi:download" class="w-4 h-4" /> Download
             </button>
+            <button class="btn btn-xs sm:btn-sm bg-white/10 hover:bg-white/20 border-none text-white gap-2" @click="openBulkRenameModal">
+              <Icon name="mdi:pencil" class="w-4 h-4" /> Rename
+            </button>
             <button class="btn btn-xs sm:btn-sm bg-white/10 hover:bg-white/20 border-none text-white gap-2" @click="openBulkTagModal">
               <Icon name="mdi:tag-plus" class="w-4 h-4" /> Tags
             </button>
@@ -1784,6 +1843,65 @@ const toggleFavourite = async (file: File) => {
               <span v-if="isMoving" class="loading loading-spinner loading-xs"></span>
               Move Here
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Rename Modal -->
+    <div v-if="showBulkRenameModal" class="modal modal-open backdrop-blur-md">
+      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-base-content/5">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="bg-primary/10 p-3 rounded-2xl">
+            <Icon name="mdi:pencil-box-multiple" class="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h3 class="font-black text-xl tracking-tight">Bulk Rename</h3>
+            <p class="text-[11px] font-bold text-base-content/40 uppercase tracking-widest">Rename {{ selectedFiles.size }} items at once</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <div class="form-control">
+            <label class="label mb-1">
+              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Base Name</span>
+            </label>
+            <input
+                v-model="bulkRenameBaseName"
+                type="text"
+                placeholder="Holiday_Photo"
+                class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+            />
+          </div>
+          <div class="form-control">
+            <label class="label mb-1">
+              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Start Index</span>
+            </label>
+            <input
+                v-model.number="bulkRenameStartNumber"
+                type="number"
+                min="0"
+                class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+            />
+          </div>
+
+          <div class="bg-base-200/50 p-4 rounded-2xl border border-dashed border-base-content/10">
+            <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-2">Preview Example</span>
+            <p class="text-sm font-bold text-primary truncate">
+              {{ bulkRenameBaseName || 'Name' }}_{{ bulkRenameStartNumber || 1 }}.jpg
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-3 mt-10">
+            <button 
+              class="btn btn-primary h-12 rounded-xl shadow-lg" 
+              @click="executeBulkRename"
+              :disabled="isBulkRenaming"
+            >
+              <span v-if="isBulkRenaming" class="loading loading-spinner loading-xs"></span>
+              Rename All
+            </button>
+            <button class="btn btn-ghost h-12 rounded-xl" @click="showBulkRenameModal = false">Cancel</button>
           </div>
         </div>
       </div>

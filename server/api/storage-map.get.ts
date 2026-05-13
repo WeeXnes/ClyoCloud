@@ -20,7 +20,7 @@ async function getDirSize(dirPath: string): Promise<number> {
     let totalSize = 0
     try {
         const files = await fs.readdir(dirPath, { withFileTypes: true })
-        for (const file of files) {
+        await Promise.all(files.map(async (file) => {
             const filePath = path.join(dirPath, file.name)
             if (file.isDirectory()) {
                 totalSize += await getDirSize(filePath)
@@ -28,7 +28,7 @@ async function getDirSize(dirPath: string): Promise<number> {
                 const stats = await fs.stat(filePath)
                 totalSize += stats.size
             }
-        }
+        }))
         sizeCache.set(dirPath, { size: totalSize, timestamp: Date.now() })
     } catch (err) {}
     return totalSize
@@ -54,31 +54,46 @@ export default defineEventHandler(async (event) => {
                 const children: StorageNode[] = []
                 let totalSize = 0
 
-                for (const entry of entries) {
-                    if (entry.name.startsWith('.') || entry.name.endsWith('.cloudinfo')) continue
-
+                // Batch stats requests for better performance
+                const entryStats = await Promise.all(entries.map(async (entry) => {
+                    if (entry.name.startsWith('.') || entry.name.endsWith('.cloudinfo')) return null
                     const fullPath = path.join(dirPath, entry.name)
                     
                     if (entry.isDirectory()) {
-                        if (depth < 5) {
+                        if (depth < 2) { // Limit depth for map visualization to keep it fast
                             const childNode = await getStorageMap(fullPath, entry.name, depth + 1)
-                            totalSize += childNode.size
-                            children.push(childNode)
+                            return { type: 'dir', name: entry.name, node: childNode }
                         } else {
                             const size = await getDirSize(fullPath)
-                            totalSize += size
-                            children.push({ name: entry.name, size })
+                            return { type: 'dir', name: entry.name, size }
                         }
                     } else if (entry.isFile()) {
                         const stats = await fs.stat(fullPath)
-                        totalSize += stats.size
-                        children.push({ name: entry.name, size: stats.size })
+                        return { type: 'file', name: entry.name, size: stats.size }
+                    }
+                    return null
+                }))
+
+                for (const stat of entryStats) {
+                    if (!stat) continue
+                    if (stat.type === 'dir') {
+                        if (stat.node) {
+                            totalSize += stat.node.size
+                            children.push(stat.node)
+                        } else {
+                            totalSize += stat.size
+                            children.push({ name: stat.name, size: stat.size })
+                        }
+                    } else {
+                        totalSize += stat.size
+                        children.push({ name: stat.name, size: stat.size })
                     }
                 }
 
                 node.size = totalSize
                 if (children.length > 0) {
-                    node.children = children
+                    // Sort children by size descending for better visualization
+                    node.children = children.sort((a, b) => b.size - a.size)
                 }
             } catch (err) {
                 console.error(`Error mapping ${dirPath}:`, err)

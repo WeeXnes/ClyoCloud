@@ -57,63 +57,38 @@ const fetchStats = async (silent = false) => {
   }
 }
 
-// Sunburst Logic
+// Treemap Logic
 const hoveredNode = ref<any>(null)
 
-const getSunburstPaths = (node: any, radius: number = 100) => {
-  const paths: any[] = []
-  if (!node || !node.children) return paths
+const getFlattenedNodes = (node: any, depth: number = 0): any[] => {
+  if (!node || !node.children) return []
+  
+  // Only show top 2 levels in treemap for performance and clarity
+  if (depth > 1) return []
 
-  const totalSize = node.size
-  let currentAngle = 0
-
-  const processNode = (n: any, startAngle: number, endAngle: number, level: number) => {
-    const innerRadius = level * 40
-    const outerRadius = (level + 1) * 40
-    
-    // Convert angles to radians
-    const startRad = (startAngle - 90) * Math.PI / 180
-    const endRad = (endAngle - 90) * Math.PI / 180
-
-    const x1 = Math.cos(startRad) * innerRadius
-    const y1 = Math.sin(startRad) * innerRadius
-    const x2 = Math.cos(endRad) * innerRadius
-    const y2 = Math.sin(endRad) * innerRadius
-    const x3 = Math.cos(endRad) * outerRadius
-    const y3 = Math.sin(endRad) * outerRadius
-    const x4 = Math.cos(startRad) * outerRadius
-    const y4 = Math.sin(startRad) * outerRadius
-
-    const largeArc = (endAngle - startAngle) > 180 ? 1 : 0
-
-    const d = `M ${x1} ${y1} L ${x4} ${y4} A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x3} ${y3} L ${x2} ${y2} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x1} ${y1} Z`
-    
-    paths.push({
-      d,
-      name: n.name,
-      size: n.size,
-      level,
-      color: `hsl(${220 + level * 20}, ${70 - level * 10}%, ${50 + level * 5}%)`
-    })
-
-    if (n.children && level < 3) {
-      let childStartAngle = startAngle
-      const angleWidth = endAngle - startAngle
-      for (const child of n.children) {
-        const childAngleWidth = (child.size / n.size) * angleWidth
-        processNode(child, childStartAngle, childStartAngle + childAngleWidth, level + 1)
-        childStartAngle += childAngleWidth
-      }
-    }
-  }
-
-  processNode(node, 0, 360, 0)
-  return paths
+  return node.children.map((child: any) => ({
+    ...child,
+    depth
+  }))
 }
 
-const sunburstPaths = computed(() => {
-  return getSunburstPaths(storageMapData.value)
+const treemapNodes = computed(() => {
+  if (!storageMapData.value) return []
+  const topLevel = storageMapData.value.children || []
+  // Filter out very small items (less than 1% of total) to avoid clutter
+  const totalSize = storageMapData.value.size
+  return topLevel
+    .filter((n: any) => n.size > totalSize * 0.005)
+    .slice(0, 12) // Limit to top 12 items for clean UI
 })
+
+const getTreemapColor = (index: number) => {
+  const colors = [
+    'bg-primary', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 
+    'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-indigo-500'
+  ]
+  return colors[index % colors.length]
+}
 
 const getActionIcon = (action: string) => {
   switch (action) {
@@ -372,59 +347,67 @@ onUnmounted(() => {
             </div>
           </section>
 
-          <!-- Storage Map Card (Sunburst) -->
-          <section class="flex-1 bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col min-h-[500px]">
+          <!-- Storage Map Card (Treemap) -->
+          <section class="flex-1 bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col">
             <div class="flex items-center justify-between mb-8 shrink-0">
                <div class="flex items-center gap-4">
                  <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Icon name="mdi:chart-donut" class="text-primary w-6 h-6" />
+                    <Icon name="mdi:chart-tree" class="text-primary w-6 h-6" />
                  </div>
                  <div>
-                   <h3 class="font-black text-lg tracking-tight">Storage Visualization</h3>
-                   <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Disk Space Map</p>
+                   <h3 class="font-black text-lg tracking-tight">Storage Distribution</h3>
+                   <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Resource Allocation</p>
                  </div>
                </div>
             </div>
 
-            <div v-if="isLoading" class="flex-1 flex items-center justify-center">
-              <div class="w-48 h-48 rounded-full bg-base-200 animate-pulse"></div>
+            <div v-if="isLoading" class="flex-1 flex items-center justify-center min-h-[300px]">
+              <div class="loading loading-spinner loading-lg text-primary"></div>
             </div>
-            <div v-else class="flex-1 flex flex-col md:flex-row items-center justify-center gap-10">
-              <div class="relative w-64 h-64 sm:w-80 sm:h-80 shrink-0">
-                <svg viewBox="-160 -160 320 320" class="w-full h-full transform transition-transform duration-700 hover:rotate-12">
-                  <path 
-                    v-for="(path, index) in sunburstPaths" 
-                    :key="index"
-                    :d="path.d"
-                    :fill="path.color"
-                    class="transition-all duration-300 hover:opacity-80 hover:scale-[1.02] cursor-pointer"
-                    @mouseenter="hoveredNode = path"
-                    @mouseleave="hoveredNode = null"
-                  />
-                  <!-- Center text -->
-                  <circle cx="0" cy="0" r="35" fill="white" class="opacity-10" />
-                </svg>
+            <div v-else class="flex-1 flex flex-col gap-8">
+              <!-- Optimized Treemap -->
+              <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 auto-rows-[100px] gap-2">
+                <div 
+                  v-for="(node, index) in treemapNodes" 
+                  :key="node.name"
+                  class="rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer flex flex-col justify-end group border border-white/10"
+                  :class="[
+                    getTreemapColor(index),
+                    index === 0 ? 'col-span-4 row-span-2 sm:col-span-3' : 
+                    index === 1 ? 'col-span-2 row-span-2' : 
+                    'col-span-2 row-span-1'
+                  ]"
+                  @mouseenter="hoveredNode = node"
+                  @mouseleave="hoveredNode = null"
+                >
+                  <div class="flex flex-col min-w-0 text-white">
+                    <span class="text-[10px] font-black uppercase tracking-widest opacity-60 truncate">{{ formatSize(node.size) }}</span>
+                    <h4 class="text-xs font-black truncate group-hover:whitespace-normal">{{ node.name }}</h4>
+                  </div>
+                </div>
               </div>
 
-              <div class="flex-1 space-y-4 text-center md:text-left">
-                <div v-if="hoveredNode" class="animate-in fade-in slide-in-from-right-4 duration-300">
-                  <h4 class="font-black text-xl tracking-tight text-primary truncate max-w-[300px] mx-auto md:mx-0">{{ hoveredNode.name }}</h4>
-                  <p class="text-2xl font-black tracking-tighter mt-1">{{ formatSize(hoveredNode.size) }}</p>
-                  <p class="text-[10px] font-black uppercase tracking-[0.2em] text-base-content/30 mt-2">Level {{ hoveredNode.level + 1 }} Depth</p>
-                </div>
-                <div v-else class="opacity-30">
-                  <h4 class="font-black text-lg">Explore Storage</h4>
-                  <p class="text-xs font-bold uppercase tracking-widest">Hover over segments to see details</p>
-                </div>
-                <div class="pt-6 grid grid-cols-2 gap-4">
-                  <div class="bg-base-200/50 p-4 rounded-2xl border border-base-content/5">
-                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-1">Files</span>
-                    <span class="text-sm font-bold">{{ stats?.used ? 'Analyzed' : '...' }}</span>
+              <!-- Legend/Details -->
+              <div class="bg-base-200/50 rounded-3xl p-6 border border-base-content/5">
+                <div v-if="hoveredNode" class="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Active Selection</span>
                   </div>
-                  <div class="bg-base-200/50 p-4 rounded-2xl border border-base-content/5">
-                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-1">Efficiency</span>
-                    <span class="text-sm font-bold">Optimal</span>
+                  <h4 class="font-black text-xl tracking-tight text-primary truncate">{{ hoveredNode.name }}</h4>
+                  <div class="flex items-baseline gap-2 mt-1">
+                    <p class="text-2xl font-black tracking-tighter">{{ formatSize(hoveredNode.size) }}</p>
+                    <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest">
+                      ~{{ storageMapData ? ((hoveredNode.size / storageMapData.size) * 100).toFixed(1) : 0 }}% of total
+                    </p>
                   </div>
+                </div>
+                <div v-else class="flex items-center justify-between opacity-40">
+                  <div>
+                    <h4 class="font-black text-sm uppercase tracking-tight">Explore Allocation</h4>
+                    <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Select segments to analyze space</p>
+                  </div>
+                  <Icon name="mdi:gesture-tap" class="w-6 h-6" />
                 </div>
               </div>
             </div>
