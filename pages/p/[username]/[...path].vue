@@ -124,9 +124,10 @@ onMounted(fetchFileInfo)
                   {{ fileInfo.isFolder ? `${fileInfo.name}.zip` : fileInfo.name }}
                 </h2>
                 <div class="flex items-center gap-3 text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
-                  <span>{{ fileInfo.isFolder ? 'Folder' : formatFileSize(fileInfo.size) }}</span>
+                  <span>{{ formatFileSize(fileInfo.size) }}</span>
                   <span class="w-1 h-1 rounded-full bg-base-content/20"></span>
                   <span>{{ new Date(fileInfo.lastModified).toLocaleDateString() }}</span>
+                  <span v-if="fileInfo.isFolder" class="badge badge-ghost badge-xs text-[9px] font-black tracking-widest py-2">Bundle</span>
                 </div>
               </div>
             </div>

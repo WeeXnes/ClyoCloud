@@ -1476,146 +1476,188 @@ const toggleFavourite = async (file: File) => {
 
     <!-- File Info Modal (Overhauled) -->
     <div class="modal backdrop-blur-md" :class="{ 'modal-open': showFileInfoModal }" @click="closeFileModal">
-      <div class="modal-box rounded-3xl shadow-2xl p-0 max-w-lg border border-base-content/5 overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
+      <div class="modal-box rounded-3xl shadow-2xl p-0 max-w-3xl border border-base-content/5 overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
+        <!-- Modal Header -->
         <div class="bg-primary/5 p-8 border-b border-base-content/5 shrink-0">
           <div class="flex items-center gap-6">
-            <div class="bg-base-100 p-4 rounded-2xl shadow-sm ring-1 ring-base-content/5">
+            <div class="bg-base-100 p-5 rounded-2xl shadow-sm ring-1 ring-base-content/5 shrink-0">
               <Icon
                   :name="selectedFile?.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(selectedFile?.name || '')"
-                  class="w-12 h-12"
+                  class="w-16 h-16"
               />
             </div>
             <div class="min-w-0">
-              <h3 class="font-black text-xl tracking-tight truncate">{{ selectedFile?.name }}</h3>
-              <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest">
-                {{ selectedFile?.isFolder ? 'Folder' : 'Document' }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="selectedFile" class="p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
-          <div class="grid grid-cols-2 gap-6">
-            <div class="flex flex-col gap-1">
-              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Size</span>
-              <span class="text-sm font-bold">{{ formatSize(selectedFile.size) }}</span>
-            </div>
-            <div class="flex flex-col gap-1 text-right">
-              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Modified</span>
-              <span class="text-sm font-bold">{{ new Date(selectedFile.lastModified).toLocaleDateString() }}</span>
-            </div>
-          </div>
-
-          <div v-if="selectedFile.meta.tags.length || true">
-             <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-3">Tags</span>
-             <div class="flex flex-wrap gap-2 items-center">
-                <span v-for="tag in selectedFile.meta.tags"
-                      :key="tag.name"
-                      class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm group/tag"
-                      :style="{ backgroundColor: tag.color }"> 
-                  {{ tag.name }} 
-                  <Icon name="mdi:close" 
-                        class="w-0 group-hover/tag:w-3 h-3 ml-0 group-hover/tag:ml-1 cursor-pointer transition-all" 
-                        @click.stop="removeTag(tag)" />
+              <h3 class="font-black text-2xl tracking-tight truncate mb-1">{{ selectedFile?.name }}</h3>
+              <div class="flex items-center gap-2">
+                <span class="badge badge-sm font-black uppercase tracking-widest py-3 px-4" 
+                      :class="selectedFile?.isFolder ? 'badge-primary' : 'badge-ghost'">
+                  {{ selectedFile?.isFolder ? 'Folder' : 'Document' }}
                 </span>
-                
-                <button
-                  class="btn btn-ghost btn-xs bg-base-200/50 hover:bg-base-content/10 border border-base-content/5 rounded-full px-3 transition-all"
-                  @click="openSingleTagModal"
-                >                  <Icon name="mdi:tag-plus-outline" class="w-4 h-4 mr-1 text-primary" /> 
-                  <span class="font-bold text-[10px] uppercase tracking-wide">Add Tag</span>
-                </button>
-             </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Description</span>
-              <button v-if="!isEditingDescription" class="btn btn-ghost btn-xs rounded-lg" @click="startEditDescription">
-                <Icon name="mdi:pencil" class="w-3 h-3 mr-1" /> Edit
-              </button>
-            </div>
-            
-            <div v-if="isEditingDescription" class="space-y-3">
-              <textarea
-                  v-model="editableDescription"
-                  class="textarea textarea-bordered w-full h-24 bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm rounded-xl"
-                  placeholder="Enter description..."
-              ></textarea>
-              <div class="flex justify-end gap-2">
-                <button class="btn btn-ghost btn-xs" @click="isEditingDescription = false">Cancel</button>
-                <button class="btn btn-primary btn-xs px-4" @click="saveDescription">Save</button>
+                <span class="text-[10px] font-bold text-base-content/30 uppercase tracking-[0.2em] ml-2">Internal Asset</span>
               </div>
             </div>
-            <div v-else>
-              <div v-if="selectedFile.meta.description" class="bg-base-200/50 p-4 rounded-xl text-sm font-medium leading-relaxed text-base-content/80 whitespace-pre-line">
-                {{ selectedFile.meta.description }}
-              </div>
-              <button v-else class="btn btn-ghost btn-sm w-full border border-dashed border-base-content/10 rounded-xl italic font-bold text-base-content/30 text-xs" @click="startEditDescription">
-                <Icon name="mdi:plus" class="w-4 h-4 mr-1" /> Add details about this file
-              </button>
-            </div>
-          </div>
-
-          <div class="h-px bg-base-content/5"></div>
-
-          <div class="flex flex-col gap-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="text-sm font-black tracking-tight">Favorite</span>
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Pin to favorites for quick access</p>
-              </div>
-              <button 
-                class="btn btn-sm btn-ghost btn-circle"
-                :class="selectedFile.meta.isFavourite ? 'text-orange-500' : 'text-base-content/20'"
-                @click="toggleFavourite(selectedFile)"
-              >
-                <Icon :name="selectedFile.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-6 h-6" />
-              </button>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="text-sm font-black tracking-tight">Public Access</span>
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Enable to share via link</p>
-              </div>
-              <input type="checkbox" class="toggle toggle-success toggle-sm" :checked="selectedFile.meta.isPublic" @change="togglePublicAccess" />
-            </div>
-            
-            <transition name="fade">
-              <div v-if="selectedFile.meta.isPublic" class="bg-success/10 p-4 rounded-2xl flex flex-col gap-3 border border-success/20">
-                <p class="text-[11px] font-bold text-success-content/70">Anyone with the link can view this file.</p>
-                <button class="btn btn-sm btn-success text-white w-full rounded-xl shadow-lg shadow-success/20" @click="copyPublicLink">
-                  <Icon name="mdi:content-copy" class="w-4 h-4 mr-2" />
-                  Copy Public Link
-                </button>
-              </div>
-            </transition>
-          </div>
-
-          <!-- Preview -->
-          <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))" class="pt-4">
-             <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-3">Quick Preview</span>
-             <div :key="selectedFile.name" class="rounded-2xl overflow-hidden shadow-sm ring-1 ring-base-content/10 bg-base-200 flex items-center justify-center aspect-video">
-                <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
-                  <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
-                </video>
-                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-cover" />
-             </div>
           </div>
         </div>
 
-        <div class="p-6 bg-base-200/50 flex flex-wrap gap-2 justify-center shrink-0">
-          <button class="btn btn-sm btn-error btn-outline border-none hover:bg-error/20 rounded-xl px-4" @click="deleteFile(selectedFile)">
-            <Icon name="mdi:delete" class="w-4 h-4 mr-1" /> Delete
-          </button>
-          <button class="btn btn-sm bg-base-100 hover:bg-base-200 border border-base-content/10 rounded-xl px-4" @click="downloadFile(selectedFile)">
-            <Icon name="mdi:download" class="w-4 h-4 mr-1" /> Download
-          </button>
-          <button class="btn btn-sm bg-base-100 hover:bg-base-200 border border-base-content/10 rounded-xl px-4" @click="copyFileLinkStatic(selectedFile)">
-            <Icon name="mdi:link" class="w-4 h-4 mr-1" /> Link
-          </button>
-          <button class="btn btn-sm btn-primary rounded-xl px-6" @click="closeFileModal">Done</button>
+        <!-- Scrollable Content -->
+        <div v-if="selectedFile" class="p-8 space-y-10 overflow-y-auto flex-1 custom-scrollbar">
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
+              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Total Size</span>
+              <span class="text-lg font-black tracking-tight">{{ formatSize(selectedFile.size) }}</span>
+            </div>
+            <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
+              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Last Updated</span>
+              <span class="text-lg font-black tracking-tight">{{ new Date(selectedFile.lastModified).toLocaleDateString() }}</span>
+            </div>
+            <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
+              <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Permissions</span>
+              <span class="text-lg font-black tracking-tight text-success">Read/Write</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <!-- Left Column: Details & Tags -->
+            <div class="space-y-8">
+              <!-- Description Section -->
+              <div class="group/desc">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <Icon name="mdi:text-subject" class="w-4 h-4 text-primary/60" />
+                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Description & Context</span>
+                  </div>
+                  <button v-if="!isEditingDescription" class="btn btn-ghost btn-xs rounded-lg opacity-0 group-hover/desc:opacity-100 transition-opacity" @click="startEditDescription">
+                    <Icon name="mdi:pencil" class="w-3 h-3 mr-1" /> Edit
+                  </button>
+                </div>
+                
+                <div v-if="isEditingDescription" class="space-y-3">
+                  <textarea
+                      v-model="editableDescription"
+                      class="textarea textarea-bordered w-full h-32 bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm rounded-2xl"
+                      placeholder="Add some notes about this file..."
+                  ></textarea>
+                  <div class="flex justify-end gap-2">
+                    <button class="btn btn-ghost btn-xs h-9 rounded-xl px-4" @click="isEditingDescription = false">Cancel</button>
+                    <button class="btn btn-primary btn-xs h-9 rounded-xl px-6" @click="saveDescription">Save Note</button>
+                  </div>
+                </div>
+                <div v-else>
+                  <div v-if="selectedFile.meta.description" class="bg-base-200/50 p-6 rounded-2xl text-sm font-medium leading-relaxed text-base-content/80 whitespace-pre-line border border-base-content/5">
+                    {{ selectedFile.meta.description }}
+                  </div>
+                  <button v-else class="btn btn-ghost btn-md w-full border border-dashed border-base-content/10 rounded-2xl italic font-bold text-base-content/20 text-xs hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all py-8" @click="startEditDescription">
+                    <Icon name="mdi:plus" class="w-5 h-5 mb-1" />
+                    <br/> Add details about this file
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tags Section -->
+              <div>
+                <div class="flex items-center gap-2 mb-4">
+                  <Icon name="mdi:tag-outline" class="w-4 h-4 text-primary/60" />
+                  <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Identity Tags</span>
+                </div>
+                <div class="flex flex-wrap gap-2 items-center bg-base-200/30 p-4 rounded-2xl border border-base-content/5">
+                    <span v-for="tag in (selectedFile.meta.tags || [])"
+                          :key="tag.name"
+                          class="badge badge-md border-none text-white font-black py-4 px-4 shadow-sm group/tag"
+                          :style="{ backgroundColor: tag.color }"> 
+                      {{ tag.name }} 
+                      <Icon name="mdi:close" 
+                            class="w-0 group-hover/tag:w-3.5 h-3.5 ml-0 group-hover/tag:ml-1.5 cursor-pointer transition-all" 
+                            @click.stop="removeTag(tag)" />
+                    </span>
+                    
+                    <button
+                      class="btn btn-ghost btn-sm bg-base-100 hover:bg-base-200 border border-base-content/5 rounded-full px-4 transition-all"
+                      @click="openSingleTagModal"
+                    >
+                      <Icon name="mdi:plus" class="w-4 h-4 mr-1 text-primary" /> 
+                      <span class="font-bold text-[10px] uppercase tracking-wide">Assign</span>
+                    </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Security & Preview -->
+            <div class="space-y-8">
+              <!-- Management Section -->
+              <div class="bg-base-100 rounded-3xl p-6 border border-base-content/5 space-y-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-sm font-black tracking-tight">Favorite Status</span>
+                    <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Pin for quick access</p>
+                  </div>
+                  <button 
+                    class="btn btn-sm btn-ghost btn-circle bg-base-200/50 hover:bg-orange-500/10"
+                    :class="selectedFile.meta.isFavourite ? 'text-orange-500' : 'text-base-content/20'"
+                    @click="toggleFavourite(selectedFile)"
+                  >
+                    <Icon :name="selectedFile.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div class="h-px bg-base-content/5"></div>
+
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-sm font-black tracking-tight">Public Presence</span>
+                    <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Share via secret link</p>
+                  </div>
+                  <input type="checkbox" class="toggle toggle-success toggle-sm" :checked="selectedFile.meta.isPublic" @change="togglePublicAccess" />
+                </div>
+                
+                <transition name="fade">
+                  <div v-if="selectedFile.meta.isPublic" class="bg-success/5 p-4 rounded-2xl flex flex-col gap-3 border border-success/10 ring-1 ring-success/20">
+                    <p class="text-[10px] font-bold text-success uppercase tracking-widest">Active Secret Link</p>
+                    <button class="btn btn-sm btn-success text-white w-full rounded-xl shadow-lg shadow-success/20 h-11" @click="copyPublicLink">
+                      <Icon name="mdi:content-copy" class="w-4 h-4 mr-2" />
+                      Copy Link
+                    </button>
+                  </div>
+                </transition>
+              </div>
+
+              <!-- Preview Section -->
+              <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))">
+                 <div class="flex items-center gap-2 mb-4">
+                    <Icon name="mdi:eye-outline" class="w-4 h-4 text-primary/60" />
+                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Quick View</span>
+                 </div>
+                 <div :key="selectedFile.name" class="rounded-3xl overflow-hidden shadow-xl ring-1 ring-base-content/5 bg-black/90 flex items-center justify-center aspect-video group/preview relative">
+                    <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
+                      <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
+                    </video>
+                    <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-cover transition-transform duration-700 group-hover/preview:scale-110" />
+                    <div class="absolute top-4 right-4 z-10 opacity-0 group-hover/preview:opacity-100 transition-opacity">
+                       <button class="btn btn-circle btn-sm bg-black/50 border-none text-white backdrop-blur-md" @click="isImageFile(selectedFile.name) ? (selectedImageUrl = getStaticUrl(selectedFile), showImageViewerModal = true) : null">
+                          <Icon name="mdi:fullscreen" class="w-4 h-4" />
+                       </button>
+                    </div>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sticky Footer Actions -->
+        <div class="p-6 bg-base-100 border-t border-base-content/5 flex flex-wrap gap-3 justify-between items-center shrink-0 px-8">
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-error btn-outline border-none hover:bg-error/10 rounded-xl px-5 h-11" @click="deleteFile(selectedFile)">
+              <Icon name="mdi:delete" class="w-4 h-4 mr-1.5" /> Delete
+            </button>
+          </div>
+          <div class="flex gap-3">
+            <button class="btn btn-sm bg-base-200 hover:bg-base-300 border-none rounded-xl px-6 h-11 font-black text-[10px] uppercase tracking-widest" @click="downloadFile(selectedFile)">
+              <Icon name="mdi:download" class="w-4 h-4 mr-1.5" /> Download
+            </button>
+            <button class="btn btn-sm btn-primary rounded-xl px-10 h-11 font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20" @click="closeFileModal">
+              Done
+            </button>
+          </div>
         </div>
       </div>
     </div>
