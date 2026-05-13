@@ -9,6 +9,8 @@ import { copyToClipboard } from '~/core/clipboard'
 const files = ref<File[]>([])
 const selectedFile = ref<File | null>(null)
 const showFileInfoModal = ref(false)
+const showCreateFolderModal = ref(false)
+const newFolderName = ref('')
 const showImageViewerModal = ref(false)
 const showTagModal = ref(false)
 const selectedTags = ref<Tag[]>([])
@@ -80,9 +82,16 @@ const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 const contextMenuFile = ref<File | null>(null)
 
-const promptCreateFolder = async () => {
-  const name = prompt('Enter folder name:')
-  if (!name) return
+const openCreateFolderModal = () => {
+  newFolderName.value = ''
+  showCreateFolderModal.value = true
+}
+
+const executeCreateFolder = async () => {
+  if (!newFolderName.value.trim()) {
+    createNotification('Folder name is required', NotificationType.WARNING)
+    return
+  }
 
   try {
     const route = useRoute()
@@ -92,10 +101,12 @@ const promptCreateFolder = async () => {
     const response = await fetch('/api/folder', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, path: folderPath }),
+      body: JSON.stringify({ name: newFolderName.value, path: folderPath }),
     })
     if (!response.ok) throw new Error('Failed to create folder')
+    
     await fetchFiles()
+    showCreateFolderModal.value = false
     createNotification('Folder created successfully', NotificationType.SUCCESS)
   } catch (err) {
     console.error(err)
@@ -918,7 +929,7 @@ const toggleFavourite = async (file: File) => {
                  </ul>
                </div>
 
-               <button class="btn btn-sm btn-ghost border border-base-content/10 bg-base-100/50" @click="promptCreateFolder">
+               <button class="btn btn-sm btn-ghost border border-base-content/10 bg-base-100/50" @click="openCreateFolderModal">
                  <Icon name="mdi:folder-plus" class="w-4 h-4" />
                </button>
 
@@ -1424,6 +1435,40 @@ const toggleFavourite = async (file: File) => {
             <span v-if="isUploading" class="loading loading-spinner loading-xs"></span>
             Start Upload
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div v-if="showCreateFolderModal" class="modal modal-open backdrop-blur-md">
+      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-sm border border-base-content/5">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="bg-primary/10 p-3 rounded-2xl">
+            <Icon name="mdi:folder-plus" class="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h3 class="font-black text-xl tracking-tight">New Folder</h3>
+            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Create a new workspace</p>
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label class="label mb-1">
+            <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Folder Name</span>
+          </label>
+          <input
+              v-model="newFolderName"
+              type="text"
+              placeholder="Documents, Images, Project X..."
+              class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+              @keyup.enter="executeCreateFolder"
+              autoFocus
+          />
+        </div>
+
+        <div class="flex flex-col gap-3 mt-8">
+          <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="executeCreateFolder">Create Folder</button>
+          <button class="btn btn-ghost h-12 rounded-xl" @click="showCreateFolderModal = false">Cancel</button>
         </div>
       </div>
     </div>
