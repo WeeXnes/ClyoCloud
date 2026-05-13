@@ -393,27 +393,33 @@ const isMoving = ref(false)
 const scrollIndex = ref(0)
 const itemsPerRow = ref(6) // Default for XL, updated on resize
 
-const handleMainScroll = (event: Event) => {
-  const target = event.target as HTMLElement
+const handleMainScroll = () => {
+  const scrollTop = window.scrollY
+  const gridElement = document.getElementById('file-grid-container')
+  if (!gridElement) return
+
+  const offsetTop = gridElement.offsetTop
+  const viewportHeight = window.innerHeight
+  const relativeScroll = Math.max(0, scrollTop - offsetTop)
+
   if (!isGridView.value) {
-    const itemHeight = 76 // 64px height + 12px gap (gap-3)
-    scrollIndex.value = Math.floor(target.scrollTop / itemHeight)
+    const itemHeight = 76 // 64px row + 12px gap
+    scrollIndex.value = Math.floor(relativeScroll / itemHeight)
   } else {
-    // In grid view, height is Width + metadata height (approx 48px) + gap (24px)
-    // This is still an approximation because Width varies with screen size
-    // We'll use a more generous buffer to compensate
-    const containerWidth = target.clientWidth - 48 // Account for padding
-    const itemWidth = containerWidth / itemsPerRow.value
-    const itemHeight = itemWidth + 48 + 24 
-    const rowsScrolled = Math.floor(target.scrollTop / itemHeight)
+    const containerWidth = gridElement.clientWidth
+    const gaps = itemsPerRow.value - 1
+    const totalGapWidth = gaps * 24 // gap-6 is 24px
+    const itemWidth = (containerWidth - totalGapWidth) / itemsPerRow.value
+    const itemHeight = itemWidth + 8 + 48 + 24 // item + gap-2 + metadata + gap-6
+    const rowsScrolled = Math.floor(relativeScroll / itemHeight)
     scrollIndex.value = rowsScrolled * itemsPerRow.value
   }
 }
 
 const isFileVisible = (index: number) => {
-  // Use a much larger buffer for grid view to handle the approximation better
-  const buffer = isGridView.value ? itemsPerRow.value * 12 : 40
-  return Math.abs(index - scrollIndex.value) <= buffer
+  // Use a dynamic buffer based on viewport to ensure coverage
+  const buffer = isGridView.value ? itemsPerRow.value * 20 : 60
+  return index >= scrollIndex.value - (buffer / 2) && index <= scrollIndex.value + buffer
 }
 
 const updateItemsPerRow = () => {
@@ -555,6 +561,7 @@ onMounted(async () => {
   await fetchPredefinedTags()
   updateItemsPerRow()
   window.addEventListener('resize', updateItemsPerRow)
+  window.addEventListener('scroll', handleMainScroll, { passive: true })
   
   window.addEventListener('click', () => {
     showContextMenu.value = false
@@ -563,6 +570,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateItemsPerRow)
+  window.removeEventListener('scroll', handleMainScroll)
 })
 
 watch(() => useRoute().params.path, async () => {
@@ -1031,10 +1039,9 @@ const toggleFavourite = async (file: File) => {
       </div>
     </transition>
 
-    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 min-h-[70vh] overflow-y-auto max-h-[calc(100vh-64px)] scroll-smooth"
+    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 min-h-[70vh]"
           @dragover.prevent 
-          @drop.prevent="handleDrop"
-          @scroll.passive="handleMainScroll">
+          @drop.prevent="handleDrop">
       
       <!-- Skeleton Loading -->
       <div v-if="isLoading" :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'space-y-3'">
@@ -1047,6 +1054,7 @@ const toggleFavourite = async (file: File) => {
       <!-- File Grid -->
       <div 
         v-else-if="sortedFiles.length"
+        id="file-grid-container"
         :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-3'"
       >
         <div 
