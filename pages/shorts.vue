@@ -288,15 +288,18 @@ const refresh = () => {
             </h2>
             <div class="flex flex-wrap items-center gap-2">
               <span 
-                v-for="tag in video.meta.tags" 
+                v-for="tag in video.meta.tags.slice(0, 3)" 
                 :key="tag.name"
                 class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm"
                 :style="{ backgroundColor: tag.color }"
               >
                 {{ tag.name }}
               </span>
+              <span v-if="video.meta.tags.length > 3" class="text-[10px] text-white/60 font-bold self-center">
+                +{{ video.meta.tags.length - 3 }}
+              </span>
               <button
-                class="btn btn-ghost btn-xs bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-3 text-white transition-all"
+                class="btn btn-ghost btn-xs bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-3 text-white transition-all ml-1"
                 @click="openTagModal"
               >
                 <Icon name="mdi:tag-plus-outline" class="w-3.5 h-3.5 mr-1" /> 
