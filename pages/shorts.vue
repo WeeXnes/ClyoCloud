@@ -63,6 +63,12 @@ const getStreamUrl = (fullPath: string) => {
   return `${baseUrl}/stream/${encodeURIComponent(fullPath)}`
 }
 
+const getThumbnailUrl = (fullPath: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
+}
+
 const getSourceType = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
   if (ext === 'webm') return 'video/webm'
@@ -216,6 +222,11 @@ const setContainerRef = (el: any, video: Video) => {
       containerRefs.value.push(el)
     }
   }
+}
+
+const isVideoVisible = (index: number) => {
+  // Increase buffer significantly to ensure preloading works effectively
+  return Math.abs(index - currentIndex.value) <= 2
 }
 
 onMounted(async () => {
