@@ -390,6 +390,37 @@ const pickerCurrentPath = ref('')
 const pickerFolders = ref<File[]>([])
 const isMoving = ref(false)
 
+const scrollIndex = ref(0)
+const itemsPerRow = ref(6) // Default for XL, updated on resize
+
+const handleMainScroll = (event: Event) => {
+  const target = event.target as HTMLElement
+  // This is for list view mostly, grid view is more complex due to variable columns
+  // But we can approximate based on scroll position
+  if (!isGridView.value) {
+    const itemHeight = 76 // Approximately row height with gap
+    scrollIndex.value = Math.floor(target.scrollTop / itemHeight)
+  } else {
+    const itemHeight = 220 // Approximate grid item height + gap
+    const rowsScrolled = Math.floor(target.scrollTop / itemHeight)
+    scrollIndex.value = rowsScrolled * itemsPerRow.value
+  }
+}
+
+const isFileVisible = (index: number) => {
+  const buffer = isGridView.value ? itemsPerRow.value * 4 : 20
+  return Math.abs(index - scrollIndex.value) <= buffer
+}
+
+const updateItemsPerRow = () => {
+  const width = window.innerWidth
+  if (width >= 1280) itemsPerRow.value = 6
+  else if (width >= 1024) itemsPerRow.value = 5
+  else if (width >= 768) itemsPerRow.value = 4
+  else if (width >= 640) itemsPerRow.value = 3
+  else itemsPerRow.value = 2
+}
+
 const openMoveModal = async (file?: File) => {
   const route = useRoute()
   const pathParam = route.params.path
@@ -518,10 +549,16 @@ const handleContextAction = (action: string) => {
 onMounted(async () => {
   await fetchFiles()
   await fetchPredefinedTags()
+  updateItemsPerRow()
+  window.addEventListener('resize', updateItemsPerRow)
   
   window.addEventListener('click', () => {
     showContextMenu.value = false
   })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateItemsPerRow)
 })
 
 watch(() => useRoute().params.path, async () => {
@@ -990,9 +1027,10 @@ const toggleFavourite = async (file: File) => {
       </div>
     </transition>
 
-    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 min-h-[70vh]"
+    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 min-h-[70vh] overflow-y-auto max-h-[calc(100vh-64px)] scroll-smooth"
           @dragover.prevent 
-          @drop.prevent="handleDrop">
+          @drop.prevent="handleDrop"
+          @scroll.passive="handleMainScroll">
       
       <!-- Skeleton Loading -->
       <div v-if="isLoading" :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'space-y-3'">
@@ -1008,144 +1046,150 @@ const toggleFavourite = async (file: File) => {
         :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-3'"
       >
         <div 
-          v-for="file in sortedFiles" 
+          v-for="(file, index) in sortedFiles" 
           :key="file.name" 
           class="group relative"
         >
-          <!-- Grid Item -->
-          <div v-if="isGridView" 
-               class="flex flex-col gap-2 transition-all duration-300"
-          >
-            <!-- Thumbnail Container -->
-            <div 
-              class="relative aspect-square rounded-2xl bg-base-100 border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex items-center justify-center group/item ring-primary/30"
-              :class="{ 'ring-2': selectedFiles.has(file.name) }"
-              @click="onFileClick($event, file)" 
-              @contextmenu.prevent="handleContextMenu($event, file)"
+          <template v-if="isFileVisible(index)">
+            <!-- Grid Item -->
+            <div v-if="isGridView" 
+                 class="flex flex-col gap-2 transition-all duration-300"
             >
-              <!-- Selection Checkbox (Top Left) -->
-              <div class="absolute top-2 left-2 z-20 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">
-                <input 
-                  type="checkbox" 
-                  class="checkbox checkbox-sm checkbox-primary bg-base-100/80 backdrop-blur-md" 
-                  :checked="selectedFiles.has(file.name)" 
-                  @change="toggleSelection(file.name)" 
-                  @click.stop 
-                />
-              </div>
-
-              <!-- Shared Indicator (Top Right) -->
-              <div class="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
-                <div v-if="file.meta.isPublic" 
-                     class="bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
-                     title="Copy Shared Link"
-                     @click.stop="copyPublicLinkForFile(file)">
-                  <Icon name="mdi:share-variant" class="w-4 h-4" />
+              <!-- Thumbnail Container -->
+              <div 
+                class="relative aspect-square rounded-2xl bg-base-100 border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex items-center justify-center group/item ring-primary/30"
+                :class="{ 'ring-2': selectedFiles.has(file.name) }"
+                @click="onFileClick($event, file)" 
+                @contextmenu.prevent="handleContextMenu($event, file)"
+              >
+                <!-- Selection Checkbox (Top Left) -->
+                <div class="absolute top-2 left-2 z-20 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">
+                  <input 
+                    type="checkbox" 
+                    class="checkbox checkbox-sm checkbox-primary bg-base-100/80 backdrop-blur-md" 
+                    :checked="selectedFiles.has(file.name)" 
+                    @change="toggleSelection(file.name)" 
+                    @click.stop 
+                  />
                 </div>
-                <div class="bg-base-100/80 text-orange-500 w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
-                     :class="{ 'opacity-0 group-hover/item:opacity-100': !file.meta.isFavourite }"
-                     title="Toggle Favorite"
-                     @click.stop="toggleFavourite(file)">
-                  <Icon :name="file.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
-                </div>
-              </div>
 
-              <!-- File Content -->
-              <template v-if="file.isFolder">
-                <Icon name="vscode-icons:default-folder" class="w-16 h-16 group-hover/item:scale-110 transition-transform duration-500" />
-              </template>
-              <template v-else>
-                <img v-if="hasThumbnail(file.name)" 
-                     :src="getThumbnailUrl(file.name)" 
-                     class="w-full h-full object-cover transition-transform duration-700 group-hover/item:scale-110" 
-                     alt="" 
-                     data-is-thumbnail="true" />
-                <Icon v-else 
-                      class="w-16 h-16 group-hover/item:scale-110 transition-transform duration-500" 
-                      :name="getIconForExtension(file.name)" 
-                      data-is-thumbnail="true" />
-              </template>
-
-              <!-- Hover Action Overlay -->
-              <div class="absolute inset-0 bg-black/5 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none"></div>
-            </div>
-
-            <!-- Grid Metadata -->
-            <div class="px-1 text-center">
-              <div class="min-w-0 px-1">
-                <input v-if="editingName === file.name" 
-                       v-model="newName" 
-                       class="input input-xs input-bordered w-full text-center" 
-                       @keyup.enter="saveRename(file.name)" 
-                       @blur="saveRename(file.name)" 
-                       @click.stop />
-                <h3 v-else class="text-xs font-bold truncate block group-hover:text-primary transition-colors">{{ file.name }}</h3>
-                <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider mt-0.5">
-                  <span v-if="!file.isFolder">{{ (file.size / 1024 / 1024).toFixed(1) }} MB</span>
-                  <span v-else>Folder</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Modernized List Item (Oriented on old view) -->
-          <div v-else 
-               class="flex items-center gap-4 p-3 bg-base-100 rounded-xl border border-base-content/5 hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer group/row ring-primary/30 min-h-[64px]"
-               :class="{ 'ring-1 bg-primary/5 border-primary/20': selectedFiles.has(file.name) }"
-               @click="onFileClick($event, file)" 
-               @contextmenu.prevent="handleContextMenu($event, file)"
-          >
-            <!-- Checkbox -->
-            <div class="flex items-center justify-center shrink-0">
-              <input type="checkbox" 
-                     class="checkbox checkbox-sm checkbox-primary" 
-                     :checked="selectedFiles.has(file.name)" 
-                     @change="toggleSelection(file.name)" 
-                     @click.stop />
-            </div>
-            
-            <!-- Icon -->
-            <div class="flex items-center justify-center shrink-0 w-8 h-8">
-              <Icon class="w-6 h-6" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
-            </div>
-
-            <!-- Content Area -->
-            <div class="flex-grow flex items-center justify-between min-w-0">
-              <!-- Name & Editing -->
-              <div class="flex-grow min-w-0 mr-4 flex items-center">
-                <input v-if="editingName === file.name" 
-                       v-model="newName" 
-                       class="input input-sm input-bordered w-full" 
-                       @keyup.enter="saveRename(file.name)" 
-                       @blur="saveRename(file.name)" 
-                       @click.stop />
-                <h3 v-else class="text-sm font-bold truncate group-hover/row:text-primary transition-colors m-0 leading-none">{{ file.name }}</h3>
-              </div>
-              
-              <!-- Metadata Group -->
-              <div class="flex items-center gap-6 text-[11px] font-bold text-base-content/40 uppercase tracking-widest shrink-0">
-                <div class="flex items-center gap-2">
+                <!-- Shared Indicator (Top Right) -->
+                <div class="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
                   <div v-if="file.meta.isPublic" 
-                       class="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 text-success hover:bg-success hover:text-white transition-all"
+                       class="bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
                        title="Copy Shared Link"
                        @click.stop="copyPublicLinkForFile(file)">
-                    <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
+                    <Icon name="mdi:share-variant" class="w-4 h-4" />
                   </div>
-                  <div class="flex items-center justify-center w-6 h-6 rounded-full hover:bg-orange-500 hover:text-white transition-all"
-                       :class="file.meta.isFavourite ? 'bg-orange-500/10 text-orange-500' : 'opacity-0 group-hover/row:opacity-100 bg-base-content/5'"
+                  <div class="bg-base-100/80 text-orange-500 w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
+                       :class="{ 'opacity-0 group-hover/item:opacity-100': !file.meta.isFavourite }"
                        title="Toggle Favorite"
                        @click.stop="toggleFavourite(file)">
-                    <Icon :name="file.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-3.5 h-3.5" />
+                    <Icon :name="file.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
                   </div>
                 </div>
-                
-                <span v-if="!file.isFolder" class="hidden sm:inline w-20 text-right">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
-                <span v-else class="hidden sm:inline w-20 text-right">Folder</span>
-                
-                <span class="hidden md:inline w-24 text-right">{{ new Date(file.lastModified).toLocaleDateString() }}</span>
+
+                <!-- File Content -->
+                <template v-if="file.isFolder">
+                  <Icon name="vscode-icons:default-folder" class="w-16 h-16 group-hover/item:scale-110 transition-transform duration-500" />
+                </template>
+                <template v-else>
+                  <img v-if="hasThumbnail(file.name)" 
+                       :src="getThumbnailUrl(file.name)" 
+                       class="w-full h-full object-cover transition-transform duration-700 group-hover/item:scale-110" 
+                       alt="" 
+                       data-is-thumbnail="true"
+                       loading="lazy" />
+                  <Icon v-else 
+                        class="w-16 h-16 group-hover/item:scale-110 transition-transform duration-500" 
+                        :name="getIconForExtension(file.name)" 
+                        data-is-thumbnail="true" />
+                </template>
+
+                <!-- Hover Action Overlay -->
+                <div class="absolute inset-0 bg-black/5 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none"></div>
+              </div>
+
+              <!-- Grid Metadata -->
+              <div class="px-1 text-center">
+                <div class="min-w-0 px-1">
+                  <input v-if="editingName === file.name" 
+                         v-model="newName" 
+                         class="input input-xs input-bordered w-full text-center" 
+                         @keyup.enter="saveRename(file.name)" 
+                         @blur="saveRename(file.name)" 
+                         @click.stop />
+                  <h3 v-else class="text-xs font-bold truncate block group-hover:text-primary transition-colors">{{ file.name }}</h3>
+                  <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider mt-0.5">
+                    <span v-if="!file.isFolder">{{ (file.size / 1024 / 1024).toFixed(1) }} MB</span>
+                    <span v-else>Folder</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+
+            <!-- Modernized List Item (Oriented on old view) -->
+            <div v-else 
+                 class="flex items-center gap-4 p-3 bg-base-100 rounded-xl border border-base-content/5 hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer group/row ring-primary/30 min-h-[64px]"
+                 :class="{ 'ring-1 bg-primary/5 border-primary/20': selectedFiles.has(file.name) }"
+                 @click="onFileClick($event, file)" 
+                 @contextmenu.prevent="handleContextMenu($event, file)"
+            >
+              <!-- Checkbox -->
+              <div class="flex items-center justify-center shrink-0">
+                <input type="checkbox" 
+                       class="checkbox checkbox-sm checkbox-primary" 
+                       :checked="selectedFiles.has(file.name)" 
+                       @change="toggleSelection(file.name)" 
+                       @click.stop />
+              </div>
+              
+              <!-- Icon -->
+              <div class="flex items-center justify-center shrink-0 w-8 h-8">
+                <Icon class="w-6 h-6" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
+              </div>
+
+              <!-- Content Area -->
+              <div class="flex-grow flex items-center justify-between min-w-0">
+                <!-- Name & Editing -->
+                <div class="flex-grow min-w-0 mr-4 flex items-center">
+                  <input v-if="editingName === file.name" 
+                         v-model="newName" 
+                         class="input input-sm input-bordered w-full" 
+                         @keyup.enter="saveRename(file.name)" 
+                         @blur="saveRename(file.name)" 
+                         @click.stop />
+                  <h3 v-else class="text-sm font-bold truncate group-hover/row:text-primary transition-colors m-0 leading-none">{{ file.name }}</h3>
+                </div>
+                
+                <!-- Metadata Group -->
+                <div class="flex items-center gap-6 text-[11px] font-bold text-base-content/40 uppercase tracking-widest shrink-0">
+                  <div class="flex items-center gap-2">
+                    <div v-if="file.meta.isPublic" 
+                         class="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 text-success hover:bg-success hover:text-white transition-all"
+                         title="Copy Shared Link"
+                         @click.stop="copyPublicLinkForFile(file)">
+                      <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
+                    </div>
+                    <div class="flex items-center justify-center w-6 h-6 rounded-full hover:bg-orange-500 hover:text-white transition-all"
+                         :class="file.meta.isFavourite ? 'bg-orange-500/10 text-orange-500' : 'opacity-0 group-hover/row:opacity-100 bg-base-content/5'"
+                         title="Toggle Favorite"
+                         @click.stop="toggleFavourite(file)">
+                      <Icon :name="file.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  
+                  <span v-if="!file.isFolder" class="hidden sm:inline w-20 text-right">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
+                  <span v-else class="hidden sm:inline w-20 text-right">Folder</span>
+                  
+                  <span class="hidden md:inline w-24 text-right">{{ new Date(file.lastModified).toLocaleDateString() }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Placeholder to maintain height for non-rendered items -->
+          <div v-else :class="isGridView ? 'aspect-square bg-base-100/30 rounded-2xl border border-dashed border-base-content/5' : 'h-[64px] bg-base-100/30 rounded-xl border border-dashed border-base-content/5'"></div>
         </div>
       </div>
 
