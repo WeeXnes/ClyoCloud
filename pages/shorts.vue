@@ -327,7 +327,9 @@ const refresh = () => {
             class="h-full w-full object-contain"
             loop
             playsinline
+            autoplay
             :muted="isMuted"
+            :poster="getThumbnailUrl(video.fullPath)"
           >
             <source :src="getStreamUrl(video.fullPath)" :type="getSourceType(video.name)" />
           </video>

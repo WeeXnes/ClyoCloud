@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import type { Video, FileMeta, Tag } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
+import { copyToClipboard } from '~/core/clipboard'
 
 const route = useRoute()
 const videos = ref<Video[]>([])
@@ -45,6 +46,58 @@ const saveDescription = async () => {
   } catch (err) {
     console.error(err)
     createNotification('Failed to update description', NotificationType.ERROR)
+  }
+}
+
+const copyPublicLinkForVideo = async () => {
+  const video = currentVideo.value
+  if (!video) return
+
+  const user = useState<any>('user')
+  const username = user.value?.name
+  if (!username) return
+
+  const url = useRequestURL()
+  const publicUrl = `${url.origin}/p/${username}/${encodeURIComponent(video.fullPath)}`
+  
+  const success = await copyToClipboard(publicUrl)
+  if (success) {
+    createNotification('Public link copied to clipboard!', NotificationType.SUCCESS)
+  } else {
+    createNotification('Failed to copy link', NotificationType.ERROR)
+  }
+}
+
+const downloadVideo = () => {
+  if (!currentVideo.value) return
+  const url = getStreamUrl()
+  const a = document.createElement('a')
+  a.href = url
+  a.download = currentVideo.value.name
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
+const toggleFavourite = async (video: Video) => {
+  const isFavourite = !video.meta.isFavourite
+  try {
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: video.fullPath,
+        isFavourite,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to update favorite status')
+
+    video.meta.isFavourite = isFavourite
+    createNotification(`Video ${isFavourite ? 'added to' : 'removed from'} favorites`, NotificationType.INFO)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update favorite status', NotificationType.ERROR)
   }
 }
 
@@ -371,11 +424,19 @@ watch(() => route.params.path, () => {
                 </div>
 
                 <div class="flex items-center gap-2">
-                   <button class="btn btn-sm btn-ghost gap-2 rounded-full border border-base-content/10">
+                   <button 
+                     class="btn btn-sm btn-ghost gap-2 rounded-full border border-base-content/10"
+                     :class="{ 'text-orange-500': currentVideo.meta.isFavourite }"
+                     @click="toggleFavourite(currentVideo)"
+                   >
+                     <Icon :name="currentVideo.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
+                     {{ currentVideo.meta.isFavourite ? 'Favourited' : 'Favourite' }}
+                   </button>
+                   <button class="btn btn-sm btn-ghost gap-2 rounded-full border border-base-content/10" @click="downloadVideo">
                      <Icon name="mdi:download" class="w-4 h-4" />
                      Download
                    </button>
-                   <button class="btn btn-sm btn-primary gap-2 rounded-full px-4 shadow-lg">
+                   <button class="btn btn-sm btn-primary gap-2 rounded-full px-4 shadow-lg" @click="copyPublicLinkForVideo">
                      <Icon name="mdi:share-variant" class="w-4 h-4" />
                      Share
                    </button>
