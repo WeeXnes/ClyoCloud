@@ -373,6 +373,83 @@ const saveRename = async (oldName: string) => {
   }
 }
 
+const showMoveModal = ref(false)
+const movingItems = ref<string[]>([])
+const pickerCurrentPath = ref('')
+const pickerFolders = ref<File[]>([])
+const isMoving = ref(false)
+
+const openMoveModal = async (file?: File) => {
+  const route = useRoute()
+  const pathParam = route.params.path
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  
+  if (file) {
+    movingItems.value = [folderPath ? `${folderPath}/${file.name}` : file.name]
+  } else if (selectedFiles.value.size > 0) {
+    movingItems.value = Array.from(selectedFiles.value).map(name => folderPath ? `${folderPath}/${name}` : name)
+  } else {
+    return
+  }
+  
+  pickerCurrentPath.value = ''
+  await fetchPickerFolders('')
+  showMoveModal.value = true
+}
+
+const fetchPickerFolders = async (path: string) => {
+  try {
+    const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`, { credentials: 'include' })
+    if (!response.ok) throw new Error('Failed to fetch folders')
+    const allItems: File[] = await response.json()
+    // Filter out items that are currently being moved to prevent circular moving
+    pickerFolders.value = allItems.filter(item => item.isFolder && !movingItems.value.includes(path ? `${path}/${item.name}` : item.name))
+    pickerCurrentPath.value = path
+  } catch (err) {
+    console.error('Error fetching picker folders:', err)
+    createNotification('Failed to load folders', NotificationType.ERROR)
+  }
+}
+
+const navigatePicker = (folderName: string) => {
+  const newPath = pickerCurrentPath.value ? `${pickerCurrentPath.value}/${folderName}` : folderName
+  fetchPickerFolders(newPath)
+}
+
+const navigatePickerUp = () => {
+  if (!pickerCurrentPath.value) return
+  const parts = pickerCurrentPath.value.split('/')
+  parts.pop()
+  const newPath = parts.join('/')
+  fetchPickerFolders(newPath)
+}
+
+const executeMove = async () => {
+  isMoving.value = true
+  try {
+    const response = await fetch('/api/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paths: movingItems.value,
+        destination: pickerCurrentPath.value
+      })
+    })
+
+    if (!response.ok) throw new Error('Failed to move items')
+    
+    createNotification('Items moved successfully', NotificationType.SUCCESS)
+    showMoveModal.value = false
+    selectedFiles.value.clear()
+    await fetchFiles()
+  } catch (err) {
+    console.error('Error moving items:', err)
+    createNotification('Failed to move items', NotificationType.ERROR)
+  } finally {
+    isMoving.value = false
+  }
+}
+
 const handleContextMenu = (event: MouseEvent, file: File) => {
   contextMenuX.value = event.clientX
   contextMenuY.value = event.clientY
@@ -401,6 +478,9 @@ const handleContextAction = (action: string) => {
       break
     case 'rename':
       startRename(file)
+      break
+    case 'move':
+      openMoveModal(file)
       break
     case 'description':
       selectedFile.value = file
@@ -888,6 +968,9 @@ const toggleFavourite = async (file: File) => {
             <button class="btn btn-xs sm:btn-sm bg-white/10 hover:bg-white/20 border-none text-white gap-2" @click="openBulkTagModal">
               <Icon name="mdi:tag-plus" class="w-4 h-4" /> Tags
             </button>
+            <button class="btn btn-xs sm:btn-sm bg-white/10 hover:bg-white/20 border-none text-white gap-2" @click="openMoveModal()">
+              <Icon name="mdi:folder-move" class="w-4 h-4" /> Move
+            </button>
             <button class="btn btn-xs sm:btn-sm bg-error/20 hover:bg-error/40 border-none text-white gap-2" @click="bulkDelete">
               <Icon name="mdi:delete" class="w-4 h-4" /> Delete
             </button>
@@ -1102,6 +1185,7 @@ const toggleFavourite = async (file: File) => {
           </li>
           <div class="h-px bg-base-content/5 mx-2 my-1"></div>
           <li><a class="py-3 px-4" @click="handleContextAction('rename')"><Icon name="mdi:pencil" class="w-4 h-4 text-blue-500" /> Rename</a></li>
+          <li><a class="py-3 px-4" @click="handleContextAction('move')"><Icon name="mdi:folder-move" class="w-4 h-4 text-primary" /> Move</a></li>
           <li><a class="py-3 px-4" @click="handleContextAction('description')"><Icon name="mdi:text-box-edit-outline" class="w-4 h-4 text-orange-500" /> Edit Description</a></li>
           <li><a class="py-3 px-4" @click="handleContextAction('info')"><Icon name="mdi:information" class="w-4 h-4 text-primary" /> Details</a></li>
           <li><a class="py-3 px-4" @click="handleContextAction('favourite')">
@@ -1344,6 +1428,88 @@ const toggleFavourite = async (file: File) => {
       </div>
     </div>
 
+    <!-- Move Modal -->
+    <div v-if="showMoveModal" class="modal modal-open backdrop-blur-md">
+      <div class="modal-box rounded-3xl shadow-2xl p-0 max-w-lg border border-base-content/5 overflow-hidden flex flex-col max-h-[80vh]">
+        <div class="bg-primary/5 p-6 border-b border-base-content/5 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="bg-primary/10 p-2 rounded-xl">
+              <Icon name="mdi:folder-move" class="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 class="font-black text-lg tracking-tight">Move Items</h3>
+              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Select destination folder</p>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm btn-circle" @click="showMoveModal = false">
+            <Icon name="mdi:close" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="p-4 bg-base-200/30 border-b border-base-content/5 flex items-center gap-2 overflow-x-auto shrink-0 no-scrollbar">
+          <button 
+            class="btn btn-xs btn-ghost gap-1 px-2 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider"
+            @click="fetchPickerFolders('')"
+          >
+            Root
+          </button>
+          <template v-for="(part, index) in pickerCurrentPath.split('/')" :key="index">
+            <Icon v-if="part" name="mdi:chevron-right" class="w-3 h-3 opacity-30" />
+            <button 
+              v-if="part"
+              class="btn btn-xs btn-ghost gap-1 px-2 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider max-w-[120px] truncate"
+              @click="fetchPickerFolders(pickerCurrentPath.split('/').slice(0, index + 1).join('/'))"
+            >
+              {{ part }}
+            </button>
+          </template>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-2 min-h-[300px] custom-scrollbar">
+          <div v-if="pickerCurrentPath" 
+               class="flex items-center gap-3 p-3 rounded-xl hover:bg-base-200 cursor-pointer group"
+               @click="navigatePickerUp">
+            <Icon name="mdi:arrow-up-bold-outline" class="w-5 h-5 text-base-content/30 group-hover:text-primary" />
+            <span class="text-sm font-bold">Go Up</span>
+          </div>
+
+          <div v-for="folder in pickerFolders" 
+               :key="folder.name"
+               class="flex items-center gap-3 p-3 rounded-xl hover:bg-base-200 cursor-pointer group"
+               @click="navigatePicker(folder.name)">
+            <Icon name="vscode-icons:default-folder" class="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <div class="flex-grow min-w-0">
+              <span class="text-sm font-bold truncate block">{{ folder.name }}</span>
+            </div>
+            <Icon name="mdi:chevron-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 text-primary" />
+          </div>
+
+          <div v-if="pickerFolders.length === 0 && !pickerCurrentPath" class="flex flex-col items-center justify-center py-12 opacity-30">
+            <Icon name="mdi:folder-open-outline" class="w-12 h-12 mb-2" />
+            <p class="text-xs font-bold uppercase tracking-widest">No subfolders found</p>
+          </div>
+        </div>
+
+        <div class="p-4 bg-base-100 border-t border-base-content/5 flex items-center justify-between gap-4 shrink-0">
+          <div class="min-w-0 flex-1">
+            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-base-content/30 mb-1">Destination</p>
+            <p class="text-xs font-black truncate text-primary">/{{ pickerCurrentPath || 'Root' }}</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-sm px-6 rounded-xl font-bold uppercase tracking-wider text-[10px]" @click="showMoveModal = false">Cancel</button>
+            <button 
+              class="btn btn-sm btn-primary px-8 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+              @click="executeMove"
+              :disabled="isMoving"
+            >
+              <span v-if="isMoving" class="loading loading-spinner loading-xs"></span>
+              Move Here
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tag Modal (Overhauled - matches Media tab) -->
     <div v-if="showTagModal" class="modal modal-open backdrop-blur-md">
       <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-base-content/5">
@@ -1444,6 +1610,14 @@ const toggleFavourite = async (file: File) => {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 10px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .image-viewer-modal {
