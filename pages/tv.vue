@@ -15,6 +15,15 @@ const epgInterval = ref<any>(null)
 const tvPlayer = ref<HTMLVideoElement | null>(null)
 const isBuffering = ref(false)
 
+function stopPlayback() {
+  if (tvPlayer.value) {
+    const video = tvPlayer.value
+    video.pause()
+    video.removeAttribute('src')
+    video.load()
+  }
+}
+
 async function selectChannel(channel: Channel) {
   selectedChannel.value = channel
   isBuffering.value = true
@@ -23,12 +32,10 @@ async function selectChannel(channel: Channel) {
   
   if (tvPlayer.value) {
     const video = tvPlayer.value
-    // Remove previous listeners and stop current playback
-    video.pause()
-    video.removeAttribute('src')
-    video.load()
+    // Stop current playback properly
+    stopPlayback()
     
-    // Set new source
+    // Set new source - switching to 'pass' profile for zero CPU transcoding
     video.src = getStreamUrl(channel.uuid)
     video.load()
     
@@ -158,6 +165,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (epgInterval.value) clearInterval(epgInterval.value)
+  stopPlayback()
 })
 
 async function fetchEpgOnly() {
@@ -212,8 +220,8 @@ const getIconUrl = (url?: string) => {
 }
 
 const getStreamUrl = (channelUuid: string) => {
-  // Using /channel/ instead of /channelid/ for UUIDs
-  return `/tv/stream/channel/${channelUuid}?profile=webtv-vp8-vorbis-webm`
+  // Using 'pass' profile to avoid transcoding and high CPU usage
+  return `/tv/stream/channel/${channelUuid}?profile=pass`
 }
 
 const activeTab = ref<'guide' | 'recordings'>('guide')

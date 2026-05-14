@@ -54,6 +54,8 @@ export async function startCloudRecording(username: string, channelUuid: string,
     const ffmpeg = spawn('ffmpeg', [
         '-i', targetUrl,
         '-c', 'copy',
+        '-map', '0',
+        '-fflags', '+genpts',
         '-y',
         filePathTs
     ], { stdio: ['pipe', 'pipe', 'pipe'] })
@@ -73,11 +75,12 @@ export async function startCloudRecording(username: string, channelUuid: string,
         activeRecordings.delete(recordingKey)
         console.log(`[Cloud Recorder] Finished raw recording. Converting to MP4...`)
         
-        // Post-process: Convert TS to MP4
+        // Post-process: Convert TS to MP4, ensuring timestamps are handled correctly without heavy re-encoding
         const converter = spawn('ffmpeg', [
             '-i', filePathTs,
             '-c', 'copy',
-            '-f', 'mp4',
+            '-map', '0',
+            '-fflags', '+genpts',
             '-movflags', '+faststart',
             '-y',
             filePathMp4
