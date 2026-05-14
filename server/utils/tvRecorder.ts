@@ -1,16 +1,16 @@
 import fs from 'fs'
 import path from 'path'
 import { getTvheadendConfig } from './tvheadend'
-import { createReadStream } from 'fs'
-import { pipeline } from 'stream/promises'
+import { spawn } from 'child_process'
 
 interface ActiveRecording {
     username: string
     channelUuid: string
+    activeEventId?: string
     title: string
     startTime: number
-    filePath: string
-    controller: AbortController
+    filePath: string // The .ts file path
+    process: any
 }
 
 const activeRecordings = new Map<string, ActiveRecording>()
@@ -19,7 +19,8 @@ export function getActiveRecordings(username: string) {
     return Array.from(activeRecordings.values())
         .filter(r => r.username === username)
         .map(r => ({
-            uuid: r.channelUuid, // Use channel UUID as identifier
+            uuid: r.channelUuid,
+            eventId: r.activeEventId,
             title: r.title,
             status: 'recording',
             start: Math.floor(r.startTime / 1000),
@@ -27,93 +28,83 @@ export function getActiveRecordings(username: string) {
         }))
 }
 
-export async function startCloudRecording(username: string, channelUuid: string, title: string) {
+export async function startCloudRecording(username: string, channelUuid: string, title: string, eventId?: string) {
     const recordingKey = `${username}:${channelUuid}`
-    if (activeRecordings.has(recordingKey)) {
-        throw new Error('Recording already in progress for this channel')
-    }
+    if (activeRecordings.has(recordingKey)) throw new Error('Recording already in progress')
 
     const config = await getTvheadendConfig(username)
     if (!config) throw new Error('Tvheadend not configured')
 
     const runtimeConfig = useRuntimeConfig()
     const userDir = path.join(runtimeConfig.storagePath, username, 'Recordings')
-    
-    if (!fs.existsSync(userDir)) {
-        fs.mkdirSync(userDir, { recursive: true })
-    }
+    if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true })
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const safeTitle = title.replace(/[^a-z0-9]/gi, '_').substring(0, 50)
-    const fileName = `${safeTitle}_${timestamp}.ts` // We'll record raw stream for best quality
-    const filePath = path.join(userDir, fileName)
+    const fileNameTs = `${safeTitle}_${timestamp}.ts`
+    const filePathTs = path.join(userDir, fileNameTs)
+    const fileNameMp4 = `${safeTitle}_${timestamp}.mp4`
+    const filePathMp4 = path.join(userDir, fileNameMp4)
 
     const { host, port, user: tvUser, pass: tvPass } = config
-    const targetUrl = `http://${host}:${port}/stream/channel/${channelUuid}?profile=pass`
-    const auth = Buffer.from(`${tvUser}:${tvPass}`).toString('base64')
+    const encodedUser = encodeURIComponent(tvUser)
+    const encodedPass = encodeURIComponent(tvPass)
+    const targetUrl = `http://${encodedUser}:${encodedPass}@${host}:${port}/stream/channel/${channelUuid}?profile=pass`
 
-    const controller = new AbortController()
-    const writeStream = fs.createWriteStream(filePath)
+    const ffmpeg = spawn('ffmpeg', [
+        '-i', targetUrl,
+        '-c', 'copy',
+        '-y',
+        filePathTs
+    ], { stdio: ['pipe', 'pipe', 'pipe'] })
 
     const recording: ActiveRecording = {
         username,
         channelUuid,
+        activeEventId: eventId,
         title,
         startTime: Date.now(),
-        filePath,
-        controller
+        filePath: filePathTs,
+        process: ffmpeg
     }
-
     activeRecordings.set(recordingKey, recording)
 
-    // Start background recording
-    fetch(targetUrl, {
-        headers: { 'Authorization': `Basic ${auth}` },
-        signal: controller.signal
-    }).then(async (response) => {
-        if (!response.ok || !response.body) {
-            throw new Error(`Tvheadend stream failed: ${response.statusText}`)
-        }
-
-        console.log(`[Cloud Recorder] Started recording ${title} for ${username} -> ${fileName}`)
-        
-        // Pipe the stream to file
-        // @ts-ignore - response.body is a ReadableStream, we need to convert or use a helper
-        const reader = response.body.getReader()
-        
-        try {
-            while (true) {
-                const { done, value } = await reader.read()
-                if (done) break
-                writeStream.write(Buffer.from(value))
-            }
-        } finally {
-            writeStream.end()
-            activeRecordings.delete(recordingKey)
-            console.log(`[Cloud Recorder] Finished recording: ${fileName}`)
-        }
-    }).catch((err) => {
-        if (err.name === 'AbortError') {
-            console.log(`[Cloud Recorder] Recording stopped by user: ${fileName}`)
-        } else {
-            console.error(`[Cloud Recorder] Recording error:`, err.message)
-        }
-        writeStream.end()
+    ffmpeg.on('close', (code) => {
         activeRecordings.delete(recordingKey)
+        console.log(`[Cloud Recorder] Finished raw recording. Converting to MP4...`)
+        
+        // Post-process: Convert TS to MP4
+        const converter = spawn('ffmpeg', [
+            '-i', filePathTs,
+            '-c', 'copy',
+            '-f', 'mp4',
+            '-movflags', '+faststart',
+            '-y',
+            filePathMp4
+        ])
+        
+        converter.on('close', (c) => {
+            if (c === 0) {
+                console.log(`[Cloud Recorder] Conversion successful: ${fileNameMp4}`)
+                fs.unlinkSync(filePathTs) // Cleanup raw file
+            } else {
+                console.error(`[Cloud Recorder] Conversion failed for ${fileNameTs}`)
+            }
+        })
     })
 
-    return { message: 'Recording started', fileName }
+    return { message: 'Recording started', fileName: fileNameTs }
 }
 
 export function stopCloudRecording(username: string, channelUuid: string) {
     const recordingKey = `${username}:${channelUuid}`
     const recording = activeRecordings.get(recordingKey)
-    
     if (recording) {
-        recording.controller.abort()
-        activeRecordings.delete(recordingKey)
-        return { message: 'Recording stopped' }
+        recording.process.stdin.write('q\n')
+        setTimeout(() => {
+            if (activeRecordings.has(recordingKey)) recording.process.kill('SIGKILL')
+        }, 3000)
+        return { message: 'Recording stopping...' }
     }
-    
-    throw new Error('No active recording found for this channel')
+    throw new Error('No active recording found')
 }

@@ -314,10 +314,10 @@ function formatProgress(start: number, stop: number) {
                   <h4 class="font-bold text-sm truncate">{{ channel.name }}</h4>
                 </div>
                 <div class="flex items-center gap-1.5 mt-0.5">
-                   <p v-if="getChannelEvent(channel.uuid)" :class="`text-[10px] font-medium truncate ${selectedChannel?.uuid === channel.uuid ? 'text-white/70' : 'text-base-content/40'}`">
+                  <p v-if="getChannelEvent(channel.uuid)" :class="`text-[10px] font-medium truncate ${selectedChannel?.uuid === channel.uuid ? 'text-white/70' : 'text-base-content/40'}`">
                     {{ getChannelEvent(channel.uuid)?.title }}
                   </p>
-                  <Icon v-if="getChannelEvent(channel.uuid) && isEventRecording(getChannelEvent(channel.uuid)!.uuid)" name="mdi:circle" class="w-2 h-2 text-error animate-pulse flex-shrink-0" />
+                  <Icon v-if="isEventRecording(channel.uuid)" name="mdi:circle" class="w-2 h-2 text-error animate-pulse flex-shrink-0" />
                 </div>
               </div>
             </div>
@@ -338,8 +338,8 @@ function formatProgress(start: number, stop: number) {
               <div class="flex justify-between items-start">
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2 mb-1">
-                    <span :class="`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest bg-error text-error-content animate-pulse`">
-                      {{ record.status }}
+                    <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest bg-error text-error-content animate-pulse">
+                      RECORDING
                     </span>
                     <span class="text-[10px] font-bold text-base-content/40">ClyoCloud</span>
                   </div>
@@ -352,7 +352,6 @@ function formatProgress(start: number, stop: number) {
                   <Icon name="mdi:stop-circle-outline" class="w-4 h-4" />
                 </button>
               </div>
-              <p class="text-[10px] font-medium text-base-content/40">Started at: {{ formatTime(record.start) }}</p>
             </div>
 
             <div v-if="recordings.length === 0" class="flex flex-col items-center justify-center py-12 opacity-30 text-center px-4">
@@ -468,16 +467,16 @@ function formatProgress(start: number, stop: number) {
                       {{ formatTime(event.start) }}
                     </span>
                     <button 
-                      @click="isEventRecording(event.eventId) ? stopRecording(getEventRecording(event.eventId).uuid) : startRecording(event.eventId)"
-                      :class="`btn btn-circle btn-xs ${isEventRecording(event.eventId) ? 'btn-error' : 'btn-ghost bg-base-200'}`"
+                      @click="isEventRecording(event.channelUuid) ? stopRecording(event.channelUuid) : startRecording(event.channelUuid, event.title)"
+                      :class="`btn btn-circle btn-xs ${isEventRecording(event.channelUuid) ? 'btn-error' : 'btn-ghost bg-base-200'}`"
                     >
-                      <Icon :name="isEventRecording(event.eventId) ? 'mdi:stop-circle' : 'mdi:record-rec'" class="w-4 h-4" />
+                      <Icon :name="isEventRecording(event.channelUuid) ? 'mdi:stop-circle' : 'mdi:record-rec'" class="w-4 h-4" />
                     </button>
                   </div>
                   <h4 class="font-black text-sm line-clamp-1 group-hover:text-primary transition-colors">{{ event.title }}</h4>
                   <p class="text-[11px] font-medium text-base-content/40 mt-1 line-clamp-2">{{ event.description }}</p>
                   
-                  <div v-if="isEventRecording(event.eventId)" class="absolute top-0 right-0 p-1">
+                  <div v-if="isEventRecording(event.channelUuid)" class="absolute top-0 right-0 p-1">
                     <Icon name="mdi:circle" class="w-2 h-2 text-error animate-pulse" />
                   </div>
                 </div>
