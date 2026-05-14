@@ -1,5 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
+import { consola } from 'consola'
 
 export interface ActivityEntry {
     action: string
@@ -34,7 +35,10 @@ export async function logActivity(username: string, action: string, filePath: st
         activity = activity.slice(0, 100)
 
         await fs.writeFile(activityFilePath, JSON.stringify(activity, null, 2), 'utf-8')
+        
+        // Also log to system console for real-time visibility
+        consola.info(`[Activity] ${username}: ${action} ${filePath}`)
     } catch (err) {
-        console.error('Failed to log activity:', err)
+        consola.error(`[Activity] Failed to log activity for ${username}:`, err)
     }
 }

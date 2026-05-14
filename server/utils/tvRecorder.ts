@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { getTvheadendConfig } from './tvheadend'
 import { spawn } from 'child_process'
+import { consola } from 'consola'
 
 interface ActiveRecording {
     username: string
@@ -51,6 +52,7 @@ export async function startCloudRecording(username: string, channelUuid: string,
     const encodedPass = encodeURIComponent(tvPass)
     const targetUrl = `http://${encodedUser}:${encodedPass}@${host}:${port}/stream/channel/${channelUuid}?profile=pass`
 
+    consola.start(`[Cloud Recorder] Starting raw capture for: ${title}`)
     const ffmpeg = spawn('ffmpeg', [
         '-i', targetUrl,
         '-c', 'copy',
@@ -73,7 +75,8 @@ export async function startCloudRecording(username: string, channelUuid: string,
 
     ffmpeg.on('close', (code) => {
         activeRecordings.delete(recordingKey)
-        console.log(`[Cloud Recorder] Finished raw recording. Converting to MP4...`)
+        consola.info(`[Cloud Recorder] Finished raw capture. Code: ${code}`)
+        consola.start(`[Cloud Recorder] Starting MP4 conversion: ${fileNameMp4}`)
         
         // Post-process: Convert TS to MP4
         // Mapping only video and audio (0:v and 0:a) to avoid incompatible 
@@ -91,10 +94,10 @@ export async function startCloudRecording(username: string, channelUuid: string,
         
         converter.on('close', (c) => {
             if (c === 0) {
-                console.log(`[Cloud Recorder] Conversion successful: ${fileNameMp4}`)
+                consola.success(`[Cloud Recorder] Conversion successful: ${fileNameMp4}`)
                 if (fs.existsSync(filePathTs)) fs.unlinkSync(filePathTs)
             } else {
-                console.error(`[Cloud Recorder] Conversion failed for ${fileNameTs} with code ${c}`)
+                consola.error(`[Cloud Recorder] Conversion failed for ${fileNameTs} with code ${c}`)
             }
         })
 
@@ -102,7 +105,7 @@ export async function startCloudRecording(username: string, channelUuid: string,
             // Optional: log conversion errors if they happen
             const msg = data.toString()
             if (msg.toLowerCase().includes('error')) {
-                console.error(`[Cloud Recorder] Conversion Error: ${msg}`)
+                consola.error(`[Cloud Recorder] Conversion Error: ${msg.substring(0, 200)}`)
             }
         })
     })
@@ -114,9 +117,13 @@ export function stopCloudRecording(username: string, channelUuid: string) {
     const recordingKey = `${username}:${channelUuid}`
     const recording = activeRecordings.get(recordingKey)
     if (recording) {
+        consola.info(`[Cloud Recorder] Stopping active recording for ${recording.title}`)
         recording.process.stdin.write('q\n')
         setTimeout(() => {
-            if (activeRecordings.has(recordingKey)) recording.process.kill('SIGKILL')
+            if (activeRecordings.has(recordingKey)) {
+                consola.warn(`[Cloud Recorder] Force killing recording process: ${recording.title}`)
+                recording.process.kill('SIGKILL')
+            }
         }, 3000)
         return { message: 'Recording stopping...' }
     }
