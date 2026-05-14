@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { downloadPath } = body
+    const { downloadPath, tvheadendHost, tvheadendPort, tvheadendUser, tvheadendPassword } = body
     const config = useRuntimeConfig()
     const user = event.context.user
 
@@ -28,6 +28,10 @@ export default defineEventHandler(async (event) => {
         }
 
         users[userIndex].downloadPath = downloadPath || ''
+        users[userIndex].tvheadendHost = tvheadendHost || ''
+        users[userIndex].tvheadendPort = tvheadendPort || '9981'
+        users[userIndex].tvheadendUser = tvheadendUser || ''
+        users[userIndex].tvheadendPassword = tvheadendPassword || ''
 
         await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')
 

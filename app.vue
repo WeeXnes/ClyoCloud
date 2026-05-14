@@ -63,6 +63,12 @@
                   </NuxtLink>
                 </li>
                 <li>
+                  <NuxtLink to="/tv" class="nav-link" active-class="active">
+                    <Icon name="mdi:television-classic" class="w-5 h-5" />
+                    <span>TV</span>
+                  </NuxtLink>
+                </li>
+                <li>
                   <NuxtLink to="/shorts" class="nav-link" active-class="active">
                     <Icon name="mdi:play-box-outline" class="w-5 h-5" />
                     <span>Shorts</span>

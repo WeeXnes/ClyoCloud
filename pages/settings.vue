@@ -10,6 +10,10 @@ const confirmPassword = ref('')
 const isChangingPassword = ref(false)
 
 const downloadPath = ref('')
+const tvheadendHost = ref('')
+const tvheadendPort = ref('9981')
+const tvheadendUser = ref('')
+const tvheadendPassword = ref('')
 const isSavingSettings = ref(false)
 
 const tags = ref<Tag[]>([])
@@ -110,6 +114,10 @@ async function fetchUserSettings() {
     if (response.ok) {
       const data = await response.json()
       downloadPath.value = data.downloadPath || ''
+      tvheadendHost.value = data.tvheadendHost || ''
+      tvheadendPort.value = data.tvheadendPort || '9981'
+      tvheadendUser.value = data.tvheadendUser || ''
+      tvheadendPassword.value = data.tvheadendPassword || ''
     }
   } catch (err) {
     console.error('Error fetching user settings:', err)
@@ -128,7 +136,13 @@ async function saveUserSettings() {
     const response = await fetch('/api/user-settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ downloadPath: downloadPath.value }),
+      body: JSON.stringify({ 
+        downloadPath: downloadPath.value,
+        tvheadendHost: tvheadendHost.value,
+        tvheadendPort: tvheadendPort.value,
+        tvheadendUser: tvheadendUser.value,
+        tvheadendPassword: tvheadendPassword.value
+      }),
     })
 
     if (!response.ok) throw new Error('Failed to save settings')
@@ -420,6 +434,82 @@ async function logout() {
         <!-- Metadata & Tags -->
         <div class="lg:col-span-7 space-y-6">
           <div class="flex items-center gap-3 px-2">
+             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+               <Icon name="mdi:television-classic" class="text-primary w-5 h-5" />
+             </div>
+             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">TV Integration</h2>
+          </div>
+
+          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+             <div class="p-8 sm:p-10">
+               <h3 class="text-lg font-black tracking-tight mb-6">TVHeadend Connection</h3>
+               <div class="space-y-4">
+                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <div class="form-control">
+                     <label class="label py-1">
+                       <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Host / IP</span>
+                     </label>
+                     <input 
+                       v-model="tvheadendHost" 
+                       type="text" 
+                       placeholder="e.g. 192.168.1.10" 
+                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                     />
+                   </div>
+                   <div class="form-control">
+                     <label class="label py-1">
+                       <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Port</span>
+                     </label>
+                     <input 
+                       v-model="tvheadendPort" 
+                       type="text" 
+                       placeholder="9981" 
+                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                     />
+                   </div>
+                 </div>
+
+                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <div class="form-control">
+                     <label class="label py-1">
+                       <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Username</span>
+                     </label>
+                     <input 
+                       v-model="tvheadendUser" 
+                       type="text" 
+                       placeholder="tvheadend" 
+                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                     />
+                   </div>
+                   <div class="form-control">
+                     <label class="label py-1">
+                       <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Password</span>
+                     </label>
+                     <input 
+                       v-model="tvheadendPassword" 
+                       type="password" 
+                       placeholder="••••••••" 
+                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                     />
+                   </div>
+                 </div>
+
+                 <div class="pt-4">
+                   <button 
+                     class="btn btn-primary btn-block h-12 rounded-xl shadow-lg shadow-primary/20 gap-2" 
+                     @click="saveUserSettings" 
+                     :disabled="isSavingSettings"
+                   >
+                     <Icon v-if="!isSavingSettings" name="mdi:content-save-outline" class="w-4 h-4" />
+                     <span v-else class="loading loading-spinner loading-xs"></span>
+                     Save Connection Settings
+                   </button>
+                 </div>
+               </div>
+             </div>
+          </section>
+
+          <div class="flex items-center gap-3 px-2 pt-4">
              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                <Icon name="mdi:tag-multiple-outline" class="text-primary w-5 h-5" />
              </div>
