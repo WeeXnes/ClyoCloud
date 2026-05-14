@@ -32,8 +32,8 @@ export default defineEventHandler(async (event) => {
     const publicAccess = await isFilePublic(config.storagePath, username, decodedPath)
     if (!publicAccess) {
         throw createError({
-            statusCode: 401,
-            statusMessage: 'Unauthorized: File is not public',
+            statusCode: 404,
+            statusMessage: 'File not found or not public',
         })
     }
 

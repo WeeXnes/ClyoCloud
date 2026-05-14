@@ -77,12 +77,29 @@ export async function tvheadendRequest(config: TvheadendConfig, endpoint: string
     }
 }
 
+// Simple in-memory cache for heavy requests
+const tvCache = new Map<string, { data: any, timestamp: number }>()
+const CACHE_TTL = 30000 // 30 seconds
+
+async function cachedTvRequest(config: TvheadendConfig, endpoint: string, query: Record<string, any> = {}) {
+    const cacheKey = `${config.host}:${config.port}:${endpoint}:${JSON.stringify(query)}`
+    const cached = tvCache.get(cacheKey)
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data
+    }
+    
+    const data = await tvheadendRequest(config, endpoint, query)
+    tvCache.set(cacheKey, { data, timestamp: Date.now() })
+    return data
+}
+
 export async function getChannels(config: TvheadendConfig) {
-    return tvheadendRequest(config, '/api/channel/grid', { limit: 1000 })
+    return cachedTvRequest(config, '/api/channel/grid', { limit: 1000 })
 }
 
 export async function getEpg(config: TvheadendConfig) {
-    return tvheadendRequest(config, '/api/epg/events/grid', { limit: 1000 })
+    return cachedTvRequest(config, '/api/epg/events/grid', { limit: 1000 })
 }
 
 export async function getRecordings(config: TvheadendConfig) {

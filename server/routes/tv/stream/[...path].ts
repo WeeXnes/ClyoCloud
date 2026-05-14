@@ -52,13 +52,20 @@ export default defineEventHandler(async (event) => {
         }
     }
 
+    const controller = new AbortController()
+    event.node.res.on('close', () => {
+        controller.abort()
+        console.log(`[Tvheadend Proxy] Client disconnected, closing stream for ${path}`)
+    })
+
     // Direct Video Stream (Matroska, WebM, etc.)
     const proxyResponse = await sendProxy(event, targetUrl.toString(), {
         sendStream: true,
         fetchOptions: {
             headers: {
                 'Authorization': `Basic ${auth}`
-            }
+            },
+            signal: controller.signal
         },
         onResponse(e, response) {
             setHeader(e, 'Access-Control-Allow-Origin', '*')
@@ -78,13 +85,6 @@ export default defineEventHandler(async (event) => {
                 setHeader(e, 'Content-Type', 'video/x-matroska')
             }
         }
-    })
-
-    // Handle abrupt client disconnection to stop upstream stream
-    event.node.res.on('close', () => {
-        // This is a hint to the server that the response is no longer needed
-        // H3/Nitro should handle the proxy stream termination automatically when the response is closed
-        console.log(`[Tvheadend Proxy] Client disconnected, closing stream for ${path}`)
     })
 
     return proxyResponse
