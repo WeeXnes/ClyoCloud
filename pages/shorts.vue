@@ -18,8 +18,8 @@ const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 
 const observer = ref<IntersectionObserver | null>(null)
-const containerRefs = ref<HTMLElement[]>([])
-const videoRefs = ref<HTMLVideoElement[]>([])
+const containerRefs = ref<Map<string, HTMLElement>>(new Map())
+const videoRefs = ref<Map<string, HTMLVideoElement>>(new Map())
 const currentIndex = ref(0)
 
 const supportedExtensions = ['.mp4', '.webm', '.mov', '.mkv']
@@ -35,8 +35,8 @@ const handleScroll = (event: Event) => {
 const fetchVideos = async () => {
   try {
     isLoading.value = true
-    containerRefs.value = []
-    videoRefs.value = []
+    containerRefs.value.clear()
+    videoRefs.value.clear()
     const response = await fetch('/api/videos', { credentials: 'include' })
     if (!response.ok) throw new Error('Failed to fetch videos')
     const allVideos: Video[] = await response.json()
@@ -74,14 +74,11 @@ const getSourceType = (filename: string) => {
 
 const toggleMute = () => {
   isMuted.value = !isMuted.value
-  videoRefs.value.forEach(video => {
-    if (video) video.muted = isMuted.value
-  })
 }
 
 const togglePlayPause = () => {
-  const activeContainer = containerRefs.value[currentIndex.value]
-  const activeVideo = activeContainer?.querySelector('video')
+  if (!currentVisibleVideo.value) return
+  const activeVideo = videoRefs.value.get(currentVisibleVideo.value.fullPath)
   if (!activeVideo) return
 
   if (activeVideo.paused) {
@@ -219,24 +216,28 @@ const addTags = async () => {
   }
 }
 
-const setVideoRef = (el: any) => {
-  if (el && !videoRefs.value.includes(el)) {
-    videoRefs.value.push(el)
+const setVideoRef = (el: any, video: Video) => {
+  if (el) {
+    videoRefs.value.set(video.fullPath, el)
+  } else {
+    videoRefs.value.delete(video.fullPath)
   }
 }
 
 const setContainerRef = (el: any, video: Video) => {
   if (el) {
     el._videoData = video
-    if (!containerRefs.value.includes(el)) {
-      containerRefs.value.push(el)
+    containerRefs.value.set(video.fullPath, el)
+    if (observer.value) {
+      observer.value.observe(el)
     }
+  } else {
+    containerRefs.value.delete(video.fullPath)
   }
 }
 
 const isVideoVisible = (index: number) => {
-  // Increase buffer significantly to ensure preloading works effectively
-  return Math.abs(index - currentIndex.value) <= 2
+  return Math.abs(index - currentIndex.value) <= 1
 }
 
 onMounted(async () => {
@@ -250,15 +251,20 @@ onMounted(async () => {
         currentVisibleVideo.value = container._videoData
         isPaused.value = false
         if (video) {
-          video.currentTime = 0
-          video.play().catch((e: any) => console.warn('Autoplay prevented:', e))
+          // Only play if it's not already playing
+          if (video.paused) {
+            video.play().catch((e: any) => console.warn('Autoplay prevented:', e))
+          }
         }
       } else {
-        if (video) video.pause()
+        if (video) {
+          video.pause()
+          video.currentTime = 0 // Reset to beginning when not visible
+        }
       }
     })
   }, {
-    threshold: 0.8 // Trigger when 80% of the video is visible
+    threshold: 0.6 // Slightly lower threshold for better responsiveness
   })
 
   // Watch for container elements being added to DOM
@@ -342,7 +348,6 @@ const refresh = () => {
             class="h-full w-full object-contain"
             loop
             playsinline
-            autoplay
             :muted="isMuted"
             :poster="getThumbnailUrl(video.fullPath)"
           >
@@ -495,5 +500,14 @@ const refresh = () => {
 
 video::-webkit-media-controls {
   display: none !important;
+}
+
+@media (max-width: 768px) {
+  .backdrop-blur-md,
+  .backdrop-blur-sm,
+  .backdrop-blur {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 </style>
