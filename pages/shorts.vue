@@ -251,15 +251,20 @@ onMounted(async () => {
         currentVisibleVideo.value = container._videoData
         isPaused.value = false
         if (video) {
-          // Only play if it's not already playing
           if (video.paused) {
-            video.play().catch((e: any) => console.warn('Autoplay prevented:', e))
+            const playPromise = video.play()
+            if (playPromise !== undefined) {
+              playPromise.catch((e: any) => {
+                // Ignore AbortError which is common when scrolling fast
+                if (e.name === 'AbortError') return
+                console.warn('Playback prevented:', e)
+              })
+            }
           }
         }
       } else {
         if (video) {
           video.pause()
-          video.currentTime = 0 // Reset to beginning when not visible
         }
       }
     })
