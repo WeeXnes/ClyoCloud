@@ -24,49 +24,54 @@ export async function getTvheadendConfig(username: string): Promise<TvheadendCon
     }
 }
 
-export async function tvheadendRequest(config: TvheadendConfig, endpoint: string, query: Record<string, any> = {}) {
+export async function tvheadendRequest(config: TvheadendConfig, endpoint: string, query: Record<string, any> = {}, method = 'GET', body: any = null, isForm = false) {
     const { host, port, user, pass } = config
     
     // Clean host
     const cleanHost = host.replace(/^https?:\/\//, '').replace(/\/$/, '')
     
-    // Construct URL without credentials (fetch API restriction)
+    // Construct URL
     const url = new URL(`http://${cleanHost}:${port}${endpoint}`)
     Object.entries(query).forEach(([key, value]) => url.searchParams.append(key, value))
 
     // Use standard Basic Auth header
     const auth = Buffer.from(`${user}:${pass}`).toString('base64')
 
-    console.log(`[Tvheadend] Requesting: ${url.toString()} (User: ${user})`)
-
     try {
-        const response = await fetch(url.toString(), {
+        const fetchOptions: any = {
+            method,
             headers: {
                 'Authorization': `Basic ${auth}`,
                 'Accept': 'application/json'
             }
-        })
+        }
+
+        if (body) {
+            if (isForm) {
+                const formData = new URLSearchParams()
+                Object.entries(body).forEach(([k, v]) => formData.append(k, String(v)))
+                fetchOptions.body = formData.toString()
+                fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            } else {
+                fetchOptions.body = JSON.stringify(body)
+                fetchOptions.headers['Content-Type'] = 'application/json'
+            }
+        }
+
+        const response = await fetch(url.toString(), fetchOptions)
 
         if (!response.ok) {
             const errorStatus = response.status
             const errorText = await response.text().catch(() => '')
-            console.error(`[Tvheadend] Error: ${errorStatus} ${response.statusText}`)
-            
-            if (errorStatus === 401) {
-                 console.error(`[Tvheadend] 401 Unauthorized. Verify:`)
-                 console.error(`1. Username/Password are correct in ClyoCloud settings.`)
-                 console.error(`2. 'Plaintext (Basic) Authentication' is enabled in Tvheadend (Configuration -> General -> Base).`)
-                 console.error(`3. User has 'Web Interface' and 'Streaming' permissions in Tvheadend.`)
-            } else {
-                 console.error(`[Tvheadend] Response Snippet: ${errorText.substring(0, 500)}`)
-            }
+            console.error(`[Tvheadend] ${method} ${endpoint} Error: ${errorStatus} ${response.statusText}`)
+            console.error(`[Tvheadend] Response Body: ${errorText.substring(0, 500)}`)
             throw new Error(`Tvheadend request failed: ${response.statusText}`)
         }
 
         return response.json()
     } catch (err: any) {
         if (err.message.includes('fetch failed')) {
-            console.error(`[Tvheadend] Connection failed. Is ${url.origin} reachable from this server?`)
+            console.error(`[Tvheadend] Connection failed. Is ${url.origin} reachable?`)
         }
         throw err
     }
@@ -78,4 +83,25 @@ export async function getChannels(config: TvheadendConfig) {
 
 export async function getEpg(config: TvheadendConfig) {
     return tvheadendRequest(config, '/api/epg/events/grid', { limit: 1000 })
+}
+
+export async function getRecordings(config: TvheadendConfig) {
+    return tvheadendRequest(config, '/api/dvr/entry/grid', { limit: 1000 })
+}
+
+export async function getDvrConfigs(config: TvheadendConfig) {
+    return tvheadendRequest(config, '/api/dvr/config/grid', { limit: 100 })
+}
+
+export async function createRecording(config: TvheadendConfig, eventId: string) {
+    // Try sending event_id as form data, which is highly compatible
+    return tvheadendRequest(config, '/api/dvr/entry/create_by_event', {}, 'POST', { event_id: eventId }, true)
+}
+
+export async function cancelRecording(config: TvheadendConfig, entryId: string) {
+    return tvheadendRequest(config, '/api/dvr/entry/cancel', {}, 'POST', { uuid: entryId }, true)
+}
+
+export async function removeRecording(config: TvheadendConfig, entryId: string) {
+    return tvheadendRequest(config, '/api/dvr/entry/remove', {}, 'POST', { uuid: entryId }, true)
 }

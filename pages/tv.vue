@@ -6,6 +6,7 @@ import type { Channel, EpgEvent } from '~/types/Tvheadend'
 
 const channels = ref<Channel[]>([])
 const epgEvents = ref<EpgEvent[]>([])
+const recordings = ref<any[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const selectedChannel = ref<Channel | null>(null)
@@ -61,19 +62,23 @@ async function fetchData() {
     isLoading.value = true
     error.value = null
     
-    const [channelsRes, epgRes] = await Promise.all([
+    const [channelsRes, epgRes, recordingsRes] = await Promise.all([
       fetch('/api/tv/channels', { credentials: 'include' }),
-      fetch('/api/tv/epg', { credentials: 'include' })
+      fetch('/api/tv/epg', { credentials: 'include' }),
+      fetch('/api/tv/recordings', { credentials: 'include' })
     ])
 
     if (!channelsRes.ok) throw new Error('Failed to fetch channels')
     if (!epgRes.ok) throw new Error('Failed to fetch EPG')
+    if (!recordingsRes.ok) throw new Error('Failed to fetch recordings')
 
     const channelsData = await channelsRes.json()
     const epgData = await epgRes.json()
+    const recordingsData = await recordingsRes.json()
 
     channels.value = (channelsData.entries || []).sort((a: Channel, b: Channel) => a.number - b.number)
     epgEvents.value = epgData.entries || []
+    recordings.value = recordingsData.entries || []
 
     if (channels.value.length > 0 && !selectedChannel.value) {
       // Trigger the smart buffering for the first channel
@@ -87,11 +92,62 @@ async function fetchData() {
   }
 }
 
+async function startRecording(channelUuid: string, title: string) {
+  try {
+    const res = await fetch('/api/tv/record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelUuid, title })
+    })
+    if (!res.ok) throw new Error('Failed to start recording')
+    createNotification('Recording started in Cloud', NotificationType.SUCCESS)
+    fetchRecordingsOnly()
+  } catch (err) {
+    createNotification('Failed to start cloud recording', NotificationType.ERROR)
+  }
+}
+
+async function stopRecording(channelUuid: string) {
+  try {
+    const res = await fetch('/api/tv/record-cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelUuid })
+    })
+    if (!res.ok) throw new Error('Failed to stop recording')
+    createNotification('Cloud recording stopped', NotificationType.INFO)
+    fetchRecordingsOnly()
+  } catch (err) {
+    createNotification('Failed to stop recording', NotificationType.ERROR)
+  }
+}
+
+async function fetchRecordingsOnly() {
+  try {
+    const res = await fetch('/api/tv/recordings', { credentials: 'include' })
+    if (res.ok) {
+      const data = await res.json()
+      recordings.value = data.entries || []
+    }
+  } catch (err) {
+    console.error('Error refreshing recordings:', err)
+  }
+}
+
+function getEventRecording(channelUuid: string) {
+  return recordings.value.find(r => r.uuid === channelUuid)
+}
+
+function isEventRecording(channelUuid: string) {
+  return recordings.value.some(r => r.uuid === channelUuid)
+}
+
 onMounted(() => {
   fetchData()
-  // Refresh EPG every 5 minutes
+  // Refresh EPG and recordings every 5 minutes
   epgInterval.value = setInterval(() => {
     fetchEpgOnly()
+    fetchRecordingsOnly()
   }, 5 * 60 * 1000)
 })
 
@@ -154,6 +210,8 @@ const getStreamUrl = (channelUuid: string) => {
   // Using /channel/ instead of /channelid/ for UUIDs
   return `/tv/stream/channel/${channelUuid}?profile=webtv-vp8-vorbis-webm`
 }
+
+const activeTab = ref<'guide' | 'recordings'>('guide')
 
 function formatTime(timestamp: number) {
   return new Date(timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -219,15 +277,25 @@ function formatProgress(start: number, stop: number) {
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
-        <!-- Channel Sidebar -->
+        <!-- Sidebar -->
         <aside class="lg:col-span-3 xl:col-span-3 bg-base-100 rounded-[2rem] border border-base-content/5 overflow-hidden flex flex-col shadow-xl shadow-base-content/5">
-          <div class="p-6 border-b border-base-content/5 bg-base-200/30">
-            <h3 class="text-xs font-black uppercase tracking-widest text-base-content/40 flex items-center gap-2">
-              <Icon name="mdi:format-list-bulleted" class="w-4 h-4" />
-              Channel Guide
-            </h3>
+          <div class="p-2 border-b border-base-content/5 bg-base-200/30 flex gap-1">
+            <button 
+              @click="activeTab = 'guide'"
+              :class="`flex-1 py-3 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'guide' ? 'bg-primary text-primary-content shadow-lg' : 'hover:bg-base-100/50 text-base-content/40'}`"
+            >
+              <Icon name="mdi:format-list-bulleted" class="w-4 h-4 mr-1" /> Guide
+            </button>
+            <button 
+              @click="activeTab = 'recordings'"
+              :class="`flex-1 py-3 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'recordings' ? 'bg-primary text-primary-content shadow-lg' : 'hover:bg-base-100/50 text-base-content/40'}`"
+            >
+              <Icon name="mdi:record-rec" class="w-4 h-4 mr-1" /> Records
+            </button>
           </div>
-          <div class="flex-1 overflow-y-auto custom-scrollbar p-2">
+
+          <!-- Channel Guide Tab -->
+          <div v-if="activeTab === 'guide'" class="flex-1 overflow-y-auto custom-scrollbar p-2">
             <div 
               v-for="channel in filteredChannels" 
               :key="channel.uuid"
@@ -245,15 +313,51 @@ function formatProgress(start: number, stop: number) {
                   </span>
                   <h4 class="font-bold text-sm truncate">{{ channel.name }}</h4>
                 </div>
-                <p v-if="getChannelEvent(channel.uuid)" :class="`text-[10px] font-medium truncate mt-0.5 ${selectedChannel?.uuid === channel.uuid ? 'text-white/70' : 'text-base-content/40'}`">
-                  {{ getChannelEvent(channel.uuid)?.title }}
-                </p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                   <p v-if="getChannelEvent(channel.uuid)" :class="`text-[10px] font-medium truncate ${selectedChannel?.uuid === channel.uuid ? 'text-white/70' : 'text-base-content/40'}`">
+                    {{ getChannelEvent(channel.uuid)?.title }}
+                  </p>
+                  <Icon v-if="getChannelEvent(channel.uuid) && isEventRecording(getChannelEvent(channel.uuid)!.uuid)" name="mdi:circle" class="w-2 h-2 text-error animate-pulse flex-shrink-0" />
+                </div>
               </div>
             </div>
             
             <div v-if="filteredChannels.length === 0" class="flex flex-col items-center justify-center py-12 opacity-30">
               <Icon name="mdi:magnify-close" class="w-12 h-12 mb-2" />
               <p class="text-[10px] font-black uppercase tracking-widest">No channels found</p>
+            </div>
+          </div>
+
+          <!-- Recordings Tab -->
+          <div v-else class="flex-1 overflow-y-auto custom-scrollbar p-2">
+            <div 
+              v-for="record in recordings" 
+              :key="record.uuid"
+              class="group flex flex-col gap-2 p-4 rounded-2xl bg-base-200/50 mb-2 border border-base-content/5"
+            >
+              <div class="flex justify-between items-start">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span :class="`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest bg-error text-error-content animate-pulse`">
+                      {{ record.status }}
+                    </span>
+                    <span class="text-[10px] font-bold text-base-content/40">ClyoCloud</span>
+                  </div>
+                  <h4 class="font-bold text-sm line-clamp-1">{{ record.title }}</h4>
+                </div>
+                <button 
+                  @click="stopRecording(record.uuid)"
+                  class="btn btn-ghost btn-circle btn-xs text-error/40 hover:text-error"
+                >
+                  <Icon name="mdi:stop-circle-outline" class="w-4 h-4" />
+                </button>
+              </div>
+              <p class="text-[10px] font-medium text-base-content/40">Started at: {{ formatTime(record.start) }}</p>
+            </div>
+
+            <div v-if="recordings.length === 0" class="flex flex-col items-center justify-center py-12 opacity-30 text-center px-4">
+              <Icon name="mdi:video-off-outline" class="w-12 h-12 mb-2" />
+              <p class="text-[10px] font-black uppercase tracking-widest">No active recordings</p>
             </div>
           </div>
         </aside>
@@ -266,11 +370,20 @@ function formatProgress(start: number, stop: number) {
               <video
                 ref="tvPlayer"
                 controls
+                muted
                 preload="auto"
                 class="w-full h-full"
               >
                 Your browser does not support the video tag.
               </video>
+
+              <!-- Muted Indicator -->
+              <div class="absolute top-6 right-6 z-20 pointer-events-none group-hover:opacity-0 transition-opacity">
+                <div class="bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 flex items-center gap-2">
+                  <Icon name="mdi:volume-off" class="w-4 h-4 text-white/70" />
+                  <span class="text-[10px] font-black uppercase tracking-widest text-white/70">Muted for Autoplay</span>
+                </div>
+              </div>
 
               <!-- Buffering Overlay -->
               <div v-if="isBuffering" class="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-10 animate-in fade-in duration-300">
@@ -300,10 +413,18 @@ function formatProgress(start: number, stop: number) {
                     </p>
                   </div>
                   <div class="flex items-center gap-3">
+                    <button 
+                      v-if="selectedChannel"
+                      @click="isEventRecording(selectedChannel.uuid) ? stopRecording(selectedChannel.uuid) : startRecording(selectedChannel.uuid, getChannelEvent(selectedChannel.uuid)?.title || 'Live TV')"
+                      :class="`btn btn-sm gap-2 rounded-xl px-4 ${isEventRecording(selectedChannel.uuid) ? 'btn-error' : 'btn-outline'}`"
+                    >
+                      <Icon :name="isEventRecording(selectedChannel.uuid) ? 'mdi:stop-circle' : 'mdi:record-rec'" class="w-4 h-4" />
+                      {{ isEventRecording(selectedChannel.uuid) ? 'Stop Cloud Record' : 'Record to Cloud' }}
+                    </button>
                     <div class="text-right">
                       <p class="text-[10px] font-black uppercase tracking-widest text-base-content/30">On Air</p>
                       <p class="font-bold text-sm">
-                        {{ formatTime(getChannelEvent(selectedChannel.uuid)!.start) }} - {{ formatTime(getChannelEvent(selectedChannel.uuid)!.stop) }}
+                        {{ getChannelEvent(selectedChannel.uuid) ? formatTime(getChannelEvent(selectedChannel.uuid)!.start) + ' - ' + formatTime(getChannelEvent(selectedChannel.uuid)!.stop) : 'Live' }}
                       </p>
                     </div>
                   </div>
@@ -339,16 +460,26 @@ function formatProgress(start: number, stop: number) {
               <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 <div 
                   v-for="event in getSelectedChannelEpg.filter(e => e.start > Math.floor(Date.now() / 1000)).slice(0, 6)" 
-                  :key="event.uuid"
-                  class="bg-base-100 p-5 rounded-3xl border border-base-content/5 shadow-sm hover:shadow-md transition-shadow group"
+                  :key="event.eventId"
+                  class="bg-base-100 p-5 rounded-3xl border border-base-content/5 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden"
                 >
                   <div class="flex justify-between items-start mb-2">
                     <span class="text-[10px] font-black uppercase tracking-widest bg-base-200 px-2 py-1 rounded text-base-content/50">
                       {{ formatTime(event.start) }}
                     </span>
+                    <button 
+                      @click="isEventRecording(event.eventId) ? stopRecording(getEventRecording(event.eventId).uuid) : startRecording(event.eventId)"
+                      :class="`btn btn-circle btn-xs ${isEventRecording(event.eventId) ? 'btn-error' : 'btn-ghost bg-base-200'}`"
+                    >
+                      <Icon :name="isEventRecording(event.eventId) ? 'mdi:stop-circle' : 'mdi:record-rec'" class="w-4 h-4" />
+                    </button>
                   </div>
                   <h4 class="font-black text-sm line-clamp-1 group-hover:text-primary transition-colors">{{ event.title }}</h4>
                   <p class="text-[11px] font-medium text-base-content/40 mt-1 line-clamp-2">{{ event.description }}</p>
+                  
+                  <div v-if="isEventRecording(event.eventId)" class="absolute top-0 right-0 p-1">
+                    <Icon name="mdi:circle" class="w-2 h-2 text-error animate-pulse" />
+                  </div>
                 </div>
               </div>
             </div>

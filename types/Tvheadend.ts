@@ -6,7 +6,7 @@ export interface Channel {
 }
 
 export interface EpgEvent {
-  uuid: string
+  eventId: string
   channelUuid: string
   channelName: string
   start: number
