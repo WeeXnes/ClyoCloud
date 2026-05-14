@@ -116,6 +116,7 @@ const iconLookup: Record<string, string> = {
     "sql": "vscode-icons:file-type-sql",
 
     // Others
+    "default": "vscode-icons:default-root",
     "log": "vscode-icons:file-type-log",
     "bak": "vscode-icons:file-type-binary",
     "exe": "vscode-icons:file-type-binary",
@@ -144,5 +145,5 @@ export function getIconForExtension(input: string): string {
     const match = cleanInput.match(/\.([a-zA-Z0-9]+)$/);
     const ext = match ? match[1].toLowerCase() : cleanInput.toLowerCase();
 
-    return iconLookup[ext] ?? "vscode-icons:file-type-default";
+    return iconLookup[ext] ?? "vscode-icons:default-root";
 }

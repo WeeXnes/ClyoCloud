@@ -76,13 +76,14 @@ export async function startCloudRecording(username: string, channelUuid: string,
         console.log(`[Cloud Recorder] Finished raw recording. Converting to MP4...`)
         
         // Post-process: Convert TS to MP4
-        // Re-encoding audio to AAC is necessary because TS often uses MP2 or AC3 
-        // which are not natively supported in the MP4 container by all browsers.
+        // Mapping only video and audio (0:v and 0:a) to avoid incompatible 
+        // data/subtitle tracks in MPEG-TS that cause MP4 encoder failure.
         const converter = spawn('ffmpeg', [
             '-i', filePathTs,
             '-c:v', 'copy',
             '-c:a', 'aac',
-            '-map', '0',
+            '-map', '0:v',
+            '-map', '0:a',
             '-movflags', '+faststart',
             '-y',
             filePathMp4
