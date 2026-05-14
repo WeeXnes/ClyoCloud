@@ -1,50 +1,124 @@
 import { describe, it, expect } from 'vitest'
 
-// List of all known endpoints
-const endpoints = [
-  '/api/2fa/disable', '/api/2fa/enable', '/api/2fa/setup', '/api/activity',
-  '/api/activity-full', '/api/bulk-download', '/api/change-password', '/api/download',
-  '/api/download-stop', '/api/favorites', '/api/file-meta', '/api/files',
-  '/api/folder', '/api/rename', '/api/stats', '/api/tags', '/api/upload',
-  '/api/user-settings', '/api/verify', '/api/videos', '/api/zip',
-  '/file/test.txt', '/stream/test.mp4', '/thumbnail/test.png', 
-  '/p/file/admin/test.txt', '/p/stream/admin/test.mp4', '/p/thumbnail/admin/test.png'
+/**
+ * Security Verification Suite
+ * This test ensures that the "Deny-by-Default" policy in server/middleware/auth.ts
+ * is working correctly for all critical endpoints.
+ */
+
+// All endpoints that REQUIRE authentication
+const protectedEndpoints = [
+  // Core API
+  '/api/activity',
+  '/api/activity-full',
+  '/api/bulk-download',
+  '/api/change-password',
+  '/api/download',
+  '/api/download-stop',
+  '/api/favorites',
+  '/api/file-meta',
+  '/api/files',
+  '/api/folder',
+  '/api/move',
+  '/api/rename',
+  '/api/stats',
+  '/api/storage-map',
+  '/api/tags',
+  '/api/upload',
+  '/api/user-settings',
+  '/api/verify',
+  '/api/videos',
+  '/api/zip',
+  
+  // 2FA Management
+  '/api/2fa/disable',
+  '/api/2fa/enable',
+  '/api/2fa/setup',
+
+  // TV Features
+  '/api/tv/channels',
+  '/api/tv/epg',
+  '/api/tv/record',
+  '/api/tv/record-cancel',
+  '/api/tv/recordings',
+  '/tv/stream/channel/123',
+  '/tv/icon/test.png',
+
+  // Content Delivery (Raw Routes)
+  '/file/test.txt',
+  '/files/test-folder', // Verifying plural route protection
+  '/stream/test.mp4',
+  '/thumbnail/test.png',
+  '/media/test.mp4',
+
+  // System/Admin Pages
+  '/settings',
+  '/logs',
+  '/favorites',
+  '/shared'
 ]
 
+// All endpoints that are EXPLICITLY PUBLIC
 const publicEndpoints = [
-  '/api/login', '/api/logout', '/api/public/file-info', '/api/2fa/verify-login'
+  '/api/login',
+  '/api/logout',
+  '/api/public/file-info',
+  '/api/2fa/verify-login',
+  '/login',
+  '/favicon.ico',
+  '/robots.txt',
+  '/clyo.png',
+  '/wicon.png',
+  // Public Shared Links
+  '/p/username/path/to/file',
+  '/p/file/username/path/to/file',
+  '/p/stream/username/path/to/file',
+  '/p/thumbnail/username/path/to/file'
 ]
 
-describe('API Security Tests', () => {
-  describe('Protected Endpoints', () => {
-    endpoints.forEach((endpoint) => {
-      it(`should return 401 for ${endpoint} without a token`, async () => {
-        const response = await fetch(`http://localhost:6969${endpoint}`)
-        expect(response.status).toBe(401)
-      })
+describe('Security: Authentication Guard', () => {
+  const BASE_URL = 'http://localhost:6969'
 
-      it(`should return 401 for ${endpoint} with an invalid token`, async () => {
-        const response = await fetch(`http://localhost:6969${endpoint}`, {
-          headers: { Cookie: 'token=invalid_token_xyz' }
+  describe('Protected Endpoints (Must return 401 or redirect to login)', () => {
+    protectedEndpoints.forEach((endpoint) => {
+      it(`blocks unauthorized access to ${endpoint}`, async () => {
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
+          headers: { 'Accept': 'application/json' }
         })
+        
+        // Should be 401 (Unauthorized) for JSON requests
         expect(response.status).toBe(401)
       })
 
-      it(`should return 401 for ${endpoint} with a malformed token`, async () => {
-        const response = await fetch(`http://localhost:6969${endpoint}`, {
-          headers: { Cookie: 'token=MALFORMED_TOKEN_123' }
+      it(`rejects invalid tokens for ${endpoint}`, async () => {
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
+          headers: { 
+            'Accept': 'application/json',
+            'Cookie': 'token=invalid.jwt.token' 
+          }
         })
         expect(response.status).toBe(401)
       })
     })
   })
 
-  describe('Public Endpoints', () => {
+  describe('Public Endpoints (Must be accessible)', () => {
     publicEndpoints.forEach((endpoint) => {
-      it(`should be accessible (not 401) for ${endpoint}`, async () => {
-        const response = await fetch(`http://localhost:6969${endpoint}`)
+      it(`allows public access to ${endpoint}`, async () => {
+        const response = await fetch(`${BASE_URL}${endpoint}`)
+        // We don't check for 200 because some might return 404 (file not found) 
+        // or 400 (bad params), but they MUST NOT return 401
         expect(response.status).not.toBe(401)
       })
+    })
+  })
+
+  describe('Deny-by-Default Policy', () => {
+    it('blocks a completely random/unknown path', async () => {
+      const response = await fetch(`${BASE_URL}/some/hidden/admin/path`, {
+        headers: { 'Accept': 'application/json' }
+      })
+      expect(response.status).toBe(401)
     })
   })
 })
