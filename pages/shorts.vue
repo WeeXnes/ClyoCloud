@@ -337,14 +337,14 @@ const refresh = () => {
     <!-- Video Feed -->
     <div 
       v-else-if="videos.length" 
-      class="h-full w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar"
+      class="h-full w-full overflow-y-scroll overflow-x-hidden snap-y snap-mandatory no-scrollbar"
       @scroll.passive="handleScroll"
     >
       <div 
         v-for="(video, index) in videos" 
         :key="video.fullPath" 
         :ref="el => setContainerRef(el, video)"
-        class="h-[100dvh] w-full snap-center relative flex items-center justify-center bg-black cursor-pointer"
+        class="h-[100dvh] w-full max-w-[100vw] snap-center relative flex items-center justify-center bg-black cursor-pointer overflow-hidden"
         @click="togglePlayPause"
       >
         <template v-if="isVideoVisible(index)">
