@@ -115,8 +115,13 @@ async function stopRecording(channelUuid: string) {
       body: JSON.stringify({ channelUuid })
     })
     if (!res.ok) throw new Error('Failed to stop recording')
+
+    // Proactively remove from UI immediately
+    recordings.value = recordings.value.filter(r => r.uuid !== channelUuid)
     createNotification('Cloud recording stopped', NotificationType.INFO)
-    fetchRecordingsOnly()
+    
+    // Slight delay before refreshing from backend to ensure state consistency
+    setTimeout(fetchRecordingsOnly, 500)
   } catch (err) {
     createNotification('Failed to stop recording', NotificationType.ERROR)
   }
