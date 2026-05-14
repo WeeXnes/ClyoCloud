@@ -76,7 +76,8 @@ async function fetchData() {
     epgEvents.value = epgData.entries || []
 
     if (channels.value.length > 0 && !selectedChannel.value) {
-      selectedChannel.value = channels.value[0]
+      // Trigger the smart buffering for the first channel
+      selectChannel(channels.value[0])
     }
   } catch (err: any) {
     console.error('Error fetching TV data:', err)
