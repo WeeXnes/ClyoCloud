@@ -3,30 +3,32 @@ import jwt from 'jsonwebtoken'
 import { consola } from 'consola'
 
 export default defineEventHandler(async (event) => {
-    const url = getRequestURL(event).pathname.toLowerCase()
+    // Normalize URL: lowercase and collapse multiple slashes
+    const url = getRequestURL(event).pathname.replace(/\/+/g, '/').toLowerCase()
 
     const publicPaths = [
         '/api/login', 
         '/api/logout', 
         '/login', 
-        '/p/', 
-        '/api/public/', 
+        '/p', 
+        '/api/public', 
         '/api/2fa/verify-login',
-        '/_nuxt/',
+        '/_nuxt',
         '/favicon.ico',
         '/robots.txt',
         '/clyo.png',
         '/wicon.png'
     ]
 
-    if (publicPaths.some((path) => url.startsWith(path.toLowerCase()))) {
+    const isPublic = publicPaths.some((path) => url.startsWith(path.toLowerCase()))
+
+    if (isPublic) {
         consola.info(`[Auth] Public Access: ${url}`)
         return
     }
 
     // Protect all other API, Stream, File, and Page routes
     consola.start(`[Auth] Protecting Route: ${url}`)
-
     const config = useRuntimeConfig()
     const token = getCookie(event, 'token')
 
