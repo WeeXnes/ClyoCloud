@@ -269,7 +269,7 @@ onMounted(async () => {
       }
     })
   }, {
-    threshold: 0.6 // Slightly lower threshold for better responsiveness
+    threshold: 0.3 // Much lower threshold for faster video switching on iOS
   })
 
   // Watch for container elements being added to DOM
@@ -501,6 +501,15 @@ const refresh = () => {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  /* Hardware acceleration for smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+}
+
+video {
+  /* Force GPU acceleration */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 video::-webkit-media-controls {
@@ -508,11 +517,13 @@ video::-webkit-media-controls {
 }
 
 @media (max-width: 768px) {
+  /* Backdrop filters are extremely expensive on mobile WebKit */
   .backdrop-blur-md,
   .backdrop-blur-sm,
   .backdrop-blur {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
   }
 }
 </style>
