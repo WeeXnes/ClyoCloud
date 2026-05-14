@@ -11,6 +11,50 @@ const error = ref<string | null>(null)
 const selectedChannel = ref<Channel | null>(null)
 const searchQuery = ref('')
 const epgInterval = ref<any>(null)
+const tvPlayer = ref<HTMLVideoElement | null>(null)
+const isBuffering = ref(false)
+
+async function selectChannel(channel: Channel) {
+  selectedChannel.value = channel
+  isBuffering.value = true
+  
+  await nextTick()
+  
+  if (tvPlayer.value) {
+    const video = tvPlayer.value
+    // Remove previous listeners and stop current playback
+    video.pause()
+    video.removeAttribute('src')
+    video.load()
+    
+    // Set new source
+    video.src = getStreamUrl(channel.uuid)
+    video.load()
+    
+    // Logic: Wait for 'canplay', then wait 3 more seconds before calling .play()
+    const startPlayback = () => {
+      console.log('[TV] Stream ready, starting 3s buffer cushion...')
+      setTimeout(() => {
+        console.log('[TV] Buffer cushion filled, starting playback')
+        isBuffering.value = false
+        video.play().catch(e => {
+            console.error('[TV] Playback failed/blocked:', e)
+            isBuffering.value = false // Hide overlay so user can click play
+        })
+      }, 3000)
+      video.removeEventListener('canplay', startPlayback)
+    }
+    
+    video.addEventListener('canplay', startPlayback)
+    
+    video.onwaiting = () => { isBuffering.value = true }
+    video.onplaying = () => { isBuffering.value = false }
+    video.onerror = () => {
+        isBuffering.value = false
+        createNotification('Stream error occurred', NotificationType.ERROR)
+    }
+  }
+}
 
 async function fetchData() {
   try {
@@ -103,10 +147,6 @@ const getIconUrl = (url?: string) => {
     }
   }
   return `/tv/icon/${url.startsWith('/') ? url.slice(1) : url}`
-}
-
-const selectChannel = (channel: Channel) => {
-  selectedChannel.value = channel
 }
 
 const getStreamUrl = (channelUuid: string) => {
@@ -223,14 +263,27 @@ function formatProgress(start: number, stop: number) {
             <!-- Player Wrapper -->
             <div class="relative group aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl ring-1 ring-white/5">
               <video
+                ref="tvPlayer"
                 controls
-                autoplay
+                preload="auto"
                 class="w-full h-full"
-                :key="selectedChannel.uuid"
               >
-                <source :src="getStreamUrl(selectedChannel.uuid)" type="video/webm" />
                 Your browser does not support the video tag.
               </video>
+
+              <!-- Buffering Overlay -->
+              <div v-if="isBuffering" class="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-10 animate-in fade-in duration-300">
+                <div class="relative">
+                  <span class="loading loading-spinner loading-lg text-primary"></span>
+                  <div class="absolute inset-0 animate-ping opacity-20 bg-primary rounded-full"></div>
+                </div>
+                <p class="mt-6 font-black text-[10px] uppercase tracking-[0.3em] text-white/70">
+                  Stabilizing Stream...
+                </p>
+                <p class="mt-2 text-[8px] font-bold text-white/30 uppercase tracking-widest">
+                  Pre-loading buffer for stutter-free playback
+                </p>
+              </div>
             </div>
 
             <!-- Current Program Info -->
