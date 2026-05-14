@@ -21,6 +21,7 @@
     "daisyui": "^4.12.23",
     "dotenv": "^16.6.1",
     "formidable": "^3.5.4",
+    "hls.js": "^1.6.16",
     "jsonwebtoken": "^9.0.2",
     "mime-types": "^3.0.1",
     "nuxt": "^3.15.4",

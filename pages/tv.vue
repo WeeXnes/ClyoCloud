@@ -110,7 +110,8 @@ const selectChannel = (channel: Channel) => {
 }
 
 const getStreamUrl = (channelUuid: string) => {
-  return `/tv/stream/${channelUuid}`
+  // Using /channel/ instead of /channelid/ for UUIDs
+  return `/tv/stream/channel/${channelUuid}?profile=webtv-vp8-vorbis-webm`
 }
 
 function formatTime(timestamp: number) {
@@ -222,14 +223,12 @@ function formatProgress(start: number, stop: number) {
             <!-- Player Wrapper -->
             <div class="relative group aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl ring-1 ring-white/5">
               <video
-                id="tvPlayer"
                 controls
                 autoplay
                 class="w-full h-full"
                 :key="selectedChannel.uuid"
               >
-                <source :src="getStreamUrl(selectedChannel.uuid)" type="video/mp2t" />
-                <source :src="getStreamUrl(selectedChannel.uuid)" type="video/mp4" />
+                <source :src="getStreamUrl(selectedChannel.uuid)" type="video/webm" />
                 Your browser does not support the video tag.
               </video>
             </div>

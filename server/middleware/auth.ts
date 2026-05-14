@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
         return
     }
 
-    const protectedRoutes = ['/api/', '/stream/', '/file/', '/thumbnail/', '/media/']
+    const protectedRoutes = ['/api/', '/stream/', '/file/', '/thumbnail/', '/media/', '/tv/']
     if (!protectedRoutes.some((route) => url.startsWith(route.toLowerCase()))) {
         return
     }
