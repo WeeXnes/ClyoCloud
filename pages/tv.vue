@@ -14,8 +14,10 @@ const searchQuery = ref('')
 const epgInterval = ref<any>(null)
 const tvPlayer = ref<HTMLVideoElement | null>(null)
 const isBuffering = ref(false)
+const isStopping = ref(false)
 
 function stopPlayback() {
+  isStopping.value = true
   if (tvPlayer.value) {
     const video = tvPlayer.value
     video.pause()
@@ -27,6 +29,7 @@ function stopPlayback() {
 async function selectChannel(channel: Channel) {
   selectedChannel.value = channel
   isBuffering.value = true
+  isStopping.value = false
   
   await nextTick()
   
@@ -34,20 +37,24 @@ async function selectChannel(channel: Channel) {
     const video = tvPlayer.value
     // Stop current playback properly
     stopPlayback()
+    isStopping.value = false // Allow new stream to report errors
     
-    // Set new source - switching to 'pass' profile for zero CPU transcoding
+    // Set new source - switching to 'matroska' profile for high compatibility and low CPU
     video.src = getStreamUrl(channel.uuid)
     video.load()
     
     // Logic: Wait for 'canplay', then wait 3 more seconds before calling .play()
     const startPlayback = () => {
+      if (isStopping.value) return
       console.log('[TV] Stream ready, starting 3s buffer cushion...')
       setTimeout(() => {
+        if (isStopping.value) return
         console.log('[TV] Buffer cushion filled, starting playback')
         isBuffering.value = false
         video.play().catch(e => {
+            if (isStopping.value) return
             console.error('[TV] Playback failed/blocked:', e)
-            isBuffering.value = false // Hide overlay so user can click play
+            isBuffering.value = false
         })
       }, 3000)
       video.removeEventListener('canplay', startPlayback)
@@ -55,9 +62,10 @@ async function selectChannel(channel: Channel) {
     
     video.addEventListener('canplay', startPlayback)
     
-    video.onwaiting = () => { isBuffering.value = true }
+    video.onwaiting = () => { if (!isStopping.value) isBuffering.value = true }
     video.onplaying = () => { isBuffering.value = false }
     video.onerror = () => {
+        if (isStopping.value) return
         isBuffering.value = false
         createNotification('Stream error occurred', NotificationType.ERROR)
     }
@@ -220,8 +228,8 @@ const getIconUrl = (url?: string) => {
 }
 
 const getStreamUrl = (channelUuid: string) => {
-  // Using 'pass' profile to avoid transcoding and high CPU usage
-  return `/tv/stream/channel/${channelUuid}?profile=pass`
+  // Using 'matroska' profile - usually just re-muxes with minimal CPU and is browser-friendly
+  return `/tv/stream/channel/${channelUuid}?profile=matroska`
 }
 
 const activeTab = ref<'guide' | 'recordings'>('guide')
