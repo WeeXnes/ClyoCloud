@@ -58,6 +58,8 @@ export async function startCloudRecording(username: string, channelUuid: string,
         '-c', 'copy',
         '-map', '0',
         '-fflags', '+genpts',
+        '-copyts',
+        '-start_at_zero',
         '-y',
         filePathTs
     ], { stdio: ['pipe', 'pipe', 'pipe'] })
@@ -79,14 +81,15 @@ export async function startCloudRecording(username: string, channelUuid: string,
         consola.start(`[Cloud Recorder] Starting MP4 conversion: ${fileNameMp4}`)
         
         // Post-process: Convert TS to MP4
-        // Mapping only video and audio (0:v and 0:a) to avoid incompatible 
-        // data/subtitle tracks in MPEG-TS that cause MP4 encoder failure.
+        // Adding aresample=async=1 and avoid_negative_ts to fix A/V desync
         const converter = spawn('ffmpeg', [
             '-i', filePathTs,
             '-c:v', 'copy',
             '-c:a', 'aac',
+            '-af', 'aresample=async=1',
             '-map', '0:v',
             '-map', '0:a',
+            '-avoid_negative_ts', 'make_zero',
             '-movflags', '+faststart',
             '-y',
             filePathMp4
