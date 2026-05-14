@@ -390,23 +390,14 @@ function formatProgress(start: number, stop: number) {
               <video
                 ref="tvPlayer"
                 controls
-                muted
                 preload="auto"
                 class="w-full h-full"
               >
                 Your browser does not support the video tag.
               </video>
 
-              <!-- Muted Indicator -->
-              <div class="absolute top-6 right-6 z-20 pointer-events-none group-hover:opacity-0 transition-opacity">
-                <div class="bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 flex items-center gap-2">
-                  <Icon name="mdi:volume-off" class="w-4 h-4 text-white/70" />
-                  <span class="text-[10px] font-black uppercase tracking-widest text-white/70">Muted for Autoplay</span>
-                </div>
-              </div>
-
               <!-- Buffering Overlay -->
-              <div v-if="isBuffering" class="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-10 animate-in fade-in duration-300">
+              <div v-if="isBuffering" class="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-10 animate-in fade-in duration-300 pointer-events-none">
                 <div class="relative">
                   <span class="loading loading-spinner loading-lg text-primary"></span>
                   <div class="absolute inset-0 animate-ping opacity-20 bg-primary rounded-full"></div>

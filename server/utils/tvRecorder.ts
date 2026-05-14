@@ -75,12 +75,14 @@ export async function startCloudRecording(username: string, channelUuid: string,
         activeRecordings.delete(recordingKey)
         console.log(`[Cloud Recorder] Finished raw recording. Converting to MP4...`)
         
-        // Post-process: Convert TS to MP4, ensuring timestamps are handled correctly without heavy re-encoding
+        // Post-process: Convert TS to MP4
+        // Re-encoding audio to AAC is necessary because TS often uses MP2 or AC3 
+        // which are not natively supported in the MP4 container by all browsers.
         const converter = spawn('ffmpeg', [
             '-i', filePathTs,
-            '-c', 'copy',
+            '-c:v', 'copy',
+            '-c:a', 'aac',
             '-map', '0',
-            '-fflags', '+genpts',
             '-movflags', '+faststart',
             '-y',
             filePathMp4
@@ -89,9 +91,17 @@ export async function startCloudRecording(username: string, channelUuid: string,
         converter.on('close', (c) => {
             if (c === 0) {
                 console.log(`[Cloud Recorder] Conversion successful: ${fileNameMp4}`)
-                fs.unlinkSync(filePathTs) // Cleanup raw file
+                if (fs.existsSync(filePathTs)) fs.unlinkSync(filePathTs)
             } else {
-                console.error(`[Cloud Recorder] Conversion failed for ${fileNameTs}`)
+                console.error(`[Cloud Recorder] Conversion failed for ${fileNameTs} with code ${c}`)
+            }
+        })
+
+        converter.stderr.on('data', (data) => {
+            // Optional: log conversion errors if they happen
+            const msg = data.toString()
+            if (msg.toLowerCase().includes('error')) {
+                console.error(`[Cloud Recorder] Conversion Error: ${msg}`)
             }
         })
     })
