@@ -49,6 +49,7 @@ const protectedEndpoints = [
   '/files/test-folder', // Verifying plural route protection
   '/stream/test.mp4',
   '/thumbnail/test.png',
+  '/preview/test.mp4',
   '/media/test.mp4',
 
   // System/Admin Pages
@@ -73,7 +74,8 @@ const publicEndpoints = [
   '/p/username/path/to/file',
   '/p/file/username/path/to/file',
   '/p/stream/username/path/to/file',
-  '/p/thumbnail/username/path/to/file'
+  '/p/thumbnail/username/path/to/file',
+  '/p/preview/username/path/to/file'
 ]
 
 describe('Security: Authentication Guard', () => {
