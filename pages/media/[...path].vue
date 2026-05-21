@@ -63,12 +63,6 @@ const setupObserver = () => {
   }, 100)
 }
 
-watch(visibleRecommendedVideos, () => {
-  if (isMobile.value) {
-    setupObserver()
-  }
-}, { deep: true })
-
 const isEditingDescription = ref(false)
 const editableDescription = ref('')
 
@@ -426,6 +420,12 @@ const visibleVideosCount = ref(20);
 const visibleRecommendedVideos = computed(() => {
   return recommendedVideos.value.slice(0, visibleVideosCount.value);
 });
+
+watch(visibleRecommendedVideos, () => {
+  if (isMobile.value) {
+    setupObserver()
+  }
+}, { deep: true })
 
 const loadMore = () => {
   visibleVideosCount.value += 20;

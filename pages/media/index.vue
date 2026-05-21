@@ -55,12 +55,6 @@ const setupObserver = () => {
   }, 100)
 }
 
-watch(paginatedVideos, () => {
-  if (isMobile.value) {
-    setupObserver()
-  }
-}, { deep: true })
-
 async function fetchVideos() {
   try {
     isLoading.value = true
@@ -177,6 +171,12 @@ const paginatedVideos = computed(() => {
   const end = start + videosPerPage
   return filteredVideos.value.slice(start, end)
 })
+
+watch(paginatedVideos, () => {
+  if (isMobile.value) {
+    setupObserver()
+  }
+}, { deep: true })
 
 const totalPages = computed(() => {
   return Math.ceil(filteredVideos.value.length / videosPerPage)
