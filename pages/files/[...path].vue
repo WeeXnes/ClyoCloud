@@ -274,15 +274,28 @@ watch(isGridView, (newVal) => {
 const hoveredFile = ref<string | null>(null)
 const visibleFiles = ref<Set<string>>(new Set())
 const isMobile = ref(false)
+const mobileAutoPreview = ref(true)
 let touchTimer: any = null
 let observer: IntersectionObserver | null = null
+
+const fetchUserSettings = async () => {
+  try {
+    const response = await fetch('/api/user-settings', { credentials: 'include' })
+    if (response.ok) {
+      const data = await response.json()
+      mobileAutoPreview.value = data.mobileAutoPreview ?? true
+    }
+  } catch (err) {
+    console.error('Error fetching user settings:', err)
+  }
+}
 
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768
 }
 
 const handleTouchStart = (fileName: string) => {
-  if (isMobile.value) return // Viewport observer handles mobile
+  if (isMobile.value && mobileAutoPreview.value) return // Viewport observer handles mobile
   if (touchTimer) clearTimeout(touchTimer)
   touchTimer = setTimeout(() => {
     hoveredFile.value = fileName
@@ -290,12 +303,18 @@ const handleTouchStart = (fileName: string) => {
 }
 
 const handleTouchEnd = () => {
-  if (isMobile.value) return
+  if (isMobile.value && mobileAutoPreview.value) return
   if (touchTimer) clearTimeout(touchTimer)
   hoveredFile.value = null
 }
 
 const setupObserver = () => {
+  if (!mobileAutoPreview.value) {
+    if (observer) observer.disconnect()
+    visibleFiles.value.clear()
+    return
+  }
+  
   if (observer) observer.disconnect()
   
   observer = new IntersectionObserver((entries) => {
@@ -793,9 +812,10 @@ const handleContextAction = (action: string) => {
 onMounted(async () => {
   await fetchFiles()
   await fetchPredefinedTags()
+  await fetchUserSettings()
   updateItemsPerRow()
   checkMobile()
-  if (isMobile.value) setupObserver()
+  if (isMobile.value && mobileAutoPreview.value) setupObserver()
   
   window.addEventListener('resize', () => {
     updateItemsPerRow()

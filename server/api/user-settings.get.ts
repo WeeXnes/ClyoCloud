@@ -31,7 +31,8 @@ export default defineEventHandler(async (event) => {
             tvheadendHost: userData.tvheadendHost || '',
             tvheadendPort: userData.tvheadendPort || '9981',
             tvheadendUser: userData.tvheadendUser || '',
-            tvheadendPassword: userData.tvheadendPassword || ''
+            tvheadendPassword: userData.tvheadendPassword || '',
+            mobileAutoPreview: userData.mobileAutoPreview ?? true
         }
     } catch (error) {
         console.error('Get settings error:', error)

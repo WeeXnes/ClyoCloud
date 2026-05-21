@@ -10,6 +10,7 @@ const confirmPassword = ref('')
 const isChangingPassword = ref(false)
 
 const downloadPath = ref('')
+const mobileAutoPreview = ref(true)
 const tvheadendHost = ref('')
 const tvheadendPort = ref('9981')
 const tvheadendUser = ref('')
@@ -140,6 +141,7 @@ async function fetchUserSettings() {
     if (response.ok) {
       const data = await response.json()
       downloadPath.value = data.downloadPath || ''
+      mobileAutoPreview.value = data.mobileAutoPreview ?? true
       tvheadendHost.value = data.tvheadendHost || ''
       tvheadendPort.value = data.tvheadendPort || '9981'
       tvheadendUser.value = data.tvheadendUser || ''
@@ -169,6 +171,7 @@ async function saveUserSettings() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         downloadPath: downloadPath.value,
+        mobileAutoPreview: mobileAutoPreview.value,
         tvheadendHost: tvheadendHost.value,
         tvheadendPort: tvheadendPort.value,
         tvheadendUser: tvheadendUser.value,
@@ -642,6 +645,19 @@ async function logout() {
                  <p class="text-xs font-medium text-base-content/50 leading-relaxed">
                    Scan your entire storage and generate animated GIF previews for all video files. This ensures previews are ready without having to hover over each video manually.
                  </p>
+
+                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-2xl border border-base-content/5">
+                    <div>
+                      <p class="text-xs font-bold uppercase tracking-widest">Mobile Auto-Preview</p>
+                      <p class="text-[10px] font-medium text-base-content/40">Automatically play previews when scrolling on mobile</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      class="toggle toggle-primary" 
+                      v-model="mobileAutoPreview" 
+                      @change="saveUserSettings"
+                    />
+                 </div>
 
                  <div v-if="generationResults && (generationResults.total > 0 || generationResults.isProcessing)" class="space-y-4 animate-in fade-in slide-in-from-top-2">
                    <div v-if="generationResults.isProcessing" class="space-y-2">

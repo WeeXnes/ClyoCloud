@@ -62,63 +62,74 @@ export default defineEventHandler(async (event) => {
                 startTime: Date.now()
             })
 
-            for (const videoFile of videos) {
-                const relativePath = path.relative(userStoragePath, videoFile)
-                const previewFile = path.join(userPreviewPath, relativePath + '.gif')
+            const CONCURRENCY = 3 // Number of parallel ffmpeg processes
+            const queue = [...videos]
+            
+            async function worker() {
+                while (queue.length > 0) {
+                    const videoFile = queue.shift()
+                    if (!videoFile) break
 
-                try {
-                    await fs.access(previewFile)
-                    updatePreviewTaskStatus(user.name, {
-                        processed: getPreviewTaskStatus(user.name).processed + 1,
-                        skipped: getPreviewTaskStatus(user.name).skipped + 1
-                    })
-                    continue
-                } catch (e) {}
+                    const relativePath = path.relative(userStoragePath, videoFile)
+                    const previewFile = path.join(userPreviewPath, relativePath + '.gif')
 
-                try {
-                    await fs.mkdir(path.dirname(previewFile), { recursive: true })
+                    try {
+                        await fs.access(previewFile)
+                        updatePreviewTaskStatus(user.name, {
+                            processed: getPreviewTaskStatus(user.name).processed + 1,
+                            skipped: getPreviewTaskStatus(user.name).skipped + 1
+                        })
+                        continue
+                    } catch (e) {}
 
-                    const stdout = await runFfprobe(['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', videoFile])
-                    const duration = parseFloat(stdout)
-                    
-                    if (isNaN(duration)) {
+                    try {
+                        await fs.mkdir(path.dirname(previewFile), { recursive: true })
+
+                        const stdout = await runFfprobe(['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', videoFile])
+                        const duration = parseFloat(stdout)
+                        
+                        if (isNaN(duration)) {
+                            updatePreviewTaskStatus(user.name, {
+                                processed: getPreviewTaskStatus(user.name).processed + 1,
+                                errors: getPreviewTaskStatus(user.name).errors + 1
+                            })
+                            continue
+                        }
+
+                        const numFrames = 8
+                        const inputArgs: string[] = []
+                        const filterParts: string[] = []
+                        
+                        for (let i = 1; i <= numFrames; i++) {
+                            const seekTime = (duration * (i * 0.1)).toFixed(2)
+                            inputArgs.push('-ss', seekTime, '-t', '0.5', '-i', videoFile)
+                            filterParts.push(`[${i-1}:v]`)
+                        }
+
+                        const filterComplex = `${filterParts.join('')}concat=n=${numFrames}:v=1:a=0,fps=10,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,split[v1][v2];[v1]scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[v2]scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`
+
+                        await runFfmpeg([
+                            ...inputArgs,
+                            '-filter_complex', filterComplex,
+                            '-y', previewFile
+                        ])
+                        
+                        updatePreviewTaskStatus(user.name, {
+                            processed: getPreviewTaskStatus(user.name).processed + 1,
+                            generated: getPreviewTaskStatus(user.name).generated + 1
+                        })
+                    } catch (err) {
+                        console.error(`Error generating preview for ${videoFile}:`, err)
                         updatePreviewTaskStatus(user.name, {
                             processed: getPreviewTaskStatus(user.name).processed + 1,
                             errors: getPreviewTaskStatus(user.name).errors + 1
                         })
-                        continue
                     }
-
-                    const numFrames = 8
-                    const inputArgs: string[] = []
-                    const filterParts: string[] = []
-                    
-                    for (let i = 1; i <= numFrames; i++) {
-                        const seekTime = (duration * (i * 0.1)).toFixed(2)
-                        inputArgs.push('-ss', seekTime, '-t', '0.5', '-i', videoFile)
-                        filterParts.push(`[${i-1}:v]`)
-                    }
-
-                    const filterComplex = `${filterParts.join('')}concat=n=${numFrames}:v=1:a=0,fps=10,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,split[v1][v2];[v1]scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[v2]scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`
-
-                    await runFfmpeg([
-                        ...inputArgs,
-                        '-filter_complex', filterComplex,
-                        '-y', previewFile
-                    ])
-                    
-                    updatePreviewTaskStatus(user.name, {
-                        processed: getPreviewTaskStatus(user.name).processed + 1,
-                        generated: getPreviewTaskStatus(user.name).generated + 1
-                    })
-                } catch (err) {
-                    console.error(`Error generating preview for ${videoFile}:`, err)
-                    updatePreviewTaskStatus(user.name, {
-                        processed: getPreviewTaskStatus(user.name).processed + 1,
-                        errors: getPreviewTaskStatus(user.name).errors + 1
-                    })
                 }
             }
+
+            // Start multiple workers in parallel
+            await Promise.all(Array.from({ length: CONCURRENCY }).map(() => worker()))
         } catch (error: any) {
             console.error('Bulk preview generation error:', error)
         } finally {
