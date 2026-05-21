@@ -10,9 +10,17 @@ const isLoading = ref(true)
 const error = ref<string | null>(null)
 const searchQuery = ref('')
 const hoveredVideo = ref<string | null>(null)
+const visibleVideos = ref<Set<string>>(new Set())
+const isMobile = ref(false)
 let touchTimer: any = null
+let observer: IntersectionObserver | null = null
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
 
 const handleTouchStart = (path: string) => {
+  if (isMobile.value) return
   if (touchTimer) clearTimeout(touchTimer)
   touchTimer = setTimeout(() => {
     hoveredVideo.value = path
@@ -20,9 +28,38 @@ const handleTouchStart = (path: string) => {
 }
 
 const handleTouchEnd = () => {
+  if (isMobile.value) return
   if (touchTimer) clearTimeout(touchTimer)
   hoveredVideo.value = null
 }
+
+const setupObserver = () => {
+  if (observer) observer.disconnect()
+  
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const videoPath = (entry.target as HTMLElement).dataset.videoPath
+      if (!videoPath) return
+      
+      if (entry.isIntersecting) {
+        visibleVideos.value.add(videoPath)
+      } else {
+        visibleVideos.value.delete(videoPath)
+      }
+    })
+  }, { threshold: 0.5 })
+
+  setTimeout(() => {
+    const elements = document.querySelectorAll('.video-thumbnail-container')
+    elements.forEach(el => observer?.observe(el))
+  }, 100)
+}
+
+watch(paginatedVideos, () => {
+  if (isMobile.value) {
+    setupObserver()
+  }
+}, { deep: true })
 
 async function fetchVideos() {
   try {
@@ -44,6 +81,14 @@ async function fetchVideos() {
 
 onMounted(() => {
   fetchVideos()
+  checkMobile()
+  if (isMobile.value) setupObserver()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+  if (observer) observer.disconnect()
 })
 
 function formatFileSize(size: number): string {
@@ -253,7 +298,8 @@ function setPage(page: number | string) {
         >
           <!-- Thumbnail Container -->
           <div 
-            class="relative aspect-video overflow-hidden rounded-xl bg-base-300 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer group/thumb"
+            class="relative aspect-video overflow-hidden rounded-xl bg-base-300 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer group/thumb video-thumbnail-container"
+            :data-video-path="video.fullPath"
             @click="goToVideo(video.fullPath)"
             @mouseenter="hoveredVideo = video.fullPath"
             @mouseleave="hoveredVideo = null"
@@ -273,7 +319,7 @@ function setPage(page: number | string) {
             </div>
 
             <!-- Video Preview Overlay -->
-            <div v-if="hoveredVideo === video.fullPath" 
+            <div v-if="hoveredVideo === video.fullPath || (isMobile && visibleVideos.has(video.fullPath))" 
                  class="absolute inset-0 z-10 bg-base-100 animate-in fade-in duration-300">
               <img :src="getPreviewUrl(video.fullPath)" 
                    class="w-full h-full object-cover" 

@@ -272,9 +272,17 @@ watch(isGridView, (newVal) => {
 })
 
 const hoveredFile = ref<string | null>(null)
+const visibleFiles = ref<Set<string>>(new Set())
+const isMobile = ref(false)
 let touchTimer: any = null
+let observer: IntersectionObserver | null = null
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
 
 const handleTouchStart = (fileName: string) => {
+  if (isMobile.value) return // Viewport observer handles mobile
   if (touchTimer) clearTimeout(touchTimer)
   touchTimer = setTimeout(() => {
     hoveredFile.value = fileName
@@ -282,9 +290,39 @@ const handleTouchStart = (fileName: string) => {
 }
 
 const handleTouchEnd = () => {
+  if (isMobile.value) return
   if (touchTimer) clearTimeout(touchTimer)
   hoveredFile.value = null
 }
+
+const setupObserver = () => {
+  if (observer) observer.disconnect()
+  
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const fileName = (entry.target as HTMLElement).dataset.fileName
+      if (!fileName) return
+      
+      if (entry.isIntersecting) {
+        visibleFiles.value.add(fileName)
+      } else {
+        visibleFiles.value.delete(fileName)
+      }
+    })
+  }, { threshold: 0.5 })
+
+  // Use a slight delay to ensure DOM is updated
+  setTimeout(() => {
+    const elements = document.querySelectorAll('.video-thumbnail-container')
+    elements.forEach(el => observer?.observe(el))
+  }, 100)
+}
+
+watch(sortedFiles, () => {
+  if (isMobile.value) {
+    setupObserver()
+  }
+}, { deep: true })
 
 const openBulkTagModal = () => {
   selectedTags.value = []
@@ -756,7 +794,13 @@ onMounted(async () => {
   await fetchFiles()
   await fetchPredefinedTags()
   updateItemsPerRow()
-  window.addEventListener('resize', updateItemsPerRow)
+  checkMobile()
+  if (isMobile.value) setupObserver()
+  
+  window.addEventListener('resize', () => {
+    updateItemsPerRow()
+    checkMobile()
+  })
   window.addEventListener('scroll', handleMainScroll, { passive: true })
   window.addEventListener('keydown', handleKeydown)
 
@@ -766,8 +810,10 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   window.removeEventListener('resize', updateItemsPerRow)
+  window.removeEventListener('resize', checkMobile)
   window.removeEventListener('scroll', handleMainScroll)
   window.removeEventListener('keydown', handleKeydown)
+  if (observer) observer.disconnect()
 })
 
 watch(() => useRoute().params.path, async () => {
@@ -1301,7 +1347,11 @@ const toggleFavourite = async (file: File) => {
               <!-- Thumbnail Container -->
               <div 
                 class="relative aspect-square rounded-2xl bg-base-100 border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex items-center justify-center group/item ring-primary/30"
-                :class="{ 'ring-2': selectedFiles.has(file.name) }"
+                :class="{ 
+                  'ring-2': selectedFiles.has(file.name),
+                  'video-thumbnail-container': isVideoFile(file.name)
+                }"
+                :data-file-name="file.name"
                 @click="onFileClick($event, file)" 
                 @contextmenu.prevent="handleContextMenu($event, file)"
                 @mouseenter="hoveredFile = file.name"
@@ -1354,7 +1404,7 @@ const toggleFavourite = async (file: File) => {
                         data-is-thumbnail="true" />
 
                   <!-- Video Preview Overlay -->
-                  <div v-if="isVideoFile(file.name) && hoveredFile === file.name" 
+                  <div v-if="isVideoFile(file.name) && (hoveredFile === file.name || (isMobile && visibleFiles.has(file.name)))" 
                        class="absolute inset-0 z-10 bg-base-100 animate-in fade-in duration-300">
                     <img :src="getPreviewUrl(file.name)" 
                          class="w-full h-full object-cover" 

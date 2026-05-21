@@ -18,9 +18,17 @@ const showNewTagForm = ref(true)
 const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 const hoveredVideo = ref<string | null>(null)
+const visibleVideos = ref<Set<string>>(new Set())
+const isMobile = ref(false)
 let touchTimer: any = null
+let observer: IntersectionObserver | null = null
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
 
 const handleTouchStart = (path: string) => {
+  if (isMobile.value) return
   if (touchTimer) clearTimeout(touchTimer)
   touchTimer = setTimeout(() => {
     hoveredVideo.value = path
@@ -28,9 +36,38 @@ const handleTouchStart = (path: string) => {
 }
 
 const handleTouchEnd = () => {
+  if (isMobile.value) return
   if (touchTimer) clearTimeout(touchTimer)
   hoveredVideo.value = null
 }
+
+const setupObserver = () => {
+  if (observer) observer.disconnect()
+  
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const videoPath = (entry.target as HTMLElement).dataset.videoPath
+      if (!videoPath) return
+      
+      if (entry.isIntersecting) {
+        visibleVideos.value.add(videoPath)
+      } else {
+        visibleVideos.value.delete(videoPath)
+      }
+    })
+  }, { threshold: 0.5 })
+
+  setTimeout(() => {
+    const elements = document.querySelectorAll('.video-thumbnail-container')
+    elements.forEach(el => observer?.observe(el))
+  }, 100)
+}
+
+watch(visibleRecommendedVideos, () => {
+  if (isMobile.value) {
+    setupObserver()
+  }
+}, { deep: true })
 
 const isEditingDescription = ref(false)
 const editableDescription = ref('')
@@ -397,7 +434,15 @@ const loadMore = () => {
 onMounted(() => {
   fetchVideos();
   fetchPredefinedTags();
+  checkMobile()
+  if (isMobile.value) setupObserver()
+  window.addEventListener('resize', checkMobile)
 });
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+  if (observer) observer.disconnect()
+})
 
 // Watch for route changes to refresh the video
 watch(() => route.params.path, () => {
@@ -601,8 +646,9 @@ watch(() => route.params.path, () => {
               <a
                 v-for="video in visibleRecommendedVideos"
                 :key="video.fullPath"
-                class="group flex gap-3 hover:bg-base-100 p-2 -m-2 rounded-xl transition-all"
+                class="group flex gap-3 hover:bg-base-100 p-2 -m-2 rounded-xl transition-all video-thumbnail-container"
                 :href="getVideoUrl(video.fullPath)"
+                :data-video-path="video.fullPath"
                 @click.prevent="goToVideo(video.fullPath)"
                 @mouseenter="hoveredVideo = video.fullPath"
                 @mouseleave="hoveredVideo = null"
@@ -623,7 +669,7 @@ watch(() => route.params.path, () => {
                   </div>
 
                   <!-- Video Preview Overlay -->
-                  <div v-if="hoveredVideo === video.fullPath" 
+                  <div v-if="hoveredVideo === video.fullPath || (isMobile && visibleVideos.has(video.fullPath))" 
                        class="absolute inset-0 z-10 bg-base-100 animate-in fade-in duration-300">
                     <img :src="getPreviewUrl(video.fullPath)" 
                          class="w-full h-full object-cover" 
