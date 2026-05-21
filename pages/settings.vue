@@ -23,7 +23,29 @@ const isSavingTags = ref(false)
 
 const isGeneratingPreviews = ref(false)
 const isClearingPreviews = ref(false)
-const generationResults = ref<{ total: number, generated: number, skipped: number, errors: number } | null>(null)
+const generationResults = ref<{ total: number, processed: number, generated: number, skipped: number, errors: number, isProcessing: boolean } | null>(null)
+let statusPollingInterval: any = null
+
+const fetchGenerationStatus = async () => {
+  try {
+    const response = await fetch('/api/previews-status', { credentials: 'include' })
+    if (response.ok) {
+      const status = await response.json()
+      generationResults.value = status
+      isGeneratingPreviews.value = status.isProcessing
+
+      if (!status.isProcessing && statusPollingInterval) {
+        clearInterval(statusPollingInterval)
+        statusPollingInterval = null
+        if (status.processed > 0) {
+          createNotification(`Bulk generation complete! Processed: ${status.processed}`, NotificationType.SUCCESS)
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching generation status:', err)
+  }
+}
 
 const is2faEnabled = ref(false)
 const show2faSetup = ref(false)
@@ -132,6 +154,11 @@ onMounted(() => {
   fetchTags()
   fetchUserSettings()
   fetch2faStatus()
+  fetchGenerationStatus() // Check if a task is already running
+})
+
+onUnmounted(() => {
+  if (statusPollingInterval) clearInterval(statusPollingInterval)
 })
 
 async function saveUserSettings() {
@@ -226,23 +253,27 @@ async function saveTags() {
 }
 
 async function generateAllPreviews() {
+  if (isGeneratingPreviews.value) return
+  
   isGeneratingPreviews.value = true
   generationResults.value = null
   try {
-    createNotification('Starting bulk preview generation. This may take a while...', NotificationType.INFO)
     const response = await fetch('/api/previews-generate', {
       method: 'POST',
       credentials: 'include'
     })
 
-    if (!response.ok) throw new Error('Failed to generate previews')
+    if (!response.ok) throw new Error('Failed to start preview generation')
     
-    generationResults.value = await response.json()
-    createNotification(`Bulk generation complete! Generated: ${generationResults.value?.generated}`, NotificationType.SUCCESS)
+    createNotification('Bulk preview generation started in background.', NotificationType.INFO)
+    
+    // Start polling for status
+    if (statusPollingInterval) clearInterval(statusPollingInterval)
+    statusPollingInterval = setInterval(fetchGenerationStatus, 1000)
+    fetchGenerationStatus() // Immediate first fetch
   } catch (err) {
     console.error(err)
-    createNotification('Failed to generate all previews', NotificationType.ERROR)
-  } finally {
+    createNotification('Failed to start bulk generation', NotificationType.ERROR)
     isGeneratingPreviews.value = false
   }
 }
@@ -612,7 +643,19 @@ async function logout() {
                    Scan your entire storage and generate animated GIF previews for all video files. This ensures previews are ready without having to hover over each video manually.
                  </p>
 
-                 <div v-if="generationResults" class="bg-base-200/50 p-6 rounded-2xl border border-base-content/5 grid grid-cols-2 sm:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2">
+                 <div v-if="generationResults && (generationResults.total > 0 || generationResults.isProcessing)" class="space-y-4 animate-in fade-in slide-in-from-top-2">
+                   <div v-if="generationResults.isProcessing" class="space-y-2">
+                      <div class="flex justify-between items-end">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-primary">Processing Library...</span>
+                        <span class="text-xs font-bold">{{ Math.round((generationResults.processed / generationResults.total) * 100) }}%</span>
+                      </div>
+                      <progress class="progress progress-primary w-full h-3 rounded-full bg-base-200" :value="generationResults.processed" :max="generationResults.total"></progress>
+                      <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest text-center">
+                        {{ generationResults.processed }} of {{ generationResults.total }} videos analyzed
+                      </p>
+                   </div>
+
+                   <div class="bg-base-200/50 p-6 rounded-2xl border border-base-content/5 grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div class="flex flex-col">
                       <span class="text-[9px] font-black uppercase tracking-widest text-base-content/30">Total</span>
                       <span class="text-lg font-black">{{ generationResults.total }}</span>
@@ -629,6 +672,7 @@ async function logout() {
                       <span class="text-[9px] font-black uppercase tracking-widest text-error/60">Errors</span>
                       <span class="text-lg font-black text-error">{{ generationResults.errors }}</span>
                     </div>
+                   </div>
                  </div>
 
                  <div class="flex flex-col sm:flex-row gap-3">
