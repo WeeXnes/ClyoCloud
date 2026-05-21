@@ -22,6 +22,7 @@ const newTagColor = ref('#4B5EAA')
 const isSavingTags = ref(false)
 
 const isGeneratingPreviews = ref(false)
+const isClearingPreviews = ref(false)
 const generationResults = ref<{ total: number, generated: number, skipped: number, errors: number } | null>(null)
 
 const is2faEnabled = ref(false)
@@ -243,6 +244,28 @@ async function generateAllPreviews() {
     createNotification('Failed to generate all previews', NotificationType.ERROR)
   } finally {
     isGeneratingPreviews.value = false
+  }
+}
+
+async function clearAllPreviews() {
+  if (!confirm('Are you sure you want to delete ALL generated previews? This cannot be undone.')) return
+  
+  isClearingPreviews.value = true
+  try {
+    const response = await fetch('/api/previews-clear', {
+      method: 'POST',
+      credentials: 'include'
+    })
+
+    if (!response.ok) throw new Error('Failed to clear previews')
+    
+    generationResults.value = null
+    createNotification('All previews cleared successfully', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to clear previews', NotificationType.ERROR)
+  } finally {
+    isClearingPreviews.value = false
   }
 }
 
@@ -608,17 +631,31 @@ async function logout() {
                     </div>
                  </div>
 
-                 <button 
-                   class="btn btn-primary btn-block h-14 rounded-2xl shadow-lg gap-3" 
-                   @click="generateAllPreviews" 
-                   :disabled="isGeneratingPreviews"
-                 >
-                   <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-5 h-5" />
-                   <span v-else class="loading loading-spinner loading-xs"></span>
-                   <span class="font-black tracking-tight uppercase text-xs">
-                     {{ isGeneratingPreviews ? 'Generating Previews...' : 'Generate All Previews' }}
-                   </span>
-                 </button>
+                 <div class="flex flex-col sm:flex-row gap-3">
+                   <button 
+                     class="btn btn-primary flex-1 h-14 rounded-2xl shadow-lg gap-3" 
+                     @click="generateAllPreviews" 
+                     :disabled="isGeneratingPreviews || isClearingPreviews"
+                   >
+                     <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-5 h-5" />
+                     <span v-else class="loading loading-spinner loading-xs"></span>
+                     <span class="font-black tracking-tight uppercase text-xs">
+                       {{ isGeneratingPreviews ? 'Generating...' : 'Generate All' }}
+                     </span>
+                   </button>
+
+                   <button 
+                     class="btn btn-ghost border-2 border-error/20 text-error flex-1 h-14 rounded-2xl gap-3 hover:bg-error/10 hover:border-error" 
+                     @click="clearAllPreviews" 
+                     :disabled="isGeneratingPreviews || isClearingPreviews"
+                   >
+                     <Icon v-if="!isClearingPreviews" name="mdi:delete-sweep-outline" class="w-5 h-5" />
+                     <span v-else class="loading loading-spinner loading-xs"></span>
+                     <span class="font-black tracking-tight uppercase text-xs">
+                       {{ isClearingPreviews ? 'Clearing...' : 'Clear All Previews' }}
+                     </span>
+                   </button>
+                 </div>
                </div>
              </div>
           </section>

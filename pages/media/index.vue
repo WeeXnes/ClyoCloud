@@ -10,6 +10,19 @@ const isLoading = ref(true)
 const error = ref<string | null>(null)
 const searchQuery = ref('')
 const hoveredVideo = ref<string | null>(null)
+let touchTimer: any = null
+
+const handleTouchStart = (path: string) => {
+  if (touchTimer) clearTimeout(touchTimer)
+  touchTimer = setTimeout(() => {
+    hoveredVideo.value = path
+  }, 200)
+}
+
+const handleTouchEnd = () => {
+  if (touchTimer) clearTimeout(touchTimer)
+  hoveredVideo.value = null
+}
 
 async function fetchVideos() {
   try {
@@ -244,6 +257,9 @@ function setPage(page: number | string) {
             @click="goToVideo(video.fullPath)"
             @mouseenter="hoveredVideo = video.fullPath"
             @mouseleave="hoveredVideo = null"
+            @touchstart.passive="handleTouchStart(video.fullPath)"
+            @touchend="handleTouchEnd"
+            @touchmove="handleTouchEnd"
           >
             <img
               v-if="hasThumbnail(video.name)"

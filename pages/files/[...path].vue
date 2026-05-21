@@ -272,6 +272,19 @@ watch(isGridView, (newVal) => {
 })
 
 const hoveredFile = ref<string | null>(null)
+let touchTimer: any = null
+
+const handleTouchStart = (fileName: string) => {
+  if (touchTimer) clearTimeout(touchTimer)
+  touchTimer = setTimeout(() => {
+    hoveredFile.value = fileName
+  }, 200)
+}
+
+const handleTouchEnd = () => {
+  if (touchTimer) clearTimeout(touchTimer)
+  hoveredFile.value = null
+}
 
 const openBulkTagModal = () => {
   selectedTags.value = []
@@ -1293,6 +1306,9 @@ const toggleFavourite = async (file: File) => {
                 @contextmenu.prevent="handleContextMenu($event, file)"
                 @mouseenter="hoveredFile = file.name"
                 @mouseleave="hoveredFile = null"
+                @touchstart.passive="handleTouchStart(file.name)"
+                @touchend="handleTouchEnd"
+                @touchmove="handleTouchEnd"
               >
                 <!-- Selection Checkbox (Top Left) -->
                 <div class="absolute top-2 left-2 z-20 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">

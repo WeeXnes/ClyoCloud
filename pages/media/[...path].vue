@@ -18,6 +18,19 @@ const showNewTagForm = ref(true)
 const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 const hoveredVideo = ref<string | null>(null)
+let touchTimer: any = null
+
+const handleTouchStart = (path: string) => {
+  if (touchTimer) clearTimeout(touchTimer)
+  touchTimer = setTimeout(() => {
+    hoveredVideo.value = path
+  }, 200)
+}
+
+const handleTouchEnd = () => {
+  if (touchTimer) clearTimeout(touchTimer)
+  hoveredVideo.value = null
+}
 
 const isEditingDescription = ref(false)
 const editableDescription = ref('')
@@ -593,6 +606,9 @@ watch(() => route.params.path, () => {
                 @click.prevent="goToVideo(video.fullPath)"
                 @mouseenter="hoveredVideo = video.fullPath"
                 @mouseleave="hoveredVideo = null"
+                @touchstart.passive="handleTouchStart(video.fullPath)"
+                @touchend="handleTouchEnd"
+                @touchmove="handleTouchEnd"
               >
                 <!-- Compact Thumbnail -->
                 <div class="relative w-32 aspect-video overflow-hidden rounded-lg bg-base-300 shadow-sm flex-shrink-0 ring-1 ring-base-content/5">

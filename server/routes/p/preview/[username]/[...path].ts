@@ -95,7 +95,7 @@ export default defineEventHandler(async (event) => {
             filterParts.push(`[${i-1}:v]`)
         }
 
-        const filterComplex = `${filterParts.join('')}concat=n=${numFrames}:v=1:a=0,fps=10,scale=320:-1:force_original_aspect_ratio=increase,crop=320:180,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`
+        const filterComplex = `${filterParts.join('')}concat=n=${numFrames}:v=1:a=0,fps=10[v];[v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`
 
         try {
             await runFfmpeg([
