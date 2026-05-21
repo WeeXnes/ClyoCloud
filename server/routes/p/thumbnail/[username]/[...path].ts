@@ -3,36 +3,8 @@ import { stat } from 'fs/promises'
 import { defineEventHandler, getRouterParam, setHeader, createError } from 'h3'
 import mime from 'mime-types'
 import path, { join, resolve } from 'path'
-import { spawn } from 'child_process'
+import { runFfmpeg, runFfprobe } from '~/server/utils/ffmpeg'
 import { isFilePublic } from '~/server/utils/publicCheck'
-
-async function runFfmpeg(args: string[]): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const process = spawn('ffmpeg', args)
-        let stdout = ''
-        let stderr = ''
-        process.stdout.on('data', (data) => stdout += data)
-        process.stderr.on('data', (data) => stderr += data)
-        process.on('close', (code) => {
-            if (code === 0) resolve(stdout)
-            else reject(new Error(`ffmpeg failed with code ${code}: ${stderr}`))
-        })
-    })
-}
-
-async function runFfprobe(args: string[]): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const process = spawn('ffprobe', args)
-        let stdout = ''
-        let stderr = ''
-        process.stdout.on('data', (data) => stdout += data)
-        process.stderr.on('data', (data) => stderr += data)
-        process.on('close', (code) => {
-            if (code === 0) resolve(stdout)
-            else reject(new Error(`ffprobe failed with code ${code}: ${stderr}`))
-        })
-    })
-}
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()

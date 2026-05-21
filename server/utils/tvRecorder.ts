@@ -56,10 +56,10 @@ export async function startCloudRecording(username: string, channelUuid: string,
     const ffmpeg = spawn('ffmpeg', [
         '-i', targetUrl,
         '-c', 'copy',
-        '-map', '0',
-        '-fflags', '+genpts',
-        '-copyts',
-        '-start_at_zero',
+        '-map', '0:v:0',
+        '-map', '0:a:0',
+        '-fflags', '+genpts+igndts',
+        '-f', 'mpegts',
         '-y',
         filePathTs
     ], { stdio: ['pipe', 'pipe', 'pipe'] })
@@ -81,15 +81,14 @@ export async function startCloudRecording(username: string, channelUuid: string,
         consola.start(`[Cloud Recorder] Starting MP4 conversion: ${fileNameMp4}`)
         
         // Post-process: Convert TS to MP4
-        // Adding aresample=async=1 and avoid_negative_ts to fix A/V desync
+        // Using aresample and async 1 to fix lag without aggressive framerate changes (prevents stutter)
         const converter = spawn('ffmpeg', [
+            '-fflags', '+genpts+igndts',
             '-i', filePathTs,
             '-c:v', 'copy',
             '-c:a', 'aac',
             '-af', 'aresample=async=1',
-            '-map', '0:v',
-            '-map', '0:a',
-            '-avoid_negative_ts', 'make_zero',
+            '-async', '1',
             '-movflags', '+faststart',
             '-y',
             filePathMp4

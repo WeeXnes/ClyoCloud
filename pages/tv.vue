@@ -39,24 +39,20 @@ async function selectChannel(channel: Channel) {
     stopPlayback()
     isStopping.value = false // Allow new stream to report errors
     
-    // Set new source - switching to 'matroska' profile for high compatibility and low CPU
+    // Set new source - using matroska for proven container compatibility
     video.src = getStreamUrl(channel.uuid)
     video.load()
     
-    // Logic: Wait for 'canplay', then wait 3 more seconds before calling .play()
+    // Logic: Wait for 'canplay', then play immediately to preserve user gesture context
     const startPlayback = () => {
       if (isStopping.value) return
-      console.log('[TV] Stream ready, starting 3s buffer cushion...')
-      setTimeout(() => {
-        if (isStopping.value) return
-        console.log('[TV] Buffer cushion filled, starting playback')
-        isBuffering.value = false
-        video.play().catch(e => {
-            if (isStopping.value) return
-            console.error('[TV] Playback failed/blocked:', e)
-            isBuffering.value = false
-        })
-      }, 3000)
+      console.log('[TV] Stream ready, starting playback')
+      isBuffering.value = false
+      video.play().catch(e => {
+          if (isStopping.value) return
+          console.warn('[TV] Playback blocked, requiring user interaction:', e)
+          isBuffering.value = false
+      })
       video.removeEventListener('canplay', startPlayback)
     }
     
@@ -386,12 +382,12 @@ function formatProgress(start: number, stop: number) {
         <div class="lg:col-span-9 xl:col-span-9 space-y-6">
           <div v-if="selectedChannel" class="space-y-6 animate-in fade-in duration-500">
             <!-- Player Wrapper -->
-            <div class="relative group aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl ring-1 ring-white/5">
+            <div class="relative group aspect-video bg-black rounded-[2.5rem] shadow-2xl ring-1 ring-white/5">
               <video
                 ref="tvPlayer"
                 controls
                 preload="auto"
-                class="w-full h-full"
+                class="w-full h-full rounded-[2.5rem]"
               >
                 Your browser does not support the video tag.
               </video>

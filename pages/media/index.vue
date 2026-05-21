@@ -9,6 +9,7 @@ const videos = ref<Video[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const searchQuery = ref('')
+const hoveredVideo = ref<string | null>(null)
 
 async function fetchVideos() {
   try {
@@ -60,6 +61,12 @@ const getThumbnailUrl = (fullPath: string) => {
   const url = useRequestURL()
   const baseUrl = url.origin
   return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
+}
+
+const getPreviewUrl = (fullPath: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  return `${baseUrl}/preview/${encodeURIComponent(fullPath)}`
 }
 
 const getVideoUrl = (fullPath: string) => {
@@ -235,6 +242,8 @@ function setPage(page: number | string) {
           <div 
             class="relative aspect-video overflow-hidden rounded-xl bg-base-300 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer group/thumb"
             @click="goToVideo(video.fullPath)"
+            @mouseenter="hoveredVideo = video.fullPath"
+            @mouseleave="hoveredVideo = null"
           >
             <img
               v-if="hasThumbnail(video.name)"
@@ -245,6 +254,14 @@ function setPage(page: number | string) {
             />
             <div v-else class="flex h-full w-full items-center justify-center">
               <Icon name="mdi:video-off-outline" class="w-12 h-12 text-base-content/20" />
+            </div>
+
+            <!-- Video Preview Overlay -->
+            <div v-if="hoveredVideo === video.fullPath" 
+                 class="absolute inset-0 z-10 bg-base-100 animate-in fade-in duration-300">
+              <img :src="getPreviewUrl(video.fullPath)" 
+                   class="w-full h-full object-cover" 
+                   alt="Preview" />
             </div>
 
             <!-- Overlays -->

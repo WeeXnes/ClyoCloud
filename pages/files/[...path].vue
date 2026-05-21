@@ -271,6 +271,7 @@ watch(isGridView, (newVal) => {
   isGridViewCookie.value = newVal
 })
 
+const hoveredFile = ref<string | null>(null)
 
 const openBulkTagModal = () => {
   selectedTags.value = []
@@ -925,7 +926,17 @@ const getThumbnailUrl = (filename: string) => {
   const baseUrl = url.origin
   const subpath = useRoute().params.path
   const joinedPath = Array.isArray(subpath) ? subpath.map(encodeURIComponent).join('/') : encodeURIComponent(subpath)
-  return `${baseUrl}/thumbnail/${joinedPath}/${encodeURIComponent(filename)}`
+  const pathPrefix = joinedPath ? `${joinedPath}/` : ''
+  return `${baseUrl}/thumbnail/${pathPrefix}${encodeURIComponent(filename)}`
+}
+
+const getPreviewUrl = (filename: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  const subpath = useRoute().params.path
+  const joinedPath = Array.isArray(subpath) ? subpath.map(encodeURIComponent).join('/') : encodeURIComponent(subpath)
+  const pathPrefix = joinedPath ? `${joinedPath}/` : ''
+  return `${baseUrl}/preview/${pathPrefix}${encodeURIComponent(filename)}`
 }
 
 const onFileClick = (event: MouseEvent, file: File) => {
@@ -1280,6 +1291,8 @@ const toggleFavourite = async (file: File) => {
                 :class="{ 'ring-2': selectedFiles.has(file.name) }"
                 @click="onFileClick($event, file)" 
                 @contextmenu.prevent="handleContextMenu($event, file)"
+                @mouseenter="hoveredFile = file.name"
+                @mouseleave="hoveredFile = null"
               >
                 <!-- Selection Checkbox (Top Left) -->
                 <div class="absolute top-2 left-2 z-20 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">
@@ -1323,6 +1336,14 @@ const toggleFavourite = async (file: File) => {
                         class="w-16 h-16 group-hover/item:scale-110 transition-transform duration-500" 
                         :name="getIconForExtension(file.name)" 
                         data-is-thumbnail="true" />
+
+                  <!-- Video Preview Overlay -->
+                  <div v-if="isVideoFile(file.name) && hoveredFile === file.name" 
+                       class="absolute inset-0 z-10 bg-base-100 animate-in fade-in duration-300">
+                    <img :src="getPreviewUrl(file.name)" 
+                         class="w-full h-full object-cover" 
+                         alt="Preview" />
+                  </div>
                 </template>
 
                 <!-- Hover Action Overlay -->

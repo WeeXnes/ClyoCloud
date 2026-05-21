@@ -21,6 +21,10 @@ export default defineNuxtConfig({
             process.env.THUMBNAIL_PATH ||
             path.join(os.homedir(), '.clyo', 'thumbs'),
 
+        previewPath:
+            process.env.PREVIEW_PATH ||
+            path.join(os.homedir(), '.clyo', 'previews'),
+
         usersFilePath:
             process.env.USERS_FILE_PATH ||
             path.join(os.homedir(), '.clyo', 'users.json'),

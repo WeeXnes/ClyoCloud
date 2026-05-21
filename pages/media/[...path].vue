@@ -17,6 +17,7 @@ const predefinedTags = ref<Tag[]>([])
 const showNewTagForm = ref(true)
 const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
+const hoveredVideo = ref<string | null>(null)
 
 const isEditingDescription = ref(false)
 const editableDescription = ref('')
@@ -153,6 +154,12 @@ const getThumbnailUrl = (fullPath: string) => {
   const url = useRequestURL()
   const baseUrl = url.origin
   return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
+}
+
+const getPreviewUrl = (fullPath: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  return `${baseUrl}/preview/${encodeURIComponent(fullPath)}`
 }
 
 async function fetchVideos() {
@@ -584,6 +591,8 @@ watch(() => route.params.path, () => {
                 class="group flex gap-3 hover:bg-base-100 p-2 -m-2 rounded-xl transition-all"
                 :href="getVideoUrl(video.fullPath)"
                 @click.prevent="goToVideo(video.fullPath)"
+                @mouseenter="hoveredVideo = video.fullPath"
+                @mouseleave="hoveredVideo = null"
               >
                 <!-- Compact Thumbnail -->
                 <div class="relative w-32 aspect-video overflow-hidden rounded-lg bg-base-300 shadow-sm flex-shrink-0 ring-1 ring-base-content/5">
@@ -595,6 +604,14 @@ watch(() => route.params.path, () => {
                   />
                   <div v-else class="flex h-full w-full items-center justify-center">
                     <Icon name="mdi:play" class="w-5 h-5 text-base-content/20" />
+                  </div>
+
+                  <!-- Video Preview Overlay -->
+                  <div v-if="hoveredVideo === video.fullPath" 
+                       class="absolute inset-0 z-10 bg-base-100 animate-in fade-in duration-300">
+                    <img :src="getPreviewUrl(video.fullPath)" 
+                         class="w-full h-full object-cover" 
+                         alt="Preview" />
                   </div>
                 </div>
 

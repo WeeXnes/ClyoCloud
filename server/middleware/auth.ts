@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
         '/api/login', 
         '/api/logout', 
         '/login', 
-        '/p', 
+        '/p/', 
         '/api/public', 
         '/api/2fa/verify-login',
         '/_nuxt',
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
         '/wicon.png'
     ]
 
-    const isPublic = publicPaths.some((path) => url.startsWith(path.toLowerCase()))
+    const isPublic = publicPaths.some((p) => url === p.toLowerCase() || url.startsWith(p.toLowerCase()))
 
     if (isPublic) {
         consola.info(`[Auth] Public Access: ${url}`)
