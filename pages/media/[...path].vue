@@ -690,9 +690,10 @@ watch(() => route.params.path, () => {
 
                   <!-- Video Preview Overlay -->
                   <div v-if="hoveredVideo === video.fullPath || (isMobile && visibleVideos.has(video.fullPath))" 
-                       class="absolute inset-0 z-10 bg-base-100 animate-in fade-in duration-300">
+                       class="absolute inset-0 z-10 animate-in fade-in duration-300">
                     <img :src="getPreviewUrl(video.fullPath)" 
-                         class="w-full h-full object-cover" 
+                         class="w-full h-full object-cover opacity-0 transition-opacity duration-500" 
+                         @load="$event.target.classList.remove('opacity-0')"
                          alt="Preview" />
                   </div>
                 </div>
