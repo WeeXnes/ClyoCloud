@@ -51,8 +51,14 @@ export default defineEventHandler(async (event) => {
     // Start background process
     async function startGeneration() {
         try {
+            // Load user settings for concurrency
+            const usersData = await fs.readFile(config.usersFilePath, 'utf-8')
+            const users: any[] = JSON.parse(usersData)
+            const userData = users.find((u) => u.name === user!.name)
+            const CONCURRENCY = userData?.maxConcurrentPreviews || 3
+
             const videos = await findVideos(userStoragePath)
-            updatePreviewTaskStatus(user.name, {
+            updatePreviewTaskStatus(user!.name, {
                 isProcessing: true,
                 total: videos.length,
                 processed: 0,
@@ -62,7 +68,6 @@ export default defineEventHandler(async (event) => {
                 startTime: Date.now()
             })
 
-            const CONCURRENCY = 3 // Number of parallel ffmpeg processes
             const queue = [...videos]
             
             async function worker() {
@@ -75,9 +80,9 @@ export default defineEventHandler(async (event) => {
 
                     try {
                         await fs.access(previewFile)
-                        updatePreviewTaskStatus(user.name, {
-                            processed: getPreviewTaskStatus(user.name).processed + 1,
-                            skipped: getPreviewTaskStatus(user.name).skipped + 1
+                        updatePreviewTaskStatus(user!.name, {
+                            processed: getPreviewTaskStatus(user!.name).processed + 1,
+                            skipped: getPreviewTaskStatus(user!.name).skipped + 1
                         })
                         continue
                     } catch (e) {}
@@ -89,9 +94,9 @@ export default defineEventHandler(async (event) => {
                         const duration = parseFloat(stdout)
                         
                         if (isNaN(duration)) {
-                            updatePreviewTaskStatus(user.name, {
-                                processed: getPreviewTaskStatus(user.name).processed + 1,
-                                errors: getPreviewTaskStatus(user.name).errors + 1
+                            updatePreviewTaskStatus(user!.name, {
+                                processed: getPreviewTaskStatus(user!.name).processed + 1,
+                                errors: getPreviewTaskStatus(user!.name).errors + 1
                             })
                             continue
                         }
@@ -114,15 +119,15 @@ export default defineEventHandler(async (event) => {
                             '-y', previewFile
                         ])
                         
-                        updatePreviewTaskStatus(user.name, {
-                            processed: getPreviewTaskStatus(user.name).processed + 1,
-                            generated: getPreviewTaskStatus(user.name).generated + 1
+                        updatePreviewTaskStatus(user!.name, {
+                            processed: getPreviewTaskStatus(user!.name).processed + 1,
+                            generated: getPreviewTaskStatus(user!.name).generated + 1
                         })
                     } catch (err) {
                         console.error(`Error generating preview for ${videoFile}:`, err)
-                        updatePreviewTaskStatus(user.name, {
-                            processed: getPreviewTaskStatus(user.name).processed + 1,
-                            errors: getPreviewTaskStatus(user.name).errors + 1
+                        updatePreviewTaskStatus(user!.name, {
+                            processed: getPreviewTaskStatus(user!.name).processed + 1,
+                            errors: getPreviewTaskStatus(user!.name).errors + 1
                         })
                     }
                 }
@@ -133,7 +138,7 @@ export default defineEventHandler(async (event) => {
         } catch (error: any) {
             console.error('Bulk preview generation error:', error)
         } finally {
-            updatePreviewTaskStatus(user.name, { isProcessing: false })
+            updatePreviewTaskStatus(user!.name, { isProcessing: false })
         }
     }
 

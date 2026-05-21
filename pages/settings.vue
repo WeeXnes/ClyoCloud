@@ -11,6 +11,7 @@ const isChangingPassword = ref(false)
 
 const downloadPath = ref('')
 const mobileAutoPreview = ref(true)
+const maxConcurrentPreviews = ref(3)
 const tvheadendHost = ref('')
 const tvheadendPort = ref('9981')
 const tvheadendUser = ref('')
@@ -142,6 +143,7 @@ async function fetchUserSettings() {
       const data = await response.json()
       downloadPath.value = data.downloadPath || ''
       mobileAutoPreview.value = data.mobileAutoPreview ?? true
+      maxConcurrentPreviews.value = data.maxConcurrentPreviews || 3
       tvheadendHost.value = data.tvheadendHost || ''
       tvheadendPort.value = data.tvheadendPort || '9981'
       tvheadendUser.value = data.tvheadendUser || ''
@@ -172,6 +174,7 @@ async function saveUserSettings() {
       body: JSON.stringify({ 
         downloadPath: downloadPath.value,
         mobileAutoPreview: mobileAutoPreview.value,
+        maxConcurrentPreviews: maxConcurrentPreviews.value,
         tvheadendHost: tvheadendHost.value,
         tvheadendPort: tvheadendPort.value,
         tvheadendUser: tvheadendUser.value,
@@ -657,6 +660,29 @@ async function logout() {
                       v-model="mobileAutoPreview" 
                       @change="saveUserSettings"
                     />
+                 </div>
+
+                 <div class="space-y-3 p-4 bg-base-200/50 rounded-2xl border border-base-content/5">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-xs font-bold uppercase tracking-widest">Max Concurrent Processes</p>
+                        <p class="text-[10px] font-medium text-base-content/40">Speed up generation with more parallel workers</p>
+                      </div>
+                      <span class="badge badge-primary font-bold">{{ maxConcurrentPreviews }}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="10" 
+                      v-model.number="maxConcurrentPreviews" 
+                      class="range range-primary range-xs" 
+                      @change="saveUserSettings"
+                    />
+                    <div class="flex justify-between px-1 text-[8px] font-bold text-base-content/20 uppercase tracking-tighter">
+                      <span>Quiet</span>
+                      <span>Balanced</span>
+                      <span>Aggressive</span>
+                    </div>
                  </div>
 
                  <div v-if="generationResults && (generationResults.total > 0 || generationResults.isProcessing)" class="space-y-4 animate-in fade-in slide-in-from-top-2">
