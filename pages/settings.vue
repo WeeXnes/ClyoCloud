@@ -21,6 +21,9 @@ const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 const isSavingTags = ref(false)
 
+const isGeneratingPreviews = ref(false)
+const generationResults = ref<{ total: number, generated: number, skipped: number, errors: number } | null>(null)
+
 const is2faEnabled = ref(false)
 const show2faSetup = ref(false)
 const qrCodeUrl = ref('')
@@ -218,6 +221,28 @@ async function saveTags() {
     createNotification('Failed to save tags', NotificationType.ERROR)
   } finally {
     isSavingTags.value = false
+  }
+}
+
+async function generateAllPreviews() {
+  isGeneratingPreviews.value = true
+  generationResults.value = null
+  try {
+    createNotification('Starting bulk preview generation. This may take a while...', NotificationType.INFO)
+    const response = await fetch('/api/previews-generate', {
+      method: 'POST',
+      credentials: 'include'
+    })
+
+    if (!response.ok) throw new Error('Failed to generate previews')
+    
+    generationResults.value = await response.json()
+    createNotification(`Bulk generation complete! Generated: ${generationResults.value?.generated}`, NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to generate all previews', NotificationType.ERROR)
+  } finally {
+    isGeneratingPreviews.value = false
   }
 }
 
@@ -546,6 +571,54 @@ async function logout() {
                    </button>
                  </div>
                  <p class="mt-3 text-[10px] font-medium text-base-content/40 px-2 italic">Relative to your root storage folder. Leave empty for root.</p>
+               </div>
+             </div>
+          </section>
+
+          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+             <div class="p-8 sm:p-10">
+               <div class="flex items-center justify-between mb-8">
+                 <div>
+                   <h3 class="text-lg font-black tracking-tight">Bulk Preview Generation</h3>
+                   <p class="text-xs font-medium text-base-content/40">Generate previews for all videos at once</p>
+                 </div>
+               </div>
+
+               <div class="space-y-6">
+                 <p class="text-xs font-medium text-base-content/50 leading-relaxed">
+                   Scan your entire storage and generate animated GIF previews for all video files. This ensures previews are ready without having to hover over each video manually.
+                 </p>
+
+                 <div v-if="generationResults" class="bg-base-200/50 p-6 rounded-2xl border border-base-content/5 grid grid-cols-2 sm:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div class="flex flex-col">
+                      <span class="text-[9px] font-black uppercase tracking-widest text-base-content/30">Total</span>
+                      <span class="text-lg font-black">{{ generationResults.total }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-[9px] font-black uppercase tracking-widest text-success/60">Generated</span>
+                      <span class="text-lg font-black text-success">{{ generationResults.generated }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-[9px] font-black uppercase tracking-widest text-base-content/30">Skipped</span>
+                      <span class="text-lg font-black">{{ generationResults.skipped }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-[9px] font-black uppercase tracking-widest text-error/60">Errors</span>
+                      <span class="text-lg font-black text-error">{{ generationResults.errors }}</span>
+                    </div>
+                 </div>
+
+                 <button 
+                   class="btn btn-primary btn-block h-14 rounded-2xl shadow-lg gap-3" 
+                   @click="generateAllPreviews" 
+                   :disabled="isGeneratingPreviews"
+                 >
+                   <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-5 h-5" />
+                   <span v-else class="loading loading-spinner loading-xs"></span>
+                   <span class="font-black tracking-tight uppercase text-xs">
+                     {{ isGeneratingPreviews ? 'Generating Previews...' : 'Generate All Previews' }}
+                   </span>
+                 </button>
                </div>
              </div>
           </section>
