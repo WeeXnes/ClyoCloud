@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { downloadPath, tvheadendHost, tvheadendPort, tvheadendUser, tvheadendPassword, mobileAutoPreview, maxConcurrentPreviews } = body
+    const { downloadPath, tvheadendHost, tvheadendPort, tvheadendUser, tvheadendPassword, mobileAutoPreview, maxConcurrentPreviews, experimentalMode } = body
     const config = useRuntimeConfig()
     const user = event.context.user
 
@@ -35,8 +35,12 @@ export default defineEventHandler(async (event) => {
         if (typeof mobileAutoPreview === 'boolean') {
             users[userIndex].mobileAutoPreview = mobileAutoPreview
         }
+        if (typeof experimentalMode === 'boolean') {
+            users[userIndex].experimentalMode = experimentalMode
+        }
         if (typeof maxConcurrentPreviews === 'number') {
-            users[userIndex].maxConcurrentPreviews = Math.max(1, Math.min(10, maxConcurrentPreviews))
+            const maxLimit = users[userIndex].experimentalMode ? 200 : 10
+            users[userIndex].maxConcurrentPreviews = Math.max(1, Math.min(maxLimit, maxConcurrentPreviews))
         }
 
         await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')

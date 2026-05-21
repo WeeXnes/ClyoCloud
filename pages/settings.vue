@@ -12,6 +12,7 @@ const isChangingPassword = ref(false)
 const downloadPath = ref('')
 const mobileAutoPreview = ref(true)
 const maxConcurrentPreviews = ref(3)
+const experimentalMode = ref(false)
 const tvheadendHost = ref('')
 const tvheadendPort = ref('9981')
 const tvheadendUser = ref('')
@@ -144,6 +145,7 @@ async function fetchUserSettings() {
       downloadPath.value = data.downloadPath || ''
       mobileAutoPreview.value = data.mobileAutoPreview ?? true
       maxConcurrentPreviews.value = data.maxConcurrentPreviews || 3
+      experimentalMode.value = data.experimentalMode || false
       tvheadendHost.value = data.tvheadendHost || ''
       tvheadendPort.value = data.tvheadendPort || '9981'
       tvheadendUser.value = data.tvheadendUser || ''
@@ -175,6 +177,7 @@ async function saveUserSettings() {
         downloadPath: downloadPath.value,
         mobileAutoPreview: mobileAutoPreview.value,
         maxConcurrentPreviews: maxConcurrentPreviews.value,
+        experimentalMode: experimentalMode.value,
         tvheadendHost: tvheadendHost.value,
         tvheadendPort: tvheadendPort.value,
         tvheadendUser: tvheadendUser.value,
@@ -662,6 +665,19 @@ async function logout() {
                     />
                  </div>
 
+                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-2xl border border-base-content/5">
+                    <div>
+                      <p class="text-xs font-bold uppercase tracking-widest">Experimental Mode</p>
+                      <p class="text-[10px] font-medium text-base-content/40">Unlock advanced and potentially unstable settings</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      class="toggle toggle-secondary" 
+                      v-model="experimentalMode" 
+                      @change="saveUserSettings"
+                    />
+                 </div>
+
                  <div class="space-y-3 p-4 bg-base-200/50 rounded-2xl border border-base-content/5">
                     <div class="flex items-center justify-between">
                       <div>
@@ -673,7 +689,7 @@ async function logout() {
                     <input 
                       type="range" 
                       min="1" 
-                      max="10" 
+                      :max="experimentalMode ? 200 : 10" 
                       v-model.number="maxConcurrentPreviews" 
                       class="range range-primary range-xs" 
                       @change="saveUserSettings"
@@ -681,7 +697,7 @@ async function logout() {
                     <div class="flex justify-between px-1 text-[8px] font-bold text-base-content/20 uppercase tracking-tighter">
                       <span>Quiet</span>
                       <span>Balanced</span>
-                      <span>Aggressive</span>
+                      <span>{{ experimentalMode ? 'Extreme' : 'Aggressive' }}</span>
                     </div>
                  </div>
 
