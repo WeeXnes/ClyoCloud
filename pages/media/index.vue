@@ -74,16 +74,36 @@ const setupObserver = () => {
   }, 100)
 }
 
+const totalVideosCount = ref(0)
+
 async function fetchVideos() {
   try {
     isLoading.value = true
-    const response = await fetch('/api/videos', {
+    error.value = null
+    
+    const params = new URLSearchParams()
+    params.append('page', currentPage.value.toString())
+    params.append('limit', videosPerPage.toString())
+    if (searchQuery.value.trim()) {
+      params.append('search', searchQuery.value.trim())
+    }
+
+    const response = await fetch(`/api/videos?${params.toString()}`, {
       credentials: 'include',
     })
+    
     if (!response.ok) {
       throw new Error(`Failed to fetch videos: ${response.statusText}`)
     }
-    videos.value = await response.json()
+    
+    const data = await response.json()
+    if (data && typeof data === 'object' && 'items' in data) {
+      videos.value = data.items
+      totalVideosCount.value = data.total
+    } else {
+      videos.value = data
+      totalVideosCount.value = data.length
+    }
   } catch (err) {
     console.error('Error fetching videos:', err)
     error.value = 'Failed to load videos. Please try again.'
@@ -93,7 +113,7 @@ async function fetchVideos() {
 }
 
 onMounted(async () => {
-  fetchVideos()
+  await fetchVideos()
   await fetchUserSettings()
   checkMobile()
   if (isMobile.value && mobileAutoPreview.value) setupObserver()
@@ -167,30 +187,21 @@ const copyPublicLinkForVideo = async (fullPath: string) => {
   }
 }
 
-watch(searchQuery, () => {
-  currentPage.value = 1
-})
-
-const filteredVideos = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return videos.value
+const debounceFetch = (() => {
+  let timer: any
+  return () => {
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      currentPage.value = 1
+      fetchVideos()
+    }, 500)
   }
-  const query = searchQuery.value.trim().toLowerCase()
-  return videos.value.filter(video => {
-    const nameMatch = video.name.toLowerCase().includes(query)
-    const tagMatch = video.meta.tags.some(tag => tag.name.toLowerCase().includes(query))
-    return nameMatch || tagMatch
-  })
-})
+})()
 
-const currentPage = ref(1)
-const videosPerPage = 30
+watch(searchQuery, debounceFetch)
+watch(currentPage, fetchVideos)
 
-const paginatedVideos = computed(() => {
-  const start = (currentPage.value - 1) * videosPerPage
-  const end = start + videosPerPage
-  return filteredVideos.value.slice(start, end)
-})
+const paginatedVideos = computed(() => videos.value)
 
 watch(paginatedVideos, () => {
   if (isMobile.value) {
@@ -199,7 +210,7 @@ watch(paginatedVideos, () => {
 }, { deep: true })
 
 const totalPages = computed(() => {
-  return Math.ceil(filteredVideos.value.length / videosPerPage)
+  return Math.ceil(totalVideosCount.value / videosPerPage)
 })
 
 const displayedPages = computed(() => {

@@ -22,34 +22,6 @@ export default defineEventHandler(async (event): Promise<File[]> => {
             })
         }
 
-        const sizeCache = new Map<string, { size: number; timestamp: number }>()
-        const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
-
-        async function getDirSize(dirPath: string): Promise<number> {
-            const cached = sizeCache.get(dirPath)
-            if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-                return cached.size
-            }
-
-            let totalSize = 0
-            try {
-                const files = await fs.readdir(dirPath, { withFileTypes: true })
-                for (const file of files) {
-                    const filePath = path.join(dirPath, file.name)
-                    if (file.isDirectory()) {
-                        totalSize += await getDirSize(filePath)
-                    } else if (file.isFile()) {
-                        const stats = await fs.stat(filePath)
-                        totalSize += stats.size
-                    }
-                }
-                sizeCache.set(dirPath, { size: totalSize, timestamp: Date.now() })
-            } catch (err) {
-                console.error(`Error calculating size for ${dirPath}:`, err)
-            }
-            return totalSize
-        }
-
         const fileNames = await fs.readdir(fullPath)
         const filteredFileNames = fileNames.filter((name) => !name.endsWith('.cloudinfo') && !name.startsWith('.'))
 
@@ -60,23 +32,20 @@ export default defineEventHandler(async (event): Promise<File[]> => {
                 const extension = path.extname(name)
                 const isFolder = stats.isDirectory()
 
+                // Folder size calculation is extremely expensive and removed for performance
                 let size = stats.size
-                if (isFolder) {
-                    size = await getDirSize(filePath)
-                }
 
                 const cloudInfoFileName = `${name.substring(0, 100)}.cloudinfo`
                 const cloudInfoPath = path.join(fullPath, cloudInfoFileName)
 
-                let meta: FileMeta
+                let meta: FileMeta = { tags: [] }
 
                 try {
-                    await fs.access(cloudInfoPath)
                     const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8')
                     meta = JSON.parse(cloudInfoContent) as FileMeta
                 } catch {
-                    meta = { tags: [] } as FileMeta
-                    await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')
+                    // Skip automatic creation of .cloudinfo files to reduce I/O
+                    // It will be created when meta is actually set (e.g. by tagging)
                 }
 
                 return {

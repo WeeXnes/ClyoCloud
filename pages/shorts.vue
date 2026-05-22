@@ -37,14 +37,14 @@ const fetchVideos = async () => {
     isLoading.value = true
     containerRefs.value.clear()
     videoRefs.value.clear()
-    const response = await fetch('/api/videos', { credentials: 'include' })
+    // Fetch only 200 random videos for the shorts feed
+    const response = await fetch('/api/videos?shuffle=true&limit=200&page=1', { credentials: 'include' })
     if (!response.ok) throw new Error('Failed to fetch videos')
-    const allVideos: Video[] = await response.json()
+    const data = await response.json()
+    const allVideos: Video[] = data.items || data
     
-    // Filter for supported videos and shuffle
-    videos.value = allVideos
-      .filter(v => supportedExtensions.some(ext => v.name.toLowerCase().endsWith(ext)))
-      .sort(() => Math.random() - 0.5)
+    // Filter for supported videos
+    videos.value = allVideos.filter(v => supportedExtensions.some(ext => v.name.toLowerCase().endsWith(ext)))
   } catch (err) {
     console.error('Error fetching videos for shorts:', err)
   } finally {

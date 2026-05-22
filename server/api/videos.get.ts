@@ -3,6 +3,10 @@ import fs from 'fs/promises'
 import path from 'path'
 import type { Video, FileMeta } from '~/types/File'
 
+// Simple in-memory cache for video scans
+const videoCache = new Map<string, { videos: Video[]; timestamp: number }>();
+const CACHE_TTL = 30 * 1000; // 30 seconds cache
+
 /**
  * Recursively scans a directory for MP4 files and returns an array of Video objects with relative paths
  * @param directoryPath - The root directory to scan
@@ -33,22 +37,16 @@ async function scanMp4Files(directoryPath: string, userStoragePath: string): Pro
                     const stats = await fs.stat(fullPath);
                     const cloudInfoFileName = `${entry.name}.cloudinfo`;
                     const cloudInfoPath = path.join(currentPath, cloudInfoFileName);
-                    let meta: FileMeta;
+                    let meta: FileMeta = { tags: [] };
 
                     try {
                         const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8');
-                        meta = JSON.parse(cloudInfoContent) as FileMeta;
-                        // Validate meta structure
+                        meta = JSON.parse(cloudInfoContent) as FileMeta
                         if (!meta.tags || !Array.isArray(meta.tags)) {
-                            meta = { tags: [] };
+                            meta.tags = [];
                         }
                     } catch {
-                        meta = { tags: [] };
-                        // We don't necessarily need to write the file every time it's missing during scan
-                        // to avoid excessive writes, but let's keep current behavior if it's expected.
-                        // Actually, writing in parallel might be risky if many files are missing.
-                        // Let's only write if we actually have something to save later or on explicit demand.
-                        // For now, let's skip the write during scan to speed things up.
+                        // Skip creating/writing cloudinfo during scan for speed
                     }
 
                     // Compute relative path
@@ -83,8 +81,14 @@ export default defineEventHandler(async (event): Promise<Video[]> => {
             });
         }
 
+        const username = event.context.user.name;
+        const cached = videoCache.get(username);
+        if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+            return cached.videos;
+        }
+
         const config = useRuntimeConfig();
-        const userStoragePath = path.join(config.storagePath, event.context.user.name);
+        const userStoragePath = path.join(config.storagePath, username);
         const query = getQuery(event);
         const subPath = query.path ? query.path.toString() : '';
 
@@ -101,10 +105,41 @@ export default defineEventHandler(async (event): Promise<Video[]> => {
         }
 
         // Scan for MP4 files
-        const videos = await scanMp4Files(fullPath, userStoragePath);
+        let videos = await scanMp4Files(fullPath, userStoragePath);
 
         // Sort videos by name
-        return videos.sort((a, b) => a.name.localeCompare(b.name));
+        videos = videos.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Update cache
+        videoCache.set(username, { videos, timestamp: Date.now() });
+
+        // Apply server-side search if provided
+        const search = query.search ? query.search.toString().toLowerCase() : '';
+        if (search) {
+            videos = videos.filter(v => 
+                v.name.toLowerCase().includes(search) || 
+                v.meta.tags.some(t => t.name.toLowerCase().includes(search))
+            );
+        }
+
+        // Apply shuffle if requested
+        if (query.shuffle === 'true') {
+            videos = [...videos].sort(() => Math.random() - 0.5);
+        }
+
+        // Apply pagination
+        const page = parseInt(query.page?.toString() || '0');
+        const limit = parseInt(query.limit?.toString() || '0');
+
+        if (page > 0 && limit > 0) {
+            const start = (page - 1) * limit;
+            return {
+                items: videos.slice(start, start + limit),
+                total: videos.length
+            } as any;
+        }
+
+        return videos;
     } catch (error: any) {
         console.error('Error reading videos:', error);
         throw createError({
