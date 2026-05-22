@@ -361,7 +361,7 @@ function setPage(page: number | string) {
             </div>
 
             <!-- Overlays -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300 flex items-end p-3">
+            <div class="absolute inset-0 z-20 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300 flex items-end p-3">
                <button class="btn btn-circle btn-sm btn-primary shadow-lg scale-90 group-hover/thumb:scale-100 transition-transform">
                  <Icon name="mdi:play" class="w-5 h-5" />
                </button>
@@ -369,7 +369,7 @@ function setPage(page: number | string) {
 
             <!-- Shared Indicator (Top Right) -->
             <div v-if="video.meta.isPublic" 
-                 class="absolute top-2 right-2 z-10 bg-success text-success-content w-8 h-8 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
+                 class="absolute top-2 right-2 z-20 bg-success text-success-content w-8 h-8 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
                  title="Copy Shared Link"
                  @click.stop="copyPublicLinkForVideo(video.fullPath)">
               <Icon name="mdi:share-variant" class="w-4 h-4" />

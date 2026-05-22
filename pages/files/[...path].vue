@@ -1392,7 +1392,7 @@ const toggleFavourite = async (file: File) => {
                 </div>
 
                 <!-- Shared Indicator (Top Right) -->
-                <div class="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
+                <div class="absolute top-2 right-2 z-30 flex flex-col gap-1.5">
                   <div v-if="file.meta.isPublic" 
                        class="bg-success text-success-content w-7 h-7 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
                        title="Copy Shared Link"
