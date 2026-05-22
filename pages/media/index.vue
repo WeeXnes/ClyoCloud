@@ -75,6 +75,8 @@ const setupObserver = () => {
 }
 
 const totalVideosCount = ref(0)
+const currentPage = ref(1)
+const videosPerPage = 30
 
 async function fetchVideos() {
   try {
