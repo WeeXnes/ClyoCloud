@@ -287,7 +287,7 @@ function setPage(page: number | string) {
                 <Icon name="mdi:play-box-multiple-outline" class="text-primary w-6 h-6" />
                 Media Library
               </h1>
-              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">{{ videos.length }} videos stored</p>
+              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">{{ totalVideosCount }} videos stored</p>
             </div>
           </div>
 

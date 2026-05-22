@@ -82,37 +82,40 @@ export default defineEventHandler(async (event): Promise<Video[]> => {
         }
 
         const username = event.context.user.name;
+        let videos: Video[] = [];
         const cached = videoCache.get(username);
+        
         if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-            return cached.videos;
+            videos = cached.videos;
+        } else {
+            const config = useRuntimeConfig();
+            const userStoragePath = path.join(config.storagePath, username);
+            const query = getQuery(event);
+            const subPath = query.path ? query.path.toString() : '';
+
+            const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '');
+            const fullPath = path.join(userStoragePath, safeSubPath);
+
+            // Ensure path is within user's directory
+            if (!fullPath.startsWith(userStoragePath)) {
+                console.error(`Access denied: Resolved path ${fullPath} is outside user directory ${userStoragePath}`);
+                throw createError({
+                    statusCode: 403,
+                    statusMessage: 'Access denied: Path outside user directory',
+                });
+            }
+
+            // Scan for MP4 files
+            videos = await scanMp4Files(fullPath, userStoragePath);
+
+            // Sort videos by name
+            videos = videos.sort((a, b) => a.name.localeCompare(b.name));
+
+            // Update cache
+            videoCache.set(username, { videos, timestamp: Date.now() });
         }
 
-        const config = useRuntimeConfig();
-        const userStoragePath = path.join(config.storagePath, username);
         const query = getQuery(event);
-        const subPath = query.path ? query.path.toString() : '';
-
-        const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '');
-        const fullPath = path.join(userStoragePath, safeSubPath);
-
-        // Ensure path is within user's directory
-        if (!fullPath.startsWith(userStoragePath)) {
-            console.error(`Access denied: Resolved path ${fullPath} is outside user directory ${userStoragePath}`);
-            throw createError({
-                statusCode: 403,
-                statusMessage: 'Access denied: Path outside user directory',
-            });
-        }
-
-        // Scan for MP4 files
-        let videos = await scanMp4Files(fullPath, userStoragePath);
-
-        // Sort videos by name
-        videos = videos.sort((a, b) => a.name.localeCompare(b.name));
-
-        // Update cache
-        videoCache.set(username, { videos, timestamp: Date.now() });
-
         // Apply server-side search if provided
         const search = query.search ? query.search.toString().toLowerCase() : '';
         if (search) {
