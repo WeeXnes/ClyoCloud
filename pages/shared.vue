@@ -133,7 +133,7 @@ onMounted(fetchShared)
           <div class="flex-grow min-w-0">
             <h3 class="text-sm font-bold truncate group-hover:text-primary transition-colors">{{ file.name }}</h3>
             <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
-              {{ file.isFolder ? 'Folder' : (file.size / 1024 / 1024).toFixed(2) + ' MB' }}
+              {{ file.isFolder ? '' : (file.size / 1024 / 1024).toFixed(2) + ' MB' }}
             </p>
           </div>
 

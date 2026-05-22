@@ -1448,7 +1448,8 @@ const toggleFavourite = async (file: File) => {
                          @click.stop />
                   <h3 v-else class="text-xs font-bold truncate block group-hover:text-primary transition-colors leading-tight">{{ file.name }}</h3>
                   <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider mt-0.5">
-                    <span>{{ formatSize(file.size) }}</span>
+                    <span v-if="!file.isFolder">{{ formatSize(file.size) }}</span>
+                    <span v-else>&nbsp;</span>
                   </div>
                 </div>
               </div>
@@ -1505,7 +1506,8 @@ const toggleFavourite = async (file: File) => {
                     </div>
                   </div>
                   
-                  <span class="hidden sm:inline w-20 text-right">{{ formatSize(file.size) }}</span>
+                  <span v-if="!file.isFolder" class="hidden sm:inline w-20 text-right">{{ formatSize(file.size) }}</span>
+                  <span v-else class="hidden sm:inline w-20 text-right">&nbsp;</span>
                   
                   <span class="hidden md:inline w-24 text-right">{{ new Date(file.lastModified).toLocaleDateString() }}</span>
                 </div>
@@ -1624,11 +1626,11 @@ const toggleFavourite = async (file: File) => {
 
           <!-- Stats Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
+            <div v-if="!selectedFile.isFolder" class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
               <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Size</span>
               <span class="text-lg font-black tracking-tight">{{ formatSize(selectedFile.size) }}</span>
             </div>
-            <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200">
+            <div class="bg-base-200/50 p-5 rounded-2xl flex flex-col gap-1 border border-base-content/5 transition-all hover:bg-base-200" :class="{ 'sm:col-span-2': selectedFile.isFolder }">
               <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Modified</span>
               <span class="text-lg font-black tracking-tight">{{ new Date(selectedFile.lastModified).toLocaleDateString() }}</span>
             </div>

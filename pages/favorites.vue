@@ -1011,7 +1011,8 @@ const toggleFavourite = async (file: File) => {
                          @click.stop />
                   <h3 v-else class="text-xs font-bold truncate block group-hover:text-primary transition-colors leading-tight">{{ file.name.split('/').pop() }}</h3>
                   <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider mt-0.5">
-                    <span>{{ formatSize(file.size) }}</span>
+                    <span v-if="!file.isFolder">{{ formatSize(file.size) }}</span>
+                    <span v-else>&nbsp;</span>
                   </div>
                 </div>
               </div>
@@ -1063,7 +1064,8 @@ const toggleFavourite = async (file: File) => {
                     </div>
                   </div>
                   
-                  <span class="hidden sm:inline w-20 text-right">{{ formatSize(file.size) }}</span>
+                  <span v-if="!file.isFolder" class="hidden sm:inline w-20 text-right">{{ formatSize(file.size) }}</span>
+                  <span v-else class="hidden sm:inline w-20 text-right">&nbsp;</span>
                   <span class="hidden md:inline w-24 text-right">{{ new Date(file.lastModified).toLocaleDateString() }}</span>
                 </div>
               </div>
@@ -1139,11 +1141,11 @@ const toggleFavourite = async (file: File) => {
 
         <div v-if="selectedFile" class="p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
           <div class="grid grid-cols-2 gap-6">
-            <div class="flex flex-col gap-1">
+            <div v-if="!selectedFile.isFolder" class="flex flex-col gap-1">
               <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Size</span>
               <span class="text-sm font-bold">{{ formatSize(selectedFile.size) }}</span>
             </div>
-            <div class="flex flex-col gap-1 text-right">
+            <div class="flex flex-col gap-1" :class="selectedFile.isFolder ? 'col-span-2 text-left' : 'text-right'">
               <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Modified</span>
               <span class="text-sm font-bold">{{ new Date(selectedFile.lastModified).toLocaleDateString() }}</span>
             </div>
