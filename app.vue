@@ -89,6 +89,18 @@
               </ul>
             </div>
 
+            <div class="mb-8">
+              <h3 class="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-base-content/30 mb-4">Storage Management</h3>
+              <ul class="space-y-1.5">
+                <li>
+                  <NuxtLink to="/duplicates" class="nav-link" active-class="active">
+                    <Icon name="mdi:content-copy" class="w-5 h-5" />
+                    <span>Duplicates</span>
+                  </NuxtLink>
+                </li>
+              </ul>
+            </div>
+
             <div>
               <h3 class="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-base-content/30 mb-4">Account</h3>
               <ul class="space-y-1.5">
