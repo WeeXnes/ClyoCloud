@@ -13,6 +13,7 @@ const downloadPath = ref('')
 const mobileAutoPreview = ref(true)
 const maxConcurrentPreviews = ref(3)
 const experimentalMode = ref(false)
+const theme = useState<string>('currentTheme')
 const tvheadendHost = ref('')
 const tvheadendPort = ref('9981')
 const tvheadendUser = ref('')
@@ -26,6 +27,59 @@ const isSavingTags = ref(false)
 
 const isGeneratingPreviews = ref(false)
 const isClearingPreviews = ref(false)
+const cleanupData = ref<{ largeFiles: any[], oldFiles: any[] } | null>(null)
+const isScanningStorage = ref(false)
+
+const formatSize = (bytes: number) => {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let value = bytes
+  let unitIndex = 0
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex++
+  }
+  return `${value.toFixed(1)} ${units[unitIndex]}`
+}
+
+const formatRelativeDate = (timestamp: number) => {
+  const diff = Date.now() - timestamp
+  const days = Math.floor(diff / (24 * 60 * 60 * 1000))
+  if (days < 30) return `${days} days ago`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `${months} months ago`
+  return `${Math.floor(months / 12)} years ago`
+}
+
+async function fetchCleanupData() {
+  isScanningStorage.value = true
+  try {
+    const data: any = await $fetch('/api/storage-clean')
+    cleanupData.value = data
+  } catch (err) {
+    console.error('Cleanup scan error:', err)
+  } finally {
+    isScanningStorage.value = false
+  }
+}
+
+async function deleteCleanupFile(file: any) {
+  if (!confirm(`Are you sure you want to delete ${file.name}?`)) return
+  try {
+    await $fetch('/api/files', {
+      method: 'DELETE',
+      body: { path: file.fullPath }
+    })
+    createNotification('File deleted', NotificationType.SUCCESS)
+    // Refresh the cleanup data
+    if (cleanupData.value) {
+      cleanupData.value.largeFiles = cleanupData.value.largeFiles.filter(f => f.fullPath !== file.fullPath)
+      cleanupData.value.oldFiles = cleanupData.value.oldFiles.filter(f => f.fullPath !== file.fullPath)
+    }
+  } catch (err) {
+    createNotification('Failed to delete file', NotificationType.ERROR)
+  }
+}
+
 const generationResults = ref<{ total: number, processed: number, generated: number, skipped: number, errors: number, isProcessing: boolean } | null>(null)
 let statusPollingInterval: any = null
 
@@ -146,6 +200,7 @@ async function fetchUserSettings() {
       mobileAutoPreview.value = data.mobileAutoPreview ?? true
       maxConcurrentPreviews.value = data.maxConcurrentPreviews || 3
       experimentalMode.value = data.experimentalMode || false
+      theme.value = data.theme || 'onedev'
       tvheadendHost.value = data.tvheadendHost || ''
       tvheadendPort.value = data.tvheadendPort || '9981'
       tvheadendUser.value = data.tvheadendUser || ''
@@ -178,6 +233,7 @@ async function saveUserSettings() {
         mobileAutoPreview: mobileAutoPreview.value,
         maxConcurrentPreviews: maxConcurrentPreviews.value,
         experimentalMode: experimentalMode.value,
+        theme: theme.value,
         tvheadendHost: tvheadendHost.value,
         tvheadendPort: tvheadendPort.value,
         tvheadendUser: tvheadendUser.value,
@@ -523,6 +579,51 @@ async function logout() {
         <div class="lg:col-span-7 space-y-6">
           <div class="flex items-center gap-3 px-2">
              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+               <Icon name="mdi:palette-outline" class="text-primary w-5 h-5" />
+             </div>
+             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Personalization</h2>
+          </div>
+
+          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+            <div class="p-8 sm:p-10">
+              <h3 class="text-lg font-black tracking-tight mb-6">UI Visual Theme</h3>
+              <p class="text-xs font-medium text-base-content/50 mb-8 leading-relaxed">
+                Choose a visual identity that matches your style. This will update the colors and mood of the entire application.
+              </p>
+
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div 
+                  v-for="t in ['onedev', 'light', 'dark', 'dracula', 'forest', 'retro', 'cyberpunk', 'valentine', 'aqua', 'nord', 'sunset', 'dim', 'coffee']" 
+                  :key="t"
+                  class="relative group cursor-pointer"
+                  @click="theme = t; saveUserSettings()"
+                >
+                  <div 
+                    class="h-20 rounded-2xl border-2 transition-all overflow-hidden flex flex-col"
+                    :class="theme === t ? 'border-primary ring-4 ring-primary/10' : 'border-base-content/5 hover:border-base-content/20'"
+                    :data-theme="t"
+                  >
+                    <div class="flex-1 bg-base-100 p-2">
+                       <div class="flex gap-1">
+                          <div class="w-2 h-2 rounded-full bg-primary"></div>
+                          <div class="w-2 h-2 rounded-full bg-secondary"></div>
+                          <div class="w-2 h-2 rounded-full bg-accent"></div>
+                       </div>
+                    </div>
+                    <div class="bg-base-200 p-2 text-[10px] font-black uppercase tracking-widest text-center">
+                      {{ t }}
+                    </div>
+                  </div>
+                  <div v-if="theme === t" class="absolute -top-2 -right-2 w-6 h-6 bg-primary text-primary-content rounded-full flex items-center justify-center shadow-lg animate-in zoom-in">
+                    <Icon name="mdi:check" class="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="flex items-center gap-3 px-2 pt-4">
+             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                <Icon name="mdi:television-classic" class="text-primary w-5 h-5" />
              </div>
              <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">TV Integration</h2>
@@ -634,6 +735,84 @@ async function logout() {
                    </button>
                  </div>
                  <p class="mt-3 text-[10px] font-medium text-base-content/40 px-2 italic">Relative to your root storage folder. Leave empty for root.</p>
+               </div>
+             </div>
+          </section>
+
+          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+             <div class="p-8 sm:p-10">
+               <div class="flex items-center justify-between mb-8">
+                 <div>
+                   <h3 class="text-lg font-black tracking-tight">Storage Health</h3>
+                   <p class="text-xs font-medium text-base-content/40">Optimize your storage space</p>
+                 </div>
+                 <button 
+                  class="btn btn-ghost btn-sm gap-2 border border-base-content/10 bg-base-100/50 rounded-xl"
+                  @click="fetchCleanupData"
+                  :disabled="isScanningStorage"
+                 >
+                   <Icon name="mdi:magnify-scan" class="w-4 h-4" :class="{ 'animate-pulse': isScanningStorage }" />
+                   <span class="text-[10px] font-black uppercase tracking-widest">{{ isScanningStorage ? 'Scanning...' : 'Scan Storage' }}</span>
+                 </button>
+               </div>
+
+               <div v-if="!cleanupData && !isScanningStorage" class="bg-base-200/50 p-10 rounded-[2rem] border border-dashed border-base-content/10 flex flex-col items-center justify-center text-center gap-4">
+                  <div class="w-16 h-16 rounded-full bg-base-100 flex items-center justify-center">
+                    <Icon name="mdi:broom" class="w-8 h-8 text-base-content/20" />
+                  </div>
+                  <div>
+                    <p class="text-sm font-black tracking-tight">Identify Storage Hogs</p>
+                    <p class="text-[10px] font-medium text-base-content/40 uppercase tracking-widest mt-1">Scan to find large and forgotten files</p>
+                  </div>
+                  <button class="btn btn-primary btn-sm px-8 rounded-xl mt-2" @click="fetchCleanupData">Begin Scan</button>
+               </div>
+
+               <div v-else-if="cleanupData" class="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <!-- Large Files Section -->
+                  <div>
+                    <div class="flex items-center gap-2 mb-4 px-2">
+                       <Icon name="mdi:weight" class="w-4 h-4 text-error/60" />
+                       <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Large Files (>500MB)</span>
+                    </div>
+                    <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                       <div v-for="file in cleanupData.largeFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-xl border border-base-content/5 group hover:bg-base-200 transition-all">
+                          <div class="min-w-0 flex-1">
+                             <p class="text-xs font-bold truncate">{{ file.name }}</p>
+                             <p class="text-[9px] font-medium text-base-content/40 uppercase truncate">{{ file.fullPath }}</p>
+                          </div>
+                          <div class="flex items-center gap-4 shrink-0">
+                             <span class="text-xs font-black text-error/80">{{ formatSize(file.size) }}</span>
+                             <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
+                               <Icon name="mdi:delete-outline" class="w-4 h-4" />
+                             </button>
+                          </div>
+                       </div>
+                       <div v-if="cleanupData.largeFiles.length === 0" class="text-center py-8 text-[10px] font-bold text-base-content/30 uppercase tracking-widest italic">No large files identified</div>
+                    </div>
+                  </div>
+
+                  <!-- Old Files Section -->
+                  <div>
+                    <div class="flex items-center gap-2 mb-4 px-2">
+                       <Icon name="mdi:history" class="w-4 h-4 text-warning/60" />
+                       <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Forgotten Files (>6 months)</span>
+                    </div>
+                    <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                       <div v-for="file in cleanupData.oldFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-xl border border-base-content/5 group hover:bg-base-200 transition-all">
+                          <div class="min-w-0 flex-1">
+                             <p class="text-xs font-bold truncate">{{ file.name }}</p>
+                             <p class="text-[9px] font-medium text-base-content/40 uppercase truncate">{{ file.fullPath }}</p>
+                          </div>
+                          <div class="flex items-center gap-4 shrink-0">
+                             <span class="text-xs font-bold text-base-content/40">{{ formatRelativeDate(file.lastModified) }}</span>
+                             <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
+                               <Icon name="mdi:delete-outline" class="w-4 h-4" />
+                             </button>
+                          </div>
+                       </div>
+                       <div v-if="cleanupData.oldFiles.length === 0" class="text-center py-8 text-[10px] font-bold text-base-content/30 uppercase tracking-widest italic">No old files identified</div>
+                    </div>
+                  </div>
                </div>
              </div>
           </section>

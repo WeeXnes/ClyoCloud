@@ -9,6 +9,14 @@ module.exports = {
             'dark',
             'dracula',
             'forest',
+            'retro',
+            'cyberpunk',
+            'valentine',
+            'aqua',
+            'nord',
+            'sunset',
+            'dim',
+            'coffee',
             {
                 onedev: {
                     'color-scheme': 'dark',

@@ -34,7 +34,8 @@ export default defineEventHandler(async (event) => {
             tvheadendPassword: userData.tvheadendPassword || '',
             mobileAutoPreview: userData.mobileAutoPreview ?? true,
             maxConcurrentPreviews: userData.maxConcurrentPreviews || 3,
-            experimentalMode: userData.experimentalMode || false
+            experimentalMode: userData.experimentalMode || false,
+            theme: userData.theme || 'onedev'
         }
     } catch (error) {
         console.error('Get settings error:', error)

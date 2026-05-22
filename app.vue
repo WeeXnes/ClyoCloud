@@ -1,6 +1,6 @@
 <!-- app.vue -->
 <template>
-  <div class="min-h-screen bg-base-200 font-sans" data-theme="onedev">
+  <div class="min-h-screen bg-base-200 font-sans" :data-theme="currentTheme">
     <NotificationManager />
     
     <div v-if="user" class="drawer lg:drawer-open">
@@ -134,7 +134,36 @@
 
 <script setup lang="ts">
 import { useState } from 'nuxt/app'
+import { onMounted, watch } from 'vue'
+
 const user = useState<{ name: string } | null>('user')
+const currentTheme = useState<string>('currentTheme', () => 'onedev')
+
+async function fetchTheme() {
+  if (!user.value) return
+  try {
+    const data: any = await $fetch('/api/user-settings')
+    if (data.theme) {
+      currentTheme.value = data.theme
+    }
+  } catch (err) {
+    console.error('Failed to fetch theme:', err)
+  }
+}
+
+onMounted(() => {
+  if (user.value) {
+    fetchTheme()
+  }
+})
+
+watch(user, (newUser) => {
+  if (newUser) {
+    fetchTheme()
+  } else {
+    currentTheme.value = 'onedev'
+  }
+})
 </script>
 
 <style scoped>
