@@ -20,6 +20,29 @@ interface DuplicateGroup {
 const duplicateGroups = ref<DuplicateGroup[]>([])
 const isLoading = ref(false)
 const isDeleting = ref(false)
+const hoveredFile = ref<string | null>(null)
+
+const isVideo = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return ['mp4', 'webm', 'mov', 'mkv'].includes(ext)
+}
+
+const isImage = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)
+}
+
+const getThumbnailUrl = (fullPath: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
+}
+
+const getPreviewUrl = (fullPath: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  return `${baseUrl}/preview/${encodeURIComponent(fullPath)}`
+}
 
 async function fetchDuplicates() {
   isLoading.value = true
@@ -259,6 +282,27 @@ async function cleanSelected() {
                     class="checkbox checkbox-primary checkbox-sm rounded-lg"
                     title="Mark for deletion"
                   />
+                </div>
+
+                <!-- Media Preview -->
+                <div class="relative w-16 h-16 rounded-lg bg-base-300 overflow-hidden shrink-0 group/preview"
+                     @mouseenter="hoveredFile = file.fullPath"
+                     @mouseleave="hoveredFile = null">
+                  <img v-if="isImage(file.name) || isVideo(file.name)"
+                       :src="getThumbnailUrl(file.fullPath)"
+                       class="w-full h-full object-cover"
+                       alt="" />
+                  <div v-else class="w-full h-full flex items-center justify-center">
+                    <Icon name="mdi:file-outline" class="w-6 h-6 text-base-content/20" />
+                  </div>
+                  
+                  <!-- Animated Preview for Videos -->
+                  <div v-if="isVideo(file.name) && hoveredFile === file.fullPath"
+                       class="absolute inset-0 z-10 animate-in fade-in duration-300">
+                    <img :src="getPreviewUrl(file.fullPath)" 
+                         class="w-full h-full object-cover"
+                         alt="Preview" />
+                  </div>
                 </div>
 
                 <div class="flex-1 min-w-0">
