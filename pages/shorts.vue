@@ -20,7 +20,9 @@ const newTagColor = ref('#4B5EAA')
 const observer = ref<IntersectionObserver | null>(null)
 const containerRefs = ref<Map<string, HTMLElement>>(new Map())
 const videoRefs = ref<Map<string, HTMLVideoElement>>(new Map())
+const feedContainerRef = ref<HTMLElement | null>(null)
 const currentIndex = ref(0)
+const isAutoscrollEnabled = ref(false)
 
 const supportedExtensions = ['.mp4', '.webm', '.mov', '.mkv']
 
@@ -30,6 +32,23 @@ const handleScroll = (event: Event) => {
   if (currentIndex.value !== index) {
     currentIndex.value = index
   }
+}
+
+const scrollToNextVideo = () => {
+  if (!isAutoscrollEnabled.value || !feedContainerRef.value) return
+  
+  const nextIndex = currentIndex.value + 1
+  if (nextIndex < videos.value.length) {
+    feedContainerRef.value.scrollTo({
+      top: nextIndex * feedContainerRef.value.clientHeight,
+      behavior: 'smooth'
+    })
+  }
+}
+
+const toggleAutoscroll = () => {
+  isAutoscrollEnabled.value = !isAutoscrollEnabled.value
+  createNotification(`Autoscroll ${isAutoscrollEnabled.value ? 'enabled' : 'disabled'}`, NotificationType.INFO)
 }
 
 const fetchVideos = async () => {
@@ -315,6 +334,14 @@ const refresh = () => {
         <Icon :name="currentVisibleVideo.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-6 h-6" />
       </button>
       <button 
+        @click="toggleAutoscroll" 
+        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        :class="{ 'text-primary': isAutoscrollEnabled }"
+        title="Toggle Autoscroll"
+      >
+        <Icon :name="isAutoscrollEnabled ? 'mdi:play-pause' : 'mdi:play-box-multiple-outline'" class="w-6 h-6" />
+      </button>
+      <button 
         @click="toggleMute" 
         class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
       >
@@ -337,6 +364,7 @@ const refresh = () => {
     <!-- Video Feed -->
     <div 
       v-else-if="videos.length" 
+      ref="feedContainerRef"
       class="h-full w-full overflow-y-scroll overflow-x-hidden snap-y snap-mandatory no-scrollbar"
       @scroll.passive="handleScroll"
     >
@@ -351,10 +379,11 @@ const refresh = () => {
           <video
             :ref="el => setVideoRef(el, video)"
             class="h-full w-full object-contain"
-            loop
+            :loop="!isAutoscrollEnabled"
             playsinline
             :muted="isMuted"
             :poster="getThumbnailUrl(video.fullPath)"
+            @ended="scrollToNextVideo"
           >
             <source :src="getStreamUrl(video.fullPath)" :type="getSourceType(video.name)" />
           </video>
