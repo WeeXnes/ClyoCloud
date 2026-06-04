@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
+import { renameInFavorites } from '~/server/utils/favorites'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -55,6 +56,9 @@ export default defineEventHandler(async (event) => {
         } catch {
             // No cloudinfo to rename
         }
+
+        // Update favorites index if needed
+        await renameInFavorites(event.context.user.name, oldPath, path.relative(userStoragePath, newFullPath).replace(/\\/g, '/'))
 
         return { success: true }
     } catch (error: any) {

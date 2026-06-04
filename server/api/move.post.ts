@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
+import { moveInFavorites } from '~/server/utils/favorites'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -97,6 +98,11 @@ export default defineEventHandler(async (event) => {
                 console.error(`Error moving ${itemPath}:`, err)
                 results.push({ path: itemPath, success: false, error: err.message })
             }
+        }
+
+        if (results.some(r => r.success)) {
+            const successfulMoves = results.filter(r => r.success).map(r => r.path)
+            await moveInFavorites(event.context.user.name, successfulMoves, destinationPath)
         }
 
         return { success: true, results }

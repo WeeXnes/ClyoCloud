@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 import type { FileMeta } from '~/types/File'
+import { addToFavorites, removeFromFavorites } from '~/server/utils/favorites'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -55,6 +56,14 @@ export default defineEventHandler(async (event) => {
         if (isFavourite !== undefined) {
             meta.isFavourite = isFavourite
             await logActivity(event.context.user.name, 'FAVORITE', fullPath, isFavourite ? 'Added to favorites' : 'Removed from favorites', event)
+            
+            // Update favorites index
+            if (isFavourite) {
+                const stats = await fs.stat(filePath)
+                await addToFavorites(event.context.user.name, fullPath, stats.isDirectory())
+            } else {
+                await removeFromFavorites(event.context.user.name, fullPath)
+            }
         }
 
         await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')

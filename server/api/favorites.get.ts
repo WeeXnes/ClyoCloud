@@ -2,32 +2,8 @@ import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 import type { File, FileMeta } from '~/types/File'
-
-const sizeCache = new Map<string, { size: number; timestamp: number }>()
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
-
-async function getDirSize(dirPath: string): Promise<number> {
-    const cached = sizeCache.get(dirPath)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        return cached.size
-    }
-
-    let totalSize = 0
-    try {
-        const files = await fs.readdir(dirPath, { withFileTypes: true })
-        for (const file of files) {
-            const filePath = path.join(dirPath, file.name)
-            if (file.isDirectory()) {
-                totalSize += await getDirSize(filePath)
-            } else if (file.isFile()) {
-                const stats = await fs.stat(filePath)
-                totalSize += stats.size
-            }
-        }
-        sizeCache.set(dirPath, { size: totalSize, timestamp: Date.now() })
-    } catch (err) {}
-    return totalSize
-}
+import { getFavoritesIndex, saveFavoritesIndex, type FavoriteEntry } from '~/server/utils/favorites'
+import { getDirSize } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event): Promise<File[]> => {
     try {
@@ -38,60 +14,59 @@ export default defineEventHandler(async (event): Promise<File[]> => {
             })
         }
 
+        const username = event.context.user.name
         const config = useRuntimeConfig()
-        const userStoragePath = path.join(config.storagePath, event.context.user.name)
+        const userStoragePath = path.join(config.storagePath, username)
 
-        const favoriteFiles: File[] = []
+        let favorites = await getFavoritesIndex(username)
+        const isInitialScan = favorites.length === 0
 
-        async function scanDir(currentPath: string, relativePath: string) {
-            const entries = await fs.readdir(currentPath, { withFileTypes: true })
-            
-            for (const entry of entries) {
-                if (entry.name.startsWith('.') || entry.name.endsWith('.cloudinfo')) continue
-
-                const fullPath = path.join(currentPath, entry.name)
-                const relPath = relativePath ? `${relativePath}/${entry.name}` : entry.name
-                
-                if (entry.isDirectory()) {
-                    await checkFavorite(fullPath, relPath, true)
-                    await scanDir(fullPath, relPath)
-                } else if (entry.isFile()) {
-                    await checkFavorite(fullPath, relPath, false)
-                }
+        if (isInitialScan) {
+            // First time or empty index, perform a full scan once
+            favorites = await performFullScan(userStoragePath)
+            if (favorites.length > 0) {
+                await saveFavoritesIndex(username, favorites)
             }
         }
 
-        async function checkFavorite(fullPath: string, relPath: string, isFolder: boolean) {
-            const dirName = path.dirname(fullPath)
+        const favoriteFiles: File[] = []
+
+        // Process favorites from index
+        await Promise.all(favorites.map(async (entry) => {
+            const fullPath = path.join(userStoragePath, entry.path)
             const baseName = path.basename(fullPath)
+            const dirName = path.dirname(fullPath)
             const cloudInfoFileName = `${baseName.substring(0, 100)}.cloudinfo`
             const cloudInfoPath = path.join(dirName, cloudInfoFileName)
 
             try {
-                const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8')
+                const [stats, cloudInfoContent] = await Promise.all([
+                    fs.stat(fullPath),
+                    fs.readFile(cloudInfoPath, 'utf-8')
+                ])
+                
                 const meta = JSON.parse(cloudInfoContent) as FileMeta
-
+                
+                // Final check to ensure it's still a favorite and exists
                 if (meta.isFavourite) {
-                    const stats = await fs.stat(fullPath)
                     let size = stats.size
-                    
-                    if (isFolder) {
+                    if (entry.isFolder) {
                         size = await getDirSize(fullPath)
                     }
 
                     favoriteFiles.push({
-                        name: relPath,
+                        name: entry.path,
                         size,
                         type: path.extname(baseName),
                         lastModified: stats.mtime.getTime(),
-                        isFolder,
+                        isFolder: entry.isFolder,
                         meta,
                     })
                 }
-            } catch (err) {}
-        }
-
-        await scanDir(userStoragePath, '')
+            } catch (err) {
+                // File or meta might have been deleted, ignore
+            }
+        }))
 
         favoriteFiles.sort((a, b) => {
             if (a.isFolder !== b.isFolder) {
@@ -109,3 +84,33 @@ export default defineEventHandler(async (event): Promise<File[]> => {
         })
     }
 })
+
+async function performFullScan(userStoragePath: string): Promise<FavoriteEntry[]> {
+    const favorites: FavoriteEntry[] = []
+
+    async function scan(currentPath: string, relativePath: string) {
+        const entries = await fs.readdir(currentPath, { withFileTypes: true })
+        for (const entry of entries) {
+            if (entry.name.startsWith('.') || entry.name.endsWith('.cloudinfo')) continue
+
+            const fullPath = path.join(currentPath, entry.name)
+            const relPath = relativePath ? `${relativePath}/${entry.name}` : entry.name
+            const cloudInfoPath = `${fullPath}.cloudinfo`
+
+            try {
+                const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8')
+                const meta = JSON.parse(cloudInfoContent)
+                if (meta.isFavourite) {
+                    favorites.push({ path: relPath, isFolder: entry.isDirectory() })
+                }
+            } catch {}
+
+            if (entry.isDirectory()) {
+                await scan(fullPath, relPath)
+            }
+        }
+    }
+
+    await scan(userStoragePath, '')
+    return favorites
+}

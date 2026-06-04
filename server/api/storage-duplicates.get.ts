@@ -2,6 +2,7 @@ import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
+import { getDuplicateTaskStatus, updateDuplicateTaskStatus } from '~/server/utils/duplicateTask'
 
 const QUICK_HASH_SIZE = 64 * 1024 // 64 KB
 
@@ -13,43 +14,74 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    const config = useRuntimeConfig()
-    const userStoragePath = path.join(config.storagePath, event.context.user.name)
-    
-    // Step 1: Group files by size
-    const filesBySize = new Map<number, string[]>()
+    const username = event.context.user.name
+    const status = getDuplicateTaskStatus(username)
 
-    async function scanDir(currentPath: string) {
-        const entries = await fs.readdir(currentPath, { withFileTypes: true })
-        
-        for (const entry of entries) {
-            const fullPath = path.join(currentPath, entry.name)
-            
-            if (entry.isDirectory()) {
-                await scanDir(fullPath)
-            } else if (entry.isFile() && !entry.name.endsWith('.cloudinfo')) {
-                const stats = await fs.stat(fullPath)
-                const size = stats.size
-                
-                if (size === 0) continue // Skip empty files
-
-                if (!filesBySize.has(size)) {
-                    filesBySize.set(size, [])
-                }
-                filesBySize.get(size)!.push(fullPath)
-            }
-        }
+    if (status.isScanning) {
+        return status
     }
 
+    // Start background scan
+    performScan(username, event)
+
+    return getDuplicateTaskStatus(username)
+})
+
+async function performScan(username: string, event: any) {
+    const config = useRuntimeConfig()
+    const userStoragePath = path.join(config.storagePath, username)
+    
+    updateDuplicateTaskStatus(username, {
+        isScanning: true,
+        progress: 0,
+        phase: 'indexing',
+        totalFiles: 0,
+        processedFiles: 0,
+        startTime: Date.now(),
+        results: []
+    })
+
     try {
+        // Step 1: Group files by size
+        const filesBySize = new Map<number, string[]>()
+        let totalFilesCount = 0
+
+        async function scanDir(currentPath: string) {
+            const entries = await fs.readdir(currentPath, { withFileTypes: true })
+            
+            for (const entry of entries) {
+                const fullPath = path.join(currentPath, entry.name)
+                
+                if (entry.isDirectory()) {
+                    await scanDir(fullPath)
+                } else if (entry.isFile() && !entry.name.endsWith('.cloudinfo') && !entry.name.startsWith('.')) {
+                    const stats = await fs.stat(fullPath)
+                    const size = stats.size
+                    
+                    if (size === 0) continue // Skip empty files
+
+                    if (!filesBySize.has(size)) {
+                        filesBySize.set(size, [])
+                    }
+                    filesBySize.get(size)!.push(fullPath)
+                    totalFilesCount++
+                    
+                    updateDuplicateTaskStatus(username, { totalFiles: totalFilesCount })
+                }
+            }
+        }
+
         await scanDir(userStoragePath)
 
         // Step 2: For sizes with multiple files, perform quick hash
+        updateDuplicateTaskStatus(username, { phase: 'hashing' })
         const duplicateGroups: any[] = []
+        let processedFiles = 0
 
-        for (const [size, paths] of filesBySize.entries()) {
-            if (paths.length < 2) continue
+        const candidates = Array.from(filesBySize.entries()).filter(([size, paths]) => paths.length >= 2)
+        const totalCandidates = candidates.reduce((acc, [_, paths]) => acc + paths.length, 0)
 
+        for (const [size, paths] of candidates) {
             const hashGroups = new Map<string, any[]>()
 
             for (const filePath of paths) {
@@ -76,6 +108,12 @@ export default defineEventHandler(async (event) => {
                     })
                 } catch (err) {
                     console.error(`Error hashing ${filePath}:`, err)
+                } finally {
+                    processedFiles++
+                    updateDuplicateTaskStatus(username, { 
+                        processedFiles,
+                        progress: Math.round((processedFiles / totalCandidates) * 100)
+                    })
                 }
             }
 
@@ -90,14 +128,22 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        // Sort by redundant size (most space saved first)
-        return duplicateGroups.sort((a, b) => b.redundantSize - a.redundantSize).slice(0, 50)
+        // Step 3: Sort by redundant size (most space saved first)
+        updateDuplicateTaskStatus(username, { phase: 'sorting' })
+        const finalResults = duplicateGroups.sort((a, b) => b.redundantSize - a.redundantSize).slice(0, 50)
+
+        updateDuplicateTaskStatus(username, {
+            isScanning: false,
+            progress: 100,
+            phase: 'idle',
+            results: finalResults
+        })
 
     } catch (error) {
         console.error('Duplicate scan error:', error)
-        throw createError({
-            statusCode: 500,
-            statusMessage: 'Could not perform duplicate scan',
+        updateDuplicateTaskStatus(username, {
+            isScanning: false,
+            phase: 'idle'
         })
     }
-})
+}

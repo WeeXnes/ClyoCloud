@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
+import { removeFromFavorites } from '~/server/utils/favorites'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -38,6 +39,9 @@ export default defineEventHandler(async (event) => {
     }
 
     await logActivity(event.context.user.name, 'DELETE', safeSubPath, undefined, event)
+
+    // Update favorites index
+    await removeFromFavorites(event.context.user.name, safeSubPath)
 
     // Also delete .cloudinfo file if it exists
     try {

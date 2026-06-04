@@ -22,46 +22,62 @@ const isLoading = ref(false)
 const isDeleting = ref(false)
 const hoveredFile = ref<string | null>(null)
 
-const isVideo = (filename: string) => {
-  const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['mp4', 'webm', 'mov', 'mkv'].includes(ext)
-}
-
-const isImage = (filename: string) => {
-  const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)
-}
-
-const getThumbnailUrl = (fullPath: string) => {
-  const url = useRequestURL()
-  const baseUrl = url.origin
-  return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
-}
-
-const getPreviewUrl = (fullPath: string) => {
-  const url = useRequestURL()
-  const baseUrl = url.origin
-  return `${baseUrl}/preview/${encodeURIComponent(fullPath)}`
-}
+const scanStatus = ref<any>(null)
+let pollInterval: any = null
 
 async function fetchDuplicates() {
   isLoading.value = true
   try {
     const data: any = await $fetch('/api/storage-duplicates')
-    duplicateGroups.value = data.map((group: any) => ({
-      ...group,
-      files: group.files.map((file: any) => ({ ...file, selectedForDeletion: false }))
-    }))
-    if (duplicateGroups.value.length === 0) {
-      createNotification('No duplicate files found!', NotificationType.SUCCESS)
+    scanStatus.value = data
+    
+    if (data.isScanning) {
+      startPolling()
+    } else if (data.results) {
+      handleResults(data.results)
     }
   } catch (err) {
     console.error('Duplicate scan error:', err)
-    createNotification('Failed to scan for duplicates', NotificationType.ERROR)
-  } finally {
+    createNotification('Failed to start scan', NotificationType.ERROR)
     isLoading.value = false
   }
 }
+
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval)
+  pollInterval = setInterval(async () => {
+    try {
+      const data: any = await $fetch('/api/storage-duplicates-status')
+      scanStatus.value = data
+      
+      if (!data.isScanning) {
+        clearInterval(pollInterval)
+        pollInterval = null
+        handleResults(data.results)
+      }
+    } catch (err) {
+      console.error('Polling error:', err)
+      clearInterval(pollInterval)
+      pollInterval = null
+      isLoading.value = false
+    }
+  }, 1000)
+}
+
+function handleResults(results: any) {
+  duplicateGroups.value = results.map((group: any) => ({
+    ...group,
+    files: group.files.map((file: any) => ({ ...file, selectedForDeletion: false }))
+  }))
+  if (duplicateGroups.value.length === 0) {
+    createNotification('No duplicate files found!', NotificationType.SUCCESS)
+  }
+  isLoading.value = false
+}
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval)
+})
 
 const formatSize = (bytes: number) => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -239,14 +255,35 @@ async function cleanSelected() {
       </div>
 
       <!-- Duplicate Groups -->
-      <div v-if="isLoading" class="flex flex-col items-center justify-center py-32 gap-6">
+      <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 gap-8 max-w-md mx-auto">
          <div class="relative">
-           <div class="w-16 h-16 rounded-full border-2 border-primary/10 border-t-primary animate-spin"></div>
-           <Icon name="mdi:magnify" class="w-6 h-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary animate-pulse" />
+           <div class="w-20 h-20 rounded-full border-4 border-primary/10 border-t-primary animate-spin"></div>
+           <Icon name="mdi:magnify-scan" class="w-8 h-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
          </div>
-         <div class="text-center">
-            <h3 class="text-base font-bold tracking-tight text-base-content">Analyzing Storage...</h3>
-            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Comparing byte signatures across cluster</p>
+         
+         <div class="w-full space-y-4">
+            <div class="text-center">
+               <h3 class="text-lg font-bold tracking-tight text-base-content capitalize">
+                 {{ scanStatus?.phase === 'indexing' ? 'Indexing Storage...' : 
+                    scanStatus?.phase === 'hashing' ? 'Comparing Signatures...' : 
+                    scanStatus?.phase === 'sorting' ? 'Finalizing Results...' : 'Analyzing...' }}
+               </h3>
+               <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">
+                 {{ scanStatus?.phase === 'indexing' ? `Discovered ${scanStatus?.totalFiles || 0} files` : 
+                    scanStatus?.phase === 'hashing' ? `Processed ${scanStatus?.processedFiles || 0} / ${scanStatus?.totalFiles || 0} candidates` : 
+                    'Byte-by-byte verification in progress' }}
+               </p>
+            </div>
+
+            <div v-if="scanStatus?.phase === 'hashing'" class="space-y-2">
+              <div class="h-2 w-full bg-base-300 rounded-full overflow-hidden">
+                <div class="h-full bg-primary transition-all duration-500 ease-out" :style="{ width: `${scanStatus?.progress || 0}%` }"></div>
+              </div>
+              <div class="flex justify-between items-center px-1">
+                <span class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">{{ scanStatus?.progress || 0 }}% Complete</span>
+                <span class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">{{ scanStatus?.processedFiles || 0 }} files</span>
+              </div>
+            </div>
          </div>
       </div>
 

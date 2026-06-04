@@ -29,37 +29,47 @@ const isGeneratingPreviews = ref(false)
 const isClearingPreviews = ref(false)
 const cleanupData = ref<{ largeFiles: any[], oldFiles: any[] } | null>(null)
 const isScanningStorage = ref(false)
-
-const formatSize = (bytes: number) => {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let value = bytes
-  let unitIndex = 0
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024
-    unitIndex++
-  }
-  return `${value.toFixed(1)} ${units[unitIndex]}`
-}
-
-const formatRelativeDate = (timestamp: number) => {
-  const diff = Date.now() - timestamp
-  const days = Math.floor(diff / (24 * 60 * 60 * 1000))
-  if (days < 30) return `${days} days ago`
-  const months = Math.floor(days / 30)
-  if (months < 12) return `${months} months ago`
-  return `${Math.floor(months / 12)} years ago`
-}
+const cleanupStatus = ref<any>(null)
+let cleanupInterval: any = null
 
 async function fetchCleanupData() {
   isScanningStorage.value = true
   try {
     const data: any = await $fetch('/api/storage-clean')
-    cleanupData.value = data
+    cleanupStatus.value = data
+    
+    if (data.isScanning) {
+      startCleanupPolling()
+    } else if (data.results) {
+      cleanupData.value = data.results
+      isScanningStorage.value = false
+    }
   } catch (err) {
     console.error('Cleanup scan error:', err)
-  } finally {
     isScanningStorage.value = false
   }
+}
+
+function startCleanupPolling() {
+  if (cleanupInterval) clearInterval(cleanupInterval)
+  cleanupInterval = setInterval(async () => {
+    try {
+      const data: any = await $fetch('/api/storage-clean-status')
+      cleanupStatus.value = data
+      
+      if (!data.isScanning) {
+        clearInterval(cleanupInterval)
+        cleanupInterval = null
+        cleanupData.value = data.results
+        isScanningStorage.value = false
+      }
+    } catch (err) {
+      console.error('Cleanup polling error:', err)
+      clearInterval(cleanupInterval)
+      cleanupInterval = null
+      isScanningStorage.value = false
+    }
+  }, 1000)
 }
 
 async function deleteCleanupFile(file: any) {
@@ -849,6 +859,38 @@ async function logout() {
                     />
                  </div>
 
+                 <div v-if="generationResults && (generationResults.isProcessing || generationResults.processed > 0)" class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5 animate-in fade-in duration-300">
+                   <div class="flex items-center justify-between">
+                     <div class="flex items-center gap-2">
+                       <span class="text-[9px] font-bold uppercase tracking-widest text-base-content">Generation Progress</span>
+                       <span v-if="generationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
+                     </div>
+                     <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ generationResults.processed }} / {{ generationResults.total }}</span>
+                   </div>
+                   
+                   <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
+                     <div 
+                       class="h-full bg-primary transition-all duration-500 ease-out" 
+                       :style="{ width: `${(generationResults.processed / generationResults.total) * 100}%` }"
+                     ></div>
+                   </div>
+
+                   <div class="grid grid-cols-3 gap-2 pt-1">
+                     <div class="flex flex-col">
+                       <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
+                       <span class="text-[10px] font-bold text-success">{{ generationResults.generated }}</span>
+                     </div>
+                     <div class="flex flex-col">
+                       <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
+                       <span class="text-[10px] font-bold text-base-content/60">{{ generationResults.skipped }}</span>
+                     </div>
+                     <div class="flex flex-col">
+                       <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
+                       <span class="text-[10px] font-bold text-error">{{ generationResults.errors }}</span>
+                     </div>
+                   </div>
+                 </div>
+
                  <div class="flex flex-col sm:flex-row gap-3">
                    <button 
                      class="btn btn-primary flex-1 h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
@@ -882,7 +924,15 @@ async function logout() {
                  </button>
                </div>
 
-               <div v-if="cleanupData" class="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+               <div v-if="isScanningStorage" class="py-10 flex flex-col items-center gap-4 animate-in fade-in duration-300">
+                  <div class="w-10 h-10 rounded-full border-2 border-primary/10 border-t-primary animate-spin"></div>
+                  <div class="text-center">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/60">Analyzing Storage Cluster</p>
+                    <p class="text-[9px] font-bold text-base-content/30 mt-1 uppercase">{{ cleanupStatus?.totalFiles || 0 }} files discovered</p>
+                  </div>
+               </div>
+
+               <div v-if="cleanupData && !isScanningStorage" class="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
                   <!-- Large Files Section -->
                   <div class="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-2">
                        <div v-for="file in cleanupData.largeFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
