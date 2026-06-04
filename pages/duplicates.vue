@@ -35,6 +35,8 @@ async function fetchDuplicates() {
       startPolling()
     } else if (data.results) {
       handleResults(data.results)
+    } else {
+      isLoading.value = false
     }
   } catch (err) {
     console.error('Duplicate scan error:', err)
@@ -65,6 +67,10 @@ function startPolling() {
 }
 
 function handleResults(results: any) {
+  if (!results) {
+    isLoading.value = false
+    return
+  }
   duplicateGroups.value = results.map((group: any) => ({
     ...group,
     files: group.files.map((file: any) => ({ ...file, selectedForDeletion: false }))
