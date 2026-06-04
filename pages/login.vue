@@ -143,7 +143,7 @@
 
             <!-- Status Footer -->
             <div class="mt-8 pt-6 border-t border-base-content/5 text-center">
-              <p class="text-[9px] font-bold text-base-content/20 uppercase tracking-[0.3em]">Encrypted Data Cluster</p>
+              <p class="text-[9px] font-bold text-base-content/20 uppercase tracking-[0.3em]">ClyoCloud - v{{ useRuntimeConfig().public.version }}</p>
             </div>
           </div>
         </div>

@@ -511,14 +511,13 @@ const refresh = () => {
       </div>
     </div>
 
-    <!-- Empty State -->
     <div v-else class="h-full w-full flex flex-col items-center justify-center text-white p-8 text-center gap-6">
       <div class="bg-white/5 p-8 rounded-xl border border-white/10">
         <Icon name="mdi:video-off-outline" class="w-16 h-16 opacity-20" />
       </div>
       <div>
-        <h3 class="text-lg font-bold uppercase tracking-widest mb-1">No Media Identified</h3>
-        <p class="text-white/40 text-[10px] font-bold uppercase tracking-widest max-w-xs">Populate your data cluster with supported video files to generate a vertical feed.</p>
+        <h3 class="text-lg font-bold uppercase tracking-widest mb-1">No videos found</h3>
+        <p class="text-white/40 text-[10px] font-bold uppercase tracking-widest max-w-xs">Upload some videos to your cloud to begin playback.</p>
       </div>
       <NuxtLink to="/files" class="btn btn-primary btn-sm rounded-lg px-8 shadow-sm font-bold uppercase tracking-widest text-[10px]">Go to Files</NuxtLink>
     </div>

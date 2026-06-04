@@ -488,7 +488,7 @@ function formatProgress(start: number, stop: number) {
           <div v-else class="flex flex-col items-center justify-center h-[60vh] text-center opacity-30">
             <Icon name="mdi:television-play" class="w-20 h-20 mb-6" />
             <h2 class="text-xl font-bold uppercase tracking-widest">Select a channel</h2>
-            <p class="font-bold text-[10px] uppercase tracking-widest mt-2">Enjoy your integrated media cluster</p>
+            <p class="font-bold text-[10px] uppercase tracking-widest mt-2">Enjoy your Live TV</p>
           </div>
         </div>
       </div>

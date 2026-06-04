@@ -807,7 +807,7 @@ async function logout() {
                    :disabled="isSavingTags"
                  >
                    <Icon name="mdi:tag-plus" class="w-4 h-4" />
-                   Establish Tag
+                   Create Tag
                  </button>
                </div>
              </div>
@@ -877,7 +877,7 @@ async function logout() {
                   :disabled="isScanningStorage"
                  >
                    <Icon name="mdi:magnify-scan" class="w-4 h-4" :class="{ 'animate-pulse': isScanningStorage }" />
-                   <span class="text-[9px] font-bold uppercase tracking-widest">{{ isScanningStorage ? 'Scanning...' : 'Scan Cluster' }}</span>
+                   <span class="text-[9px] font-bold uppercase tracking-widest">{{ isScanningStorage ? 'Scanning...' : 'Scan Storage' }}</span>
                  </button>
                </div>
 
@@ -904,7 +904,7 @@ async function logout() {
       <!-- System Info -->
       <footer class="pt-8 opacity-20 flex flex-col items-center gap-2">
          <div class="w-10 h-px bg-base-content"></div>
-         <p class="text-[8px] font-bold uppercase tracking-[0.4em]">ClyoCloud v{{ useRuntimeConfig().public.version }} • Core Terminal</p>
+         <p class="text-[8px] font-bold uppercase tracking-[0.4em]">ClyoCloud - v{{ useRuntimeConfig().public.version }}</p>
       </footer>
     </main>
   </div>

@@ -1342,10 +1342,10 @@ const toggleFavourite = async (file: File) => {
         <div v-else-if="showNewTagForm" class="space-y-4">
           <div class="form-control">
             <label class="label mb-0.5"><span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Tag Name</span></label>
-            <input v-model="newTagName" type="text" placeholder="Identity Label..." class="input input-bordered w-full bg-base-100 font-bold text-xs h-10 rounded-lg" />
+            <input v-model="newTagName" type="text" placeholder="Work, Private..." class="input input-bordered w-full bg-base-100 font-bold text-xs h-10 rounded-lg" />
           </div>
           <div class="form-control">
-            <label class="label mb-0.5"><span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Identity Color</span></label>
+            <label class="label mb-0.5"><span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Tag Color</span></label>
             <div class="flex gap-2">
               <input v-model="newTagColor" type="color" class="w-10 h-10 rounded-lg cursor-pointer border-none bg-base-200/50" />
               <input v-model="newTagColor" type="text" class="input input-bordered flex-1 bg-base-100 font-mono text-[10px] font-bold h-10 rounded-lg" />

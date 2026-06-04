@@ -141,7 +141,7 @@ onMounted(fetchLogs)
           <div class="bg-base-200/50 p-6 rounded-xl inline-block mb-4 border border-base-content/5">
             <Icon name="mdi:tray-blank-outline" class="w-12 h-12 text-base-content/10" />
           </div>
-          <h3 class="text-base font-bold tracking-tight text-base-content">No logs identified</h3>
+          <h3 class="text-base font-bold tracking-tight text-base-content">No logs found</h3>
           <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest mt-1">Try adjusting filter parameters</p>
         </div>
       </div>

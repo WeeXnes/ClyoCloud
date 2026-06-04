@@ -106,7 +106,7 @@ onMounted(fetchShared)
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search shared items..."
+              placeholder="Search shared files..."
               class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs rounded-lg"
             />
           </div>

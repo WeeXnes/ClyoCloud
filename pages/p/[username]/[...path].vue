@@ -169,7 +169,7 @@ onMounted(fetchFileInfo)
       </div>
 
       <!-- Footer Info -->
-      <p class="mt-8 text-[9px] font-bold uppercase tracking-[0.3em] text-base-content/20">End-to-End Encrypted Cloud Storage</p>
+      <p class="mt-8 text-[9px] font-bold uppercase tracking-[0.3em] text-base-content/20">ClyoCloud - v{{ useRuntimeConfig().public.version }}</p>
     </main>
   </div>
 </template>

@@ -1547,7 +1547,7 @@ const toggleFavourite = async (file: File) => {
         </template>
         <template v-else>
           <h3 class="text-xl font-bold tracking-tight text-base-content">Empty folder</h3>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-2">This space is waiting for your content</p>
+          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-2">Upload files to get started</p>
           <label class="btn btn-primary btn-sm mt-8 px-8 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" for="upload-modal">
             Upload Files
           </label>
@@ -2075,7 +2075,7 @@ const toggleFavourite = async (file: File) => {
           </div>
           <div class="flex flex-col gap-3 mt-10">
             <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="bulkAddTags">Apply Selection</button>
-            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = true">New Identity</button>
+            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = true">New Tag</button>
             <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>

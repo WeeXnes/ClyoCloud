@@ -60,8 +60,8 @@
               <Icon :name="statusIcon" class="w-5 h-5" :class="{ 'animate-pulse': isDownloading }" />
             </div>
             <div>
-              <p class="font-bold text-xs uppercase tracking-wider text-base-content">{{ statusTitle }}</p>
-              <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest">{{ statusSubtitle }}</p>
+              <p class="font-bold text-xs uppercase tracking-wider text-base-content">Retrieving Content</p>
+              <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest">Active Download Job</p>
             </div>
           </div>
           <div class="flex items-center gap-6">

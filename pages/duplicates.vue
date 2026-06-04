@@ -334,12 +334,12 @@ async function cleanSelected() {
            <Icon name="mdi:content-copy" class="w-12 h-12 text-base-content/10" />
         </div>
         <div>
-           <h3 class="text-lg font-bold tracking-tight text-base-content">Redundancy Check Required</h3>
-           <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest max-w-xs mt-2 mx-auto leading-relaxed">Begin storage analysis to identify exact file duplicates across your entire cloud library.</p>
+           <h3 class="text-lg font-bold tracking-tight text-base-content">Duplicate Scanner</h3>
+           <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest max-w-xs mt-2 mx-auto leading-relaxed">Scan your storage to identify and remove identical files.</p>
         </div>
-        <button class="btn btn-primary btn-wide btn-sm h-11 rounded-lg shadow-sm gap-2 font-bold uppercase tracking-widest text-[10px]" @click="fetchDuplicates">
+        <button class="btn btn-primary btn-wide btn-sm h-11 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="fetchDuplicates">
            <Icon name="mdi:magnify-scan" class="w-4 h-4" />
-           Begin Analysis
+           Scan Storage
         </button>
       </div>
     </main>
@@ -358,3 +358,4 @@ async function cleanSelected() {
   border-radius: 10px;
 }
 </style>
+

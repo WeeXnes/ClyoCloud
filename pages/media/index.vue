@@ -444,7 +444,7 @@ function setPage(page: number | string) {
             {{ page }}
           </button>
         </div>
-        <span class="sm:hidden text-[10px] font-bold uppercase tracking-widest text-base-content/40">Page {{ currentPage }} / {{ totalPages }}</span>
+        <span class="sm:hidden text-[10px] font-bold uppercase tracking-widest text-base-content/40">Page {{ currentPage }} of {{ totalPages }}</span>
 
         <button
           @click="nextPage"

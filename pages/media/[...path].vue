@@ -648,9 +648,9 @@ watch(() => route.params.path, () => {
              <div class="bg-base-200/50 p-8 rounded-xl mb-6 border border-base-content/5">
                <Icon name="mdi:movie-off-outline" class="w-16 h-16 text-base-content/10" />
              </div>
-             <h2 class="text-xl font-bold text-base-content uppercase tracking-widest">Media Identifier Fault</h2>
-             <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest max-w-sm mt-2 leading-relaxed">The requested media signature could not be localized within the data cluster.</p>
-             <NuxtLink to="/media" class="btn btn-primary btn-sm mt-8 px-8 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]">Return to Registry</NuxtLink>
+             <h2 class="text-xl font-bold text-base-content uppercase tracking-widest">Video not found</h2>
+             <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest max-w-sm mt-2 leading-relaxed">The requested video could not be found in your library.</p>
+             <NuxtLink to="/media" class="btn btn-primary btn-sm mt-8 px-8 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]">Return to Library</NuxtLink>
           </div>
         </div>
 
@@ -812,7 +812,7 @@ watch(() => route.params.path, () => {
           </div>
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Visual Chroma</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Tag Color</span>
             </label>
             <div class="flex gap-3 items-center">
               <input
@@ -855,7 +855,7 @@ watch(() => route.params.path, () => {
           </div>
           <div class="flex flex-col gap-2 mt-10">
             <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTag">Apply Selection</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = true">New Identity</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = true">New Tag</button>
             <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>

@@ -1,161 +1,3 @@
-<script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-
-interface Stats {
-  used: number
-  total: number
-  free: number
-  drives: Array<{
-    mount: string
-    label: string
-    total: number
-    used: number
-    available: number
-    use: number
-  }>
-  ram: {
-    total: number
-    used: number
-    free: number
-  }
-  cpu: {
-    model: string
-    cores: number
-    load: number
-  }
-  username: string
-}
-
-interface ActivityEntry {
-  action: string
-  path: string
-  timestamp: number
-  details?: string
-}
-
-const stats = ref<Stats | null>(null)
-const activities = ref<ActivityEntry[]>([])
-const storageMapData = ref<any>(null)
-const isLoading = ref(true)
-let refreshInterval: any = null
-
-const fetchStats = async (silent = false) => {
-  if (!silent) isLoading.value = true
-  try {
-    const [statsData, activityData, storageMap] = await Promise.all([
-      $fetch<Stats>('/api/stats'),
-      $fetch<ActivityEntry[]>('/api/activity'),
-      $fetch<any>('/api/storage-map')
-    ])
-    stats.value = statsData
-    activities.value = activityData
-    storageMapData.value = storageMap
-  } catch (err) {
-    console.error('Failed to fetch dashboard data:', err)
-  } finally {
-    if (!silent) isLoading.value = false
-  }
-}
-
-// Treemap Logic
-const hoveredNode = ref<any>(null)
-
-const getFlattenedNodes = (node: any, depth: number = 0): any[] => {
-  if (!node || !node.children) return []
-  
-  // Only show top 2 levels in treemap for performance and clarity
-  if (depth > 1) return []
-
-  return node.children.map((child: any) => ({
-    ...child,
-    depth
-  }))
-}
-
-const treemapNodes = computed(() => {
-  if (!storageMapData.value) return []
-  const topLevel = storageMapData.value.children || []
-  // Filter out very small items (less than 1% of total) to avoid clutter
-  const totalSize = storageMapData.value.size
-  return topLevel
-    .filter((n: any) => n.size > totalSize * 0.005)
-    .slice(0, 12) // Limit to top 12 items for clean UI
-})
-
-const getTreemapColor = (index: number) => {
-  const colors = [
-    'bg-primary', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 
-    'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-indigo-500'
-  ]
-  return colors[index % colors.length]
-}
-
-const getActionIcon = (action: string) => {
-  switch (action) {
-    case 'UPLOAD': return 'mdi:cloud-upload'
-    case 'DELETE': return 'mdi:delete'
-    case 'RENAME': return 'mdi:pencil'
-    case 'MKDIR': return 'mdi:folder-plus'
-    case 'TAG': return 'mdi:tag'
-    case 'SHARE': return 'mdi:share-variant'
-    case 'FAVORITE': return 'mdi:star'
-    default: return 'mdi:history'
-  }
-}
-
-const getActionColor = (action: string) => {
-  switch (action) {
-    case 'UPLOAD': return 'text-blue-500 bg-blue-500/10'
-    case 'DELETE': return 'text-red-500 bg-red-500/10'
-    case 'RENAME': return 'text-orange-500 bg-orange-500/10'
-    case 'MKDIR': return 'text-purple-500 bg-purple-500/10'
-    case 'TAG': return 'text-primary bg-primary/10'
-    case 'SHARE': return 'text-success bg-success/10'
-    case 'FAVORITE': return 'text-orange-400 bg-orange-400/10'
-    default: return 'text-base-content/40 bg-base-content/5'
-  }
-}
-
-const formatTime = (timestamp: number) => {
-  const diff = Date.now() - timestamp
-  if (diff < 60000) return 'Just now'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
-  return new Date(timestamp).toLocaleDateString()
-}
-
-const formatSize = (bytes: number) => {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let value = bytes
-  let unitIndex = 0
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024
-    unitIndex++
-  }
-  return `${value.toFixed(1)} ${units[unitIndex]}`
-}
-
-const ramPercentage = computed(() => {
-  if (!stats.value?.ram) return 0
-  return Math.min(100, Math.round((stats.value.ram.used / stats.value.ram.total) * 100))
-})
-
-const cpuPercentage = computed(() => {
-  if (!stats.value?.cpu) return 0
-  return Math.min(100, Math.round(stats.value.cpu.load))
-})
-
-onMounted(() => {
-  fetchStats()
-  // Refresh every 10 seconds
-  refreshInterval = setInterval(() => fetchStats(true), 10000)
-})
-
-onUnmounted(() => {
-  if (refreshInterval) clearInterval(refreshInterval)
-})
-</script>
-
 <template>
   <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
     <!-- Header Area -->
@@ -394,7 +236,7 @@ onUnmounted(() => {
           <div class="flex flex-col gap-4">
             <div class="flex items-center gap-2 px-1">
                <Icon name="mdi:chevron-right" class="text-base-content/30 w-4 h-4" />
-               <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40">Quick Terminal</h2>
+               <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40">Quick Actions</h2>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -474,10 +316,145 @@ onUnmounted(() => {
 
     <footer class="w-full py-6 px-8 flex flex-col items-center gap-2 mt-auto">
        <div class="flex items-center gap-4 opacity-20">
-          <span class="text-[8px] font-bold uppercase tracking-[0.4em]">ClyoCloud Kernel</span>
-          <div class="w-1 h-1 rounded-full bg-base-content"></div>
-          <span class="text-[8px] font-bold uppercase tracking-[0.4em]">Node v{{ useRuntimeConfig().public.version }}</span>
+          <span class="text-[8px] font-bold uppercase tracking-[0.4em]">ClyoCloud - v{{ useRuntimeConfig().public.version }}</span>
        </div>
     </footer>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+
+interface Stats {
+  used: number
+  total: number
+  free: number
+  drives: Array<{
+    mount: string
+    label: string
+    total: number
+    used: number
+    available: number
+    use: number
+  }>
+  cpu: {
+    model: string
+    cores: number
+    load: number
+    load_raw: number
+  }
+  ram: {
+    total: number
+    used: number
+    free: number
+  }
+  username: string
+}
+
+interface ActivityEntry {
+  action: string
+  path: string
+  timestamp: number
+  details?: string
+}
+
+const stats = ref<Stats | null>(null)
+const activities = ref<ActivityEntry[]>([])
+const storageMapData = ref<{ name: string; size: number; children: any[] } | null>(null)
+const isLoading = ref(true)
+const hoveredNode = ref<any>(null)
+let pollingInterval: any = null
+
+async function fetchData() {
+  try {
+    const [statsRes, activityRes, storageRes] = await Promise.all([
+      fetch('/api/stats', { credentials: 'include' }),
+      fetch('/api/activity', { credentials: 'include' }),
+      fetch('/api/storage-map', { credentials: 'include' })
+    ])
+    
+    if (statsRes.ok) stats.value = await statsRes.json()
+    if (activityRes.ok) activities.value = await activityRes.json()
+    if (storageRes.ok) storageMapData.value = await storageRes.json()
+  } catch (err) {
+    console.error('Dashboard fetch error:', err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchData()
+  pollingInterval = setInterval(fetchData, 5000)
+})
+
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval)
+})
+
+const cpuPercentage = computed(() => stats.value ? Math.round(stats.value.cpu.load_raw * 100) : 0)
+const ramPercentage = computed(() => {
+  if (!stats.value) return 0
+  return Math.round((stats.value.ram.used / stats.value.ram.total) * 100)
+})
+
+const treemapNodes = computed(() => {
+  if (!storageMapData.value) return []
+  return [...storageMapData.value.children]
+    .sort((a, b) => b.size - a.size)
+    .slice(0, 12)
+})
+
+function formatSize(bytes: number): string {
+  if (!bytes) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let val = bytes
+  let i = 0
+  while (val >= 1024 && i < units.length - 1) {
+    val /= 1024
+    i++
+  }
+  return `${val.toFixed(1)} ${units[i]}`
+}
+
+function formatTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function getActionColor(action: string) {
+  const a = action.toLowerCase()
+  if (a.includes('upload') || a.includes('create')) return 'bg-success/10 text-success'
+  if (a.includes('delete')) return 'bg-error/10 text-error'
+  if (a.includes('move') || a.includes('rename')) return 'bg-primary/10 text-primary'
+  return 'bg-base-content/10 text-base-content/40'
+}
+
+function getActionIcon(action: string) {
+  const a = action.toLowerCase()
+  if (a.includes('upload')) return 'mdi:cloud-upload'
+  if (a.includes('delete')) return 'mdi:delete'
+  if (a.includes('move')) return 'mdi:folder-move'
+  if (a.includes('rename')) return 'mdi:pencil'
+  if (a.includes('create')) return 'mdi:folder-plus'
+  return 'mdi:history'
+}
+
+function getTreemapColor(index: number) {
+  const colors = [
+    'bg-primary', 
+    'bg-secondary', 
+    'bg-accent', 
+    'bg-blue-500', 
+    'bg-purple-500', 
+    'bg-orange-500', 
+    'bg-green-500', 
+    'bg-rose-500'
+  ]
+  return colors[index % colors.length]
+}
+</script>
