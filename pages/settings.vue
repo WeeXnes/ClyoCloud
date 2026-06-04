@@ -398,17 +398,18 @@ async function logout() {
 
     <main class="w-full max-w-[1200px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         
-        <!-- Account Security -->
-        <div class="lg:col-span-5 space-y-6">
+        <!-- Left Column: Core & System -->
+        <div class="space-y-6">
           <div class="flex items-center gap-3 px-2">
              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                <Icon name="mdi:shield-lock-outline" class="text-primary w-5 h-5" />
              </div>
-             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Security</h2>
+             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Security & Core</h2>
           </div>
 
+          <!-- Password Section -->
           <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
                <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Update Password</h3>
@@ -560,78 +561,17 @@ async function logout() {
             </div>
           </section>
 
-          <!-- Quick Actions / Danger Zone -->
-          <section class="bg-error/5 rounded-xl border border-error/10 p-8 sm:p-10">
-            <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-error/60 mb-6">Session Control</h3>
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div class="text-center sm:text-left">
-                <p class="text-sm font-bold tracking-tight text-base-content">Logout everywhere</p>
-                <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Disconnect from this device</p>
-              </div>
-              <button class="btn btn-error btn-outline h-11 px-8 rounded-lg font-bold uppercase text-[10px] tracking-widest" @click="logout">
-                Sign Out
-              </button>
-            </div>
-          </section>
-        </div>
-
-        <!-- Metadata & Tags -->
-        <div class="lg:col-span-7 space-y-6">
-          <div class="flex items-center gap-3 px-2">
-             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-               <Icon name="mdi:palette-outline" class="text-primary w-5 h-5" />
-             </div>
-             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Personalization</h2>
-          </div>
-
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-            <div class="p-8 sm:p-10">
-              <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">UI Visual Theme</h3>
-              <p class="text-[11px] font-bold text-base-content/50 mb-8 leading-relaxed">
-                Choose a visual identity that matches your style. This will update the colors and mood of the entire application.
-              </p>
-
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div 
-                  v-for="t in ['onedev', 'light', 'dark', 'dracula', 'forest', 'retro', 'cyberpunk', 'valentine', 'aqua', 'nord', 'sunset', 'dim', 'coffee']" 
-                  :key="t"
-                  class="relative group cursor-pointer"
-                  @click="theme = t; saveUserSettings()"
-                >
-                  <div 
-                    class="h-20 rounded-lg border transition-all overflow-hidden flex flex-col"
-                    :class="theme === t ? 'border-primary ring-2 ring-primary/20 shadow-sm' : 'border-base-content/10 hover:border-base-content/30'"
-                    :data-theme="t"
-                  >
-                    <div class="flex-1 bg-base-100 p-2">
-                       <div class="flex gap-1">
-                          <div class="w-2 h-2 rounded-full bg-primary"></div>
-                          <div class="w-2 h-2 rounded-full bg-secondary"></div>
-                          <div class="w-2 h-2 rounded-full bg-accent"></div>
-                       </div>
-                    </div>
-                    <div class="bg-base-200 p-2 text-[8px] font-bold uppercase tracking-widest text-center text-base-content/60">
-                      {{ t }}
-                    </div>
-                  </div>
-                  <div v-if="theme === t" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary text-primary-content rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
-                    <Icon name="mdi:check" class="w-3 h-3" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <div class="flex items-center gap-3 px-2 pt-4">
+          <!-- TV Integration -->
+          <div class="flex items-center gap-3 px-2 pt-2">
              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                <Icon name="mdi:television-classic" class="text-primary w-5 h-5" />
              </div>
-             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">TV Integration</h2>
+             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">TV Connection</h2>
           </div>
 
           <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
-               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">TVHeadend Connection</h3>
+               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">TVHeadend Endpoint</h3>
                <div class="space-y-4">
                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <div class="form-control">
@@ -691,26 +631,20 @@ async function logout() {
                    >
                      <Icon v-if="!isSavingSettings" name="mdi:content-save-outline" class="w-4 h-4" />
                      <span v-else class="loading loading-spinner loading-xs"></span>
-                     Save Connection Settings
+                     Save Connection
                    </button>
                  </div>
                </div>
              </div>
           </section>
 
-          <div class="flex items-center gap-3 px-2 pt-4">
-             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-               <Icon name="mdi:tag-multiple-outline" class="text-primary w-5 h-5" />
-             </div>
-             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Organization</h2>
-          </div>
-
+          <!-- Download Configuration -->
           <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
-               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Download Configuration</h3>
+               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Download Preferences</h3>
                <div class="form-control">
                  <label class="label py-1">
-                   <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Custom Download Path</span>
+                   <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Custom Retrieval Path</span>
                  </label>
                  <div class="flex flex-col sm:flex-row gap-3">
                    <div class="flex-1 flex items-center bg-base-200/50 border border-base-content/10 rounded-lg focus-within:bg-base-100 focus-within:ring-1 focus-within:ring-primary/30 transition-all overflow-hidden px-4">
@@ -734,215 +668,81 @@ async function logout() {
                      Save
                    </button>
                  </div>
-                 <p class="mt-3 text-[9px] font-bold text-base-content/40 px-2 italic uppercase tracking-wider">Relative to your root storage folder. Leave empty for root.</p>
+                 <p class="mt-3 text-[9px] font-bold text-base-content/40 px-2 italic uppercase tracking-wider">Relative to your root storage. Leave empty for root.</p>
                </div>
              </div>
           </section>
 
+          <!-- Danger Zone -->
+          <section class="bg-error/5 rounded-xl border border-error/10 p-8 sm:p-10">
+            <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-error/60 mb-6">Session Control</h3>
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div class="text-center sm:text-left">
+                <p class="text-sm font-bold tracking-tight text-base-content">Terminate Session</p>
+                <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Disconnect from media cluster</p>
+              </div>
+              <button class="btn btn-error btn-outline h-11 px-8 rounded-lg font-bold uppercase text-[10px] tracking-widest" @click="logout">
+                Sign Out
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <!-- Right Column: Features & Maintenance -->
+        <div class="space-y-6">
+          <div class="flex items-center gap-3 px-2">
+             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+               <Icon name="mdi:palette-outline" class="text-primary w-5 h-5" />
+             </div>
+             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Interface</h2>
+          </div>
+
+          <!-- Themes Section -->
           <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <div class="flex items-center justify-between mb-8">
-                 <div>
-                   <h3 class="text-base font-bold tracking-tight text-base-content">Storage Health</h3>
-                   <p class="text-[11px] font-bold text-base-content/40">Optimize your storage space</p>
-                 </div>
-                 <button 
-                  class="btn btn-ghost btn-sm gap-2 border border-base-content/10 bg-base-100/50 rounded-lg h-9"
-                  @click="fetchCleanupData"
-                  :disabled="isScanningStorage"
-                 >
-                   <Icon name="mdi:magnify-scan" class="w-4 h-4" :class="{ 'animate-pulse': isScanningStorage }" />
-                   <span class="text-[9px] font-bold uppercase tracking-widest">{{ isScanningStorage ? 'Scanning...' : 'Scan Storage' }}</span>
-                 </button>
-               </div>
+            <div class="p-8 sm:p-10">
+              <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Visual Identity</h3>
+              <p class="text-[11px] font-bold text-base-content/50 mb-8 leading-relaxed">
+                Customize the visual Chroma of your workspace.
+              </p>
 
-               <div v-if="!cleanupData && !isScanningStorage" class="bg-base-200/30 p-10 rounded-xl border border-dashed border-base-content/10 flex flex-col items-center justify-center text-center gap-4">
-                  <div class="w-12 h-12 rounded-lg bg-base-100 flex items-center justify-center border border-base-content/5">
-                    <Icon name="mdi:broom" class="w-6 h-6 text-base-content/20" />
-                  </div>
-                  <div>
-                    <p class="text-xs font-bold tracking-tight text-base-content">Identify Storage Hogs</p>
-                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Scan to find large and forgotten files</p>
-                  </div>
-                  <button class="btn btn-primary btn-sm px-8 rounded-lg mt-2 font-bold text-[9px] uppercase tracking-widest" @click="fetchCleanupData">Begin Scan</button>
-               </div>
-
-               <div v-else-if="cleanupData" class="space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <!-- Large Files Section -->
-                  <div>
-                    <div class="flex items-center gap-2 mb-4 px-2">
-                       <Icon name="mdi:weight" class="w-3.5 h-3.5 text-error/60" />
-                       <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/40">Large Files (>500MB)</span>
-                    </div>
-                    <div class="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                       <div v-for="file in cleanupData.largeFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
-                          <div class="min-w-0 flex-1">
-                             <p class="text-[11px] font-bold truncate text-base-content">{{ file.name }}</p>
-                             <p class="text-[9px] font-bold text-base-content/30 uppercase truncate">{{ file.fullPath }}</p>
-                          </div>
-                          <div class="flex items-center gap-4 shrink-0">
-                             <span class="text-[11px] font-bold text-error/80">{{ formatSize(file.size) }}</span>
-                             <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
-                               <Icon name="mdi:delete-outline" class="w-4 h-4" />
-                             </button>
-                          </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div 
+                  v-for="t in ['onedev', 'light', 'dark', 'dracula', 'forest', 'retro', 'cyberpunk', 'valentine', 'aqua', 'nord', 'sunset', 'dim', 'coffee']" 
+                  :key="t"
+                  class="relative group cursor-pointer"
+                  @click="theme = t; saveUserSettings()"
+                >
+                  <div 
+                    class="h-20 rounded-lg border transition-all overflow-hidden flex flex-col"
+                    :class="theme === t ? 'border-primary ring-2 ring-primary/20 shadow-sm' : 'border-base-content/10 hover:border-base-content/30'"
+                    :data-theme="t"
+                  >
+                    <div class="flex-1 bg-base-100 p-2">
+                       <div class="flex gap-1">
+                          <div class="w-2 h-2 rounded-full bg-primary"></div>
+                          <div class="w-2 h-2 rounded-full bg-secondary"></div>
+                          <div class="w-2 h-2 rounded-full bg-accent"></div>
                        </div>
-                       <div v-if="cleanupData.largeFiles.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No large files identified</div>
+                    </div>
+                    <div class="bg-base-200 p-2 text-[8px] font-bold uppercase tracking-widest text-center text-base-content/60">
+                      {{ t }}
                     </div>
                   </div>
-
-                  <!-- Old Files Section -->
-                  <div>
-                    <div class="flex items-center gap-2 mb-4 px-2">
-                       <Icon name="mdi:history" class="w-3.5 h-3.5 text-warning/60" />
-                       <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/40">Forgotten Files (>6 months)</span>
-                    </div>
-                    <div class="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                       <div v-for="file in cleanupData.oldFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
-                          <div class="min-w-0 flex-1">
-                             <p class="text-[11px] font-bold truncate text-base-content">{{ file.name }}</p>
-                             <p class="text-[9px] font-bold text-base-content/30 uppercase truncate">{{ file.fullPath }}</p>
-                          </div>
-                          <div class="flex items-center gap-4 shrink-0">
-                             <span class="text-[11px] font-bold text-base-content/40">{{ formatRelativeDate(file.lastModified) }}</span>
-                             <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
-                               <Icon name="mdi:delete-outline" class="w-4 h-4" />
-                             </button>
-                          </div>
-                       </div>
-                       <div v-if="cleanupData.oldFiles.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No old files identified</div>
-                    </div>
+                  <div v-if="theme === t" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary text-primary-content rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
+                    <Icon name="mdi:check" class="w-3 h-3" />
                   </div>
-               </div>
-             </div>
+                </div>
+              </div>
+            </div>
           </section>
 
+          <!-- Predefined Tags -->
           <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
                <div class="flex items-center justify-between mb-8">
                  <div>
-                   <h3 class="text-base font-bold tracking-tight text-base-content">Bulk Preview Generation</h3>
-                   <p class="text-[11px] font-bold text-base-content/40">Generate previews for all videos at once</p>
-                 </div>
-               </div>
-
-               <div class="space-y-6">
-                 <p class="text-[11px] font-bold text-base-content/50 leading-relaxed">
-                   Scan your entire storage and generate animated GIF previews for all video files. This ensures previews are ready without having to hover over each video manually.
-                 </p>
-
-                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-content/5">
-                    <div>
-                      <p class="text-xs font-bold uppercase tracking-widest text-base-content">Mobile Auto-Preview</p>
-                      <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-wider">Automatically play previews when scrolling on mobile</p>
-                    </div>
-                    <input 
-                      type="checkbox" 
-                      class="toggle toggle-primary toggle-sm rounded-sm" 
-                      v-model="mobileAutoPreview" 
-                      @change="saveUserSettings"
-                    />
-                 </div>
-
-                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-content/5">
-                    <div>
-                      <p class="text-xs font-bold uppercase tracking-widest text-base-content">Experimental Mode</p>
-                      <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-wider">Unlock advanced and potentially unstable settings</p>
-                    </div>
-                    <input 
-                      type="checkbox" 
-                      class="toggle toggle-secondary toggle-sm rounded-sm" 
-                      v-model="experimentalMode" 
-                      @change="saveUserSettings"
-                    />
-                 </div>
-
-                 <div class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-xs font-bold uppercase tracking-widest text-base-content">Max Concurrent Processes</p>
-                        <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-wider">Speed up generation with more parallel workers</p>
-                      </div>
-                      <span class="badge badge-primary font-bold text-[10px]">{{ maxConcurrentPreviews }}</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="1" 
-                      :max="experimentalMode ? 200 : 10" 
-                      v-model.number="maxConcurrentPreviews" 
-                      class="range range-primary range-xs" 
-                      @change="saveUserSettings"
-                    />
-                    <div class="flex justify-between px-1 text-[8px] font-bold text-base-content/20 uppercase tracking-tighter">
-                      <span>Quiet</span>
-                      <span>Balanced</span>
-                      <span>{{ experimentalMode ? 'Extreme' : 'Aggressive' }}</span>
-                    </div>
-                 </div>
-
-                 <div v-if="generationResults && (generationResults.total > 0 || generationResults.isProcessing)" class="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                   <div v-if="generationResults.isProcessing" class="space-y-2">
-                      <div class="flex justify-between items-end">
-                        <span class="text-[9px] font-bold uppercase tracking-widest text-primary">Processing Library...</span>
-                        <span class="text-xs font-bold text-base-content">{{ Math.round((generationResults.processed / generationResults.total) * 100) }}%</span>
-                      </div>
-                      <progress class="progress progress-primary w-full h-2 rounded-full bg-base-200" :value="generationResults.processed" :max="generationResults.total"></progress>
-                      <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest text-center">
-                        {{ generationResults.processed }} of {{ generationResults.total }} videos analyzed
-                      </p>
-                   </div>
-
-                   <div class="bg-base-200/30 p-4 rounded-lg border border-base-content/5 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div class="flex flex-col">
-                      <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Total</span>
-                      <span class="text-sm font-bold text-base-content">{{ generationResults.total }}</span>
-                    </div>
-                    <div class="flex flex-col">
-                      <span class="text-[8px] font-bold uppercase tracking-widest text-success/60">Generated</span>
-                      <span class="text-sm font-bold text-success">{{ generationResults.generated }}</span>
-                    </div>
-                    <div class="flex flex-col">
-                      <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
-                      <span class="text-sm font-bold text-base-content">{{ generationResults.skipped }}</span>
-                    </div>
-                    <div class="flex flex-col">
-                      <span class="text-[8px] font-bold uppercase tracking-widest text-error/60">Errors</span>
-                      <span class="text-sm font-bold text-error">{{ generationResults.errors }}</span>
-                    </div>
-                   </div>
-                 </div>
-
-                 <div class="flex flex-col sm:flex-row gap-3">
-                   <button 
-                     class="btn btn-primary flex-1 h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
-                     @click="generateAllPreviews" 
-                     :disabled="isGeneratingPreviews || isClearingPreviews"
-                   >
-                     <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-4 h-4" />
-                     <span v-else class="loading loading-spinner loading-xs"></span>
-                     {{ isGeneratingPreviews ? 'Generating...' : 'Generate All' }}
-                   </button>
-
-                   <button 
-                     class="btn btn-ghost border border-error/20 text-error flex-1 h-12 rounded-lg gap-2 hover:bg-error/10 hover:border-error font-bold text-[10px] uppercase tracking-widest" 
-                     @click="clearAllPreviews" 
-                     :disabled="isGeneratingPreviews || isClearingPreviews"
-                   >
-                     <Icon v-if="!isClearingPreviews" name="mdi:delete-sweep-outline" class="w-4 h-4" />
-                     <span v-else class="loading loading-spinner loading-xs"></span>
-                     Clear All Previews
-                   </button>
-                 </div>
-               </div>
-             </div>
-          </section>
-
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <div class="flex items-center justify-between mb-8">
-                 <div>
-                   <h3 class="text-base font-bold tracking-tight text-base-content">Predefined Tags</h3>
-                   <p class="text-[11px] font-bold text-base-content/40">Standard labels for your library</p>
+                   <h3 class="text-base font-bold tracking-tight text-base-content">Tag Library</h3>
+                   <p class="text-[11px] font-bold text-base-content/40">Standard labels for classification</p>
                  </div>
                  <div class="bg-base-200/50 px-3 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest text-base-content/40 border border-base-content/5">
                    {{ tags.length }} Active
@@ -965,16 +765,7 @@ async function logout() {
                  </transition-group>
                  <div v-if="tags.length === 0" class="w-full h-full flex flex-col items-center justify-center py-4 gap-2 opacity-30">
                     <Icon name="mdi:tag-off-outline" class="w-8 h-8" />
-                    <p class="text-[9px] font-bold uppercase tracking-widest text-center">No standard tags established</p>
-                 </div>
-               </div>
-
-               <div class="relative py-4 mb-6">
-                 <div class="absolute inset-0 flex items-center">
-                   <div class="w-full border-t border-base-content/5"></div>
-                 </div>
-                 <div class="relative flex justify-center">
-                   <span class="bg-base-100 px-4 text-[8px] font-bold uppercase tracking-[0.3em] text-base-content/20">Establish New Identity</span>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-center">No identities established</p>
                  </div>
                </div>
 
@@ -1018,6 +809,92 @@ async function logout() {
                    <Icon name="mdi:tag-plus" class="w-4 h-4" />
                    Establish Tag
                  </button>
+               </div>
+             </div>
+          </section>
+
+          <!-- Previews Section -->
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
+             <div class="p-8 sm:p-10">
+               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Media Processing</h3>
+
+               <div class="space-y-6">
+                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-content/5">
+                    <div>
+                      <p class="text-xs font-bold uppercase tracking-widest text-base-content">Mobile Auto-Preview</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      class="toggle toggle-primary toggle-sm rounded-sm" 
+                      v-model="mobileAutoPreview" 
+                      @change="saveUserSettings"
+                    />
+                 </div>
+
+                 <div class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-xs font-bold uppercase tracking-widest text-base-content">Max Concurrent Threads</p>
+                      </div>
+                      <span class="badge badge-primary font-bold text-[10px]">{{ maxConcurrentPreviews }}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1" 
+                      :max="experimentalMode ? 200 : 10" 
+                      v-model.number="maxConcurrentPreviews" 
+                      class="range range-primary range-xs" 
+                      @change="saveUserSettings"
+                    />
+                 </div>
+
+                 <div class="flex flex-col sm:flex-row gap-3">
+                   <button 
+                     class="btn btn-primary flex-1 h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+                     @click="generateAllPreviews" 
+                     :disabled="isGeneratingPreviews || isClearingPreviews"
+                   >
+                     <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-4 h-4" />
+                     <span v-else class="loading loading-spinner loading-xs"></span>
+                     Initialize All
+                   </button>
+                 </div>
+               </div>
+             </div>
+          </section>
+
+          <!-- Storage Health -->
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
+             <div class="p-8 sm:p-10">
+               <div class="flex items-center justify-between mb-8">
+                 <div>
+                   <h3 class="text-base font-bold tracking-tight text-base-content">Storage Maintenance</h3>
+                   <p class="text-[11px] font-bold text-base-content/40">Optimize cluster efficiency</p>
+                 </div>
+                 <button 
+                  class="btn btn-ghost btn-sm gap-2 border border-base-content/10 bg-base-100/50 rounded-lg h-9"
+                  @click="fetchCleanupData"
+                  :disabled="isScanningStorage"
+                 >
+                   <Icon name="mdi:magnify-scan" class="w-4 h-4" :class="{ 'animate-pulse': isScanningStorage }" />
+                   <span class="text-[9px] font-bold uppercase tracking-widest">{{ isScanningStorage ? 'Scanning...' : 'Scan Cluster' }}</span>
+                 </button>
+               </div>
+
+               <div v-if="cleanupData" class="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <!-- Large Files Section -->
+                  <div class="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                       <div v-for="file in cleanupData.largeFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
+                          <div class="min-w-0 flex-1">
+                             <p class="text-[11px] font-bold truncate text-base-content">{{ file.name }}</p>
+                             <p class="text-[9px] font-bold text-base-content/30 uppercase truncate">{{ formatSize(file.size) }}</p>
+                          </div>
+                          <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
+                            <Icon name="mdi:delete-outline" class="w-4 h-4" />
+                          </button>
+                       </div>
+                       <div v-if="cleanupData.largeFiles.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No optimization targets</div>
+                  </div>
                </div>
              </div>
           </section>
