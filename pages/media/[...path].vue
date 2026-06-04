@@ -584,7 +584,7 @@ watch(() => route.params.path, () => {
                      @click="toggleFavourite(currentVideo)"
                    >
                      <Icon :name="currentVideo.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
-                     {{ currentVideo.meta.isFavourite ? 'Favourite' : 'Favourite' }}
+                     {{ currentVideo.meta.isFavourite ? 'Favourited' : 'Favourite' }}
                    </button>
                    <button class="btn btn-sm btn-ghost gap-2 rounded-lg border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest" @click="downloadVideo">
                      <Icon name="mdi:download" class="w-4 h-4 text-success" />

@@ -287,7 +287,7 @@ function setPage(page: number | string) {
                 <Icon name="mdi:play-box-multiple-outline" class="text-primary w-5 h-5" />
                 Media Library
               </h1>
-              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest pl-1">{{ totalVideosCount }} elements in cluster</p>
+              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest pl-1">{{ totalVideosCount }} media files</p>
             </div>
           </div>
 
@@ -298,7 +298,7 @@ function setPage(page: number | string) {
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search media signatures..."
+              placeholder="Search media..."
               class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs rounded-lg"
             />
           </div>

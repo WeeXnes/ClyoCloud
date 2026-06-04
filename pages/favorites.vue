@@ -306,6 +306,26 @@ const bulkAddTags = async () => {
     }
 
     createNotification('Tags added successfully', NotificationType.SUCCESS)
+
+    // Automatically add new tag to predefined tags
+    if (showNewTagForm.value) {
+      const newTag = tagsToAdd[0];
+      const exists = predefinedTags.value.some(t => t.name.toLowerCase() === newTag.name.toLowerCase());
+      if (!exists) {
+        try {
+          const updatedPredefinedTags = [...predefinedTags.value, newTag];
+          await fetch('/api/tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tags: updatedPredefinedTags }),
+          });
+          await fetchPredefinedTags();
+        } catch (tagErr) {
+          console.error('Failed to update predefined tags:', tagErr);
+        }
+      }
+    }
+
     await fetchFavorites()
     closeTagModal()
   } catch (err) {
