@@ -145,11 +145,16 @@
 </template>
 
 <script setup lang="ts">
-import { useState } from 'nuxt/app'
+import { useState, useCookie } from 'nuxt/app'
 import { onMounted, watch } from 'vue'
 
 const user = useState<{ name: string } | null>('user')
-const currentTheme = useState<string>('currentTheme', () => 'onedev')
+const themeCookie = useCookie('theme', { default: () => 'onedev' })
+const currentTheme = useState<string>('currentTheme', () => themeCookie.value)
+
+watch(currentTheme, (newTheme) => {
+  themeCookie.value = newTheme
+})
 
 async function fetchTheme() {
   if (!user.value) return
@@ -172,8 +177,6 @@ onMounted(() => {
 watch(user, (newUser) => {
   if (newUser) {
     fetchTheme()
-  } else {
-    currentTheme.value = 'onedev'
   }
 })
 </script>

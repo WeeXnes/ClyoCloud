@@ -1,6 +1,6 @@
 <!-- pages/login.vue -->
 <template>
-  <div class="min-h-screen bg-base-200 font-sans flex flex-col" data-theme="onedev">
+  <div class="min-h-screen bg-base-200 font-sans flex flex-col">
     <!-- Simple Header -->
     <header class="w-full py-8 px-8 flex justify-center">
       <div class="flex items-center gap-3">
