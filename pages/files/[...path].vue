@@ -512,6 +512,26 @@ const bulkAddTags = async () => {
     }
 
     createNotification('Tags added successfully', NotificationType.SUCCESS)
+
+    // Automatically add new tag to predefined tags
+    if (showNewTagForm.value) {
+      const newTag = tagsToAdd[0];
+      const exists = predefinedTags.value.some(t => t.name.toLowerCase() === newTag.name.toLowerCase());
+      if (!exists) {
+        try {
+          const updatedPredefinedTags = [...predefinedTags.value, newTag];
+          await fetch('/api/tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tags: updatedPredefinedTags }),
+          });
+          await fetchPredefinedTags();
+        } catch (tagErr) {
+          console.error('Failed to update predefined tags:', tagErr);
+        }
+      }
+    }
+
     await fetchFiles()
     closeTagModal()
   } catch (err) {
@@ -2003,80 +2023,84 @@ const toggleFavourite = async (file: File) => {
       </div>
     </div>
 
-    <!-- Tag Modal (Overhauled - matches Media tab) -->
+    <!-- Tag Modal -->
     <div v-if="showTagModal" class="modal modal-open backdrop-blur-md">
-      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-base-content/5">
+      <div class="modal-box rounded-xl shadow-xl p-8 max-w-sm border border-base-content/10">
         <div class="flex items-center gap-3 mb-8">
-          <div class="bg-primary/10 p-3 rounded-2xl">
-            <Icon name="mdi:tag-multiple" class="w-6 h-6 text-primary" />
+          <div class="bg-primary/10 p-2.5 rounded-lg border border-primary/10 text-primary">
+            <Icon name="mdi:tag-multiple" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-black text-xl tracking-tight">Manage Tags</h3>
-            <p class="text-[11px] font-bold text-base-content/40 uppercase tracking-widest">Label your files for quick discovery</p>
+            <h3 class="font-bold text-base tracking-tight text-base-content">Manage Identity</h3>
+            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Establish asset classifications</p>
           </div>
         </div>
 
         <div v-if="taggingProgress" class="text-center py-10">
           <div class="loading loading-spinner loading-lg text-primary mb-4"></div>
-          <p class="font-black text-sm uppercase tracking-widest text-base-content/60">
+          <p class="font-bold text-[10px] uppercase tracking-widest text-base-content/60">
             Applying tags... {{ taggingProgress.current }} / {{ taggingProgress.total }}
           </p>
         </div>
-        <div v-else-if="showNewTagForm" class="space-y-6">
+        <div v-else-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
-            <label class="label mb-1">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Tag Name</span>
+            <label class="label py-1">
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Identity Label</span>
             </label>
             <input
-                v-model="newTagName"
-                type="text"
-                placeholder="Work, Personal, Invoices..."
-                class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+              v-model="newTagName"
+              type="text"
+              placeholder="Archives, Logs, Private..."
+              class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10"
             />
           </div>
           <div class="form-control">
-            <label class="label mb-1">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Color Identity</span>
+            <label class="label py-1">
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Tag Color</span>
             </label>
-            <div class="flex gap-4">
-              <input v-model="newTagColor" type="color" class="w-16 h-12 rounded-xl cursor-pointer border-none bg-base-200/50" />
-              <div class="flex-grow h-12 rounded-xl flex items-center px-4 font-bold text-sm bg-base-200/50 border border-dashed border-base-content/10" :style="{ color: newTagColor }">
-                Preview Style
+            <div class="flex gap-3 items-center">
+              <input
+                v-model="newTagColor"
+                type="color"
+                class="w-11 h-11 rounded-lg cursor-pointer border-none bg-base-200/50"
+              />
+              <div class="flex-grow h-11 rounded-lg flex items-center px-4 font-bold text-[11px] bg-base-200/50 border border-dashed border-base-content/10 uppercase tracking-widest" :style="{ color: newTagColor }">
+                 Style Sample
               </div>
             </div>
           </div>
-          <div class="flex flex-col gap-3 mt-10">
-            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="bulkAddTags">Create & Apply</button>
-            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = false">Use Existing</button>
-            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
+          <div class="flex flex-col gap-2 mt-10">
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="bulkAddTags">Establish & Apply</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = false">Existing Tags</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>
 
-        <div v-else class="space-y-6">
+        <div v-else class="space-y-5">
           <div class="form-control">
-            <label class="label mb-3">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Select Existing Tags</span>
+            <label class="label py-1">
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Select Established</span>
             </label>
-            <div class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+            <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
               <div
-                  v-for="tag in predefinedTags"
-                  :key="tag.name"
-                  class="p-4 rounded-xl cursor-pointer text-center font-bold text-xs transition-all border-2"
-                  :style="{ 
-                    borderColor: tag.color, 
-                    backgroundColor: isTagSelected(tag) ? tag.color : 'transparent',
-                    color: isTagSelected(tag) ? 'white' : tag.color 
-                  }"
-                  @click="toggleTagSelection(tag)"
+                v-for="tag in predefinedTags"
+                :key="tag.name"
+                class="p-3 rounded-lg cursor-pointer text-center font-bold text-[9px] uppercase tracking-wider transition-all border border-base-content/10"
+                :style="{ 
+                  borderColor: isTagSelected(tag) ? tag.color : '',
+                  backgroundColor: isTagSelected(tag) ? tag.color : 'transparent', 
+                  color: isTagSelected(tag) ? 'white' : tag.color
+                }"
+                @click="toggleTagSelection(tag)"
               >
                 {{ tag.name }}
               </div>
             </div>
           </div>
-          <div class="flex flex-col gap-3 mt-10">
-            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="bulkAddTags">Apply Selection</button>
-            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = true">New Tag</button>
-            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
+          <div class="flex flex-col gap-2 mt-10">
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="bulkAddTags">Apply Selection</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = true">New Tag</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>
       </div>

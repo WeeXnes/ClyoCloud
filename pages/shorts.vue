@@ -227,6 +227,26 @@ const addTags = async () => {
     if (!response.ok) throw new Error('Failed to add tags')
 
     currentVisibleVideo.value.meta.tags = updatedTags
+
+    // Automatically add new tag to predefined tags
+    if (showNewTagForm.value) {
+      const newTag = tagsToAdd[0];
+      const exists = predefinedTags.value.some(t => t.name.toLowerCase() === newTag.name.toLowerCase());
+      if (!exists) {
+        try {
+          const updatedPredefinedTags = [...predefinedTags.value, newTag];
+          await fetch('/api/tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tags: updatedPredefinedTags }),
+          });
+          await fetchPredefinedTags();
+        } catch (tagErr) {
+          console.error('Failed to update predefined tags:', tagErr);
+        }
+      }
+    }
+
     createNotification('Tags added successfully', NotificationType.SUCCESS)
     closeTagModal()
   } catch (err) {
@@ -436,21 +456,21 @@ const refresh = () => {
 
     <!-- Tag Modal -->
     <div v-if="showTagModal" class="modal modal-open backdrop-blur-md z-[60]">
-      <div class="modal-box rounded-xl shadow-2xl p-8 max-w-sm border border-white/10 bg-[#0d1117] text-white">
+      <div class="modal-box rounded-xl shadow-xl p-8 max-w-sm border border-white/10 bg-[#0d1117] text-white">
         <div class="flex items-center gap-3 mb-8">
-          <div class="bg-primary/20 p-2.5 rounded-lg border border-primary/10">
-            <Icon name="mdi:tag-multiple" class="w-5 h-5 text-primary" />
+          <div class="bg-primary/10 p-2.5 rounded-lg border border-primary/10 text-primary">
+            <Icon name="mdi:tag-multiple" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-bold text-base tracking-tight">Identity Management</h3>
-            <p class="text-[9px] font-bold opacity-40 uppercase tracking-widest">Classify media content</p>
+            <h3 class="font-bold text-base tracking-tight text-white">Manage Identity</h3>
+            <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Establish asset classifications</p>
           </div>
         </div>
 
         <div v-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[9px] uppercase tracking-widest opacity-50 text-white">Identity Label</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Identity Label</span>
             </label>
             <input
               v-model="newTagName"
@@ -461,7 +481,7 @@ const refresh = () => {
           </div>
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[9px] uppercase tracking-widest opacity-50 text-white">Visual Chroma</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Tag Color</span>
             </label>
             <div class="flex gap-3 items-center">
               <input
@@ -476,15 +496,15 @@ const refresh = () => {
           </div>
           <div class="flex flex-col gap-2 mt-10">
             <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTags">Establish & Apply</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = false">Existing Tags</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Dismiss</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-white/70" @click="showNewTagForm = false">Existing Tags</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>
 
         <div v-else class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[9px] uppercase tracking-widest opacity-50 text-white">Select Established</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Select Established</span>
             </label>
             <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar no-scrollbar">
               <div
@@ -504,8 +524,8 @@ const refresh = () => {
           </div>
           <div class="flex flex-col gap-2 mt-10">
             <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTags">Apply Selection</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = true">New Identity</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Dismiss</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-white/70" @click="showNewTagForm = true">New Tag</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>
       </div>

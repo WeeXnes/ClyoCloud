@@ -391,7 +391,8 @@ const addTag = async () => {
       updatedTags = [...currentTags, ...tagsToActuallyAdd]
     }
 
-    const response = await fetch('/api/file-meta', {      method: 'POST',
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -404,6 +405,26 @@ const addTag = async () => {
     if (!response.ok) {
       throw new Error(`Failed to add tags`);
     }
+
+    // Automatically add new tag to predefined tags
+    if (showNewTagForm.value) {
+      const newTag = tagsToAdd[0];
+      const exists = predefinedTags.value.some(t => t.name.toLowerCase() === newTag.name.toLowerCase());
+      if (!exists) {
+        try {
+          const updatedPredefinedTags = [...predefinedTags.value, newTag];
+          await fetch('/api/tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tags: updatedPredefinedTags }),
+          });
+          await fetchPredefinedTags();
+        } catch (tagErr) {
+          console.error('Failed to update predefined tags:', tagErr);
+        }
+      }
+    }
+
     createNotification('Tags added successfully', NotificationType.SUCCESS)
     await fetchVideos(); // Refresh video list
     closeTagModal();
@@ -563,11 +584,11 @@ watch(() => route.params.path, () => {
                      @click="toggleFavourite(currentVideo)"
                    >
                      <Icon :name="currentVideo.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
-                     {{ currentVideo.meta.isFavourite ? 'Pinned' : 'Pin' }}
+                     {{ currentVideo.meta.isFavourite ? 'Favourite' : 'Favourite' }}
                    </button>
                    <button class="btn btn-sm btn-ghost gap-2 rounded-lg border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest" @click="downloadVideo">
                      <Icon name="mdi:download" class="w-4 h-4 text-success" />
-                     Inbound
+                     Download
                    </button>
                    <button class="btn btn-sm btn-primary gap-2 rounded-lg px-6 shadow-sm font-bold text-[10px] uppercase tracking-widest" @click="showShareModal = true">
                      <Icon name="mdi:share-variant" class="w-4 h-4" />
