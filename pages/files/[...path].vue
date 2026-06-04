@@ -1399,30 +1399,30 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
          }">
     </div>
     <!-- Edge-to-Edge Sticky Header -->
-    <header class="relative md:sticky md:top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
-      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <header class="sticky top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
+      <div class="w-full px-4 py-3 md:py-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
 
           <!-- Title and Breadcrumbs -->
-          <div class="flex flex-col gap-1 min-w-0">
+          <div class="flex flex-col gap-0.5 md:gap-1 min-w-0">
             <div class="flex items-center gap-2">
-              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
+              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-xs md:btn-sm lg:hidden">
                 <Icon name="mdi:menu" class="w-5 h-5" />
               </label>
-              <h1 class="text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+              <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
                 <Icon name="mdi:folder-multiple" class="text-primary w-5 h-5" />
                 Files
               </h1>
             </div>
 
             <!-- Breadcrumbs -->
-            <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-base-content/40 pl-1">
+            <div class="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-base-content/40 pl-1">
               <NuxtLink to="/files" class="hover:text-primary transition-colors">Root</NuxtLink>
               <template v-for="(folder, index) in useRoute().params.path" :key="index">
                 <Icon name="mdi:chevron-right" class="w-3 h-3 opacity-50" />
                 <NuxtLink
                   :to="`/files/${useRoute().params.path.slice(0, index + 1).map(encodeURIComponent).join('/')}`"
-                  class="hover:text-primary transition-colors truncate max-w-[120px]"
+                  class="hover:text-primary transition-colors truncate max-w-[100px] md:max-w-[120px]"
                 >
                   {{ folder }}
                 </NuxtLink>
@@ -1431,9 +1431,9 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           </div>
 
           <!-- Actions -->
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="flex flex-wrap items-center gap-2 md:gap-3">
              <!-- Search -->
-             <div class="relative w-full sm:w-auto sm:min-w-[240px]">
+             <div class="relative flex-1 md:flex-none md:min-w-[240px]">
                 <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                   <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
                 </div>
@@ -1441,13 +1441,13 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                   v-model="searchQuery"
                   type="text"
                   placeholder="Quick search..."
-                  class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs"
+                  class="input input-xs md:input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs h-8 md:h-10"
                 />
              </div>
 
-             <div class="flex items-center gap-2 ml-auto md:ml-0">
+             <div class="flex items-center gap-1.5 md:gap-2 ml-auto md:ml-0">
                <button 
-                class="btn btn-sm btn-ghost border border-base-content/10 bg-base-100/50 transition-all duration-200" 
+                class="btn btn-xs md:btn-sm btn-ghost border border-base-content/10 bg-base-100/50 transition-all duration-200" 
                 :class="{ 'text-orange-500 bg-orange-500/10 border-orange-500/20 shadow-sm': showFavouritesOnly }"
                 @click="showFavouritesOnly = !showFavouritesOnly"
                 title="Show Favourites Only"
@@ -1457,7 +1457,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                </button>
 
                <div class="dropdown dropdown-end">
-                 <button tabindex="0" class="btn btn-sm btn-ghost gap-2 border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest">
+                 <button tabindex="0" class="btn btn-xs md:btn-sm btn-ghost gap-2 border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest">
                     <Icon name="mdi:sort-variant" class="w-4 h-4" />
                     <span class="hidden sm:inline">Sort</span>
                  </button>
@@ -1468,22 +1468,22 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                  </ul>
                </div>
 
-               <button class="btn btn-sm btn-ghost border border-base-content/10 bg-base-100/50" @click="openCreateFolderModal" title="Create Folder">
+               <button class="btn btn-xs md:btn-sm btn-ghost border border-base-content/10 bg-base-100/50" @click="openCreateFolderModal" title="Create Folder">
                  <Icon name="mdi:folder-plus" class="w-4 h-4" />
                </button>
 
-               <div class="h-6 w-px bg-base-content/10 mx-1"></div>
+               <div class="h-6 w-px bg-base-content/10 mx-0.5 md:mx-1"></div>
 
                <div class="flex bg-base-200/50 p-1 rounded-lg border border-base-content/10">
                  <button 
-                  class="btn btn-xs btn-ghost rounded-md" 
+                  class="btn btn-xs btn-ghost rounded-md px-1.5" 
                   :class="{ 'bg-base-100 shadow-sm text-primary': !isGridView }"
                   @click="isGridView = false"
                  >
                    <Icon name="mdi:view-list" class="w-4 h-4" />
                  </button>
                  <button 
-                  class="btn btn-xs btn-ghost rounded-md" 
+                  class="btn btn-xs btn-ghost rounded-md px-1.5" 
                   :class="{ 'bg-base-100 shadow-sm text-primary': isGridView }"
                   @click="isGridView = true"
                  >
@@ -1491,7 +1491,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                  </button>
                </div>
 
-               <label class="btn btn-sm btn-primary px-5 shadow-sm rounded-lg font-bold text-[10px] uppercase tracking-widest" for="upload-modal">
+               <label class="btn btn-xs md:btn-sm btn-primary px-3 md:px-5 shadow-sm rounded-lg font-bold text-[9px] md:text-[10px] uppercase tracking-widest" for="upload-modal">
                  Upload
                </label>
              </div>
@@ -1502,7 +1502,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
     <!-- Bulk Action Bar -->
     <transition name="slide-down">
-      <div v-if="selectedFiles.size > 0" class="sticky top-0 md:top-[80px] z-[50] w-full bg-primary text-primary-content shadow-lg py-3 px-4 sm:px-8">        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div v-if="selectedFiles.size > 0" class="sticky top-[116px] md:top-[80px] z-[50] w-full bg-primary text-primary-content shadow-lg py-2.5 px-4 sm:px-8">        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-4">
             <button class="btn btn-xs btn-outline btn-ghost border-white/30 text-white rounded-md font-bold" @click="toggleSelectAll">
               {{ selectedFiles.size === sortedFiles.length ? 'Deselect All' : 'Select All' }}

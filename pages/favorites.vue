@@ -1003,28 +1003,28 @@ const getPreviewUrl = (fullPath: string) => {
     </div>
 
     <!-- Edge-to-Edge Sticky Header -->
-    <header class="relative md:sticky md:top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
-      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <header class="sticky top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
+      <div class="w-full px-4 py-3 md:py-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
           
           <!-- Title -->
-          <div class="flex flex-col gap-1 min-w-0">
+          <div class="flex flex-col gap-0.5 md:gap-1 min-w-0">
             <div class="flex items-center gap-2">
-              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
+              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-xs md:btn-sm lg:hidden">
                 <Icon name="mdi:menu" class="w-5 h-5" />
               </label>
-              <h1 class="text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+              <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
                 <Icon name="mdi:star" class="text-orange-500 w-5 h-5" />
                 Favorites
               </h1>
             </div>
-            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Your starred collection</p>
+            <p class="text-[9px] md:text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Your starred collection</p>
           </div>
 
           <!-- Actions -->
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="flex flex-wrap items-center gap-2 md:gap-3">
              <!-- Search -->
-             <div class="relative w-full sm:w-auto sm:min-w-[240px]">
+             <div class="relative flex-1 md:flex-none md:min-w-[240px]">
                 <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                   <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
                 </div>
@@ -1032,13 +1032,13 @@ const getPreviewUrl = (fullPath: string) => {
                   v-model="searchQuery"
                   type="text"
                   placeholder="Filter favorites..."
-                  class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs"
+                  class="input input-xs md:input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs h-8 md:h-10"
                 />
              </div>
 
-             <div class="flex items-center gap-2 ml-auto md:ml-0">
+             <div class="flex items-center gap-1.5 md:gap-2 ml-auto md:ml-0">
                <div class="dropdown dropdown-end">
-                 <button tabindex="0" class="btn btn-sm btn-ghost gap-2 border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest">
+                 <button tabindex="0" class="btn btn-xs md:btn-sm btn-ghost gap-2 border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest">
                     <Icon name="mdi:sort-variant" class="w-4 h-4" />
                     <span class="hidden sm:inline">Sort</span>
                  </button>
@@ -1049,18 +1049,18 @@ const getPreviewUrl = (fullPath: string) => {
                  </ul>
                </div>
 
-               <div class="h-6 w-px bg-base-content/10 mx-1"></div>
+               <div class="h-6 w-px bg-base-content/10 mx-0.5 md:mx-1"></div>
 
                <div class="flex bg-base-200/50 p-1 rounded-lg border border-base-content/10">
                  <button 
-                  class="btn btn-xs btn-ghost rounded-md" 
+                  class="btn btn-xs btn-ghost rounded-md px-1.5" 
                   :class="{ 'bg-base-100 shadow-sm text-primary': !isGridView }"
                   @click="isGridView = false"
                  >
                    <Icon name="mdi:view-list" class="w-4 h-4" />
                  </button>
                  <button 
-                  class="btn btn-xs btn-ghost rounded-md" 
+                  class="btn btn-xs btn-ghost rounded-md px-1.5" 
                   :class="{ 'bg-base-100 shadow-sm text-primary': isGridView }"
                   @click="isGridView = true"
                  >
@@ -1075,7 +1075,7 @@ const getPreviewUrl = (fullPath: string) => {
 
     <!-- Bulk Action Bar -->
     <transition name="slide-down">
-      <div v-if="selectedFiles.size > 0" class="sticky top-0 md:top-[80px] z-[50] w-full bg-primary text-primary-content shadow-lg py-3 px-4 sm:px-8">
+      <div v-if="selectedFiles.size > 0" class="sticky top-[104px] md:top-[80px] z-[50] w-full bg-primary text-primary-content shadow-lg py-2.5 px-4 sm:px-8">
         <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-4">
             <button class="btn btn-xs btn-outline btn-ghost border-white/30 text-white rounded-md font-bold" @click="toggleSelectAll">
