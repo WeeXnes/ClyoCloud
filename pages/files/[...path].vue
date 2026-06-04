@@ -1387,7 +1387,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/50" @mousedown="handleMouseDown">
+  <div class="min-h-screen bg-base-200/50" :class="{ 'select-none': isSelecting }" @mousedown="handleMouseDown">
     <!-- Selection Box -->
     <div v-if="isSelecting" 
          class="fixed border-2 border-primary bg-primary/10 z-[100] pointer-events-none"
@@ -1399,7 +1399,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
          }">
     </div>
     <!-- Edge-to-Edge Sticky Header -->
-    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
+    <header class="sticky top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           
@@ -1502,7 +1502,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
     <!-- Bulk Action Bar -->
     <transition name="slide-down">
-      <div v-if="selectedFiles.size > 0" class="sticky top-[104px] md:top-[68px] z-30 w-full bg-primary text-primary-content shadow-lg py-3 px-4 sm:px-8">
+      <div v-if="selectedFiles.size > 0" class="sticky top-[124px] md:top-[72px] z-[30] w-full bg-primary text-primary-content shadow-lg py-3 px-4 sm:px-8">
         <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-4">
             <button class="btn btn-xs btn-outline btn-ghost border-white/30 text-white rounded-md font-bold" @click="toggleSelectAll">
