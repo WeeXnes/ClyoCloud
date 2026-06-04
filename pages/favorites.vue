@@ -980,68 +980,6 @@ const handleMouseUp = () => {
   window.removeEventListener('mouseup', handleMouseUp)
 }
 
-// Drag and Drop
-const dragTarget = ref<string | null>(null)
-
-const handleDragStart = (event: DragEvent, file: File) => {
-  if (isMobile.value) return
-  
-  if (!selectedFiles.value.has(file.name)) {
-    selectedFiles.value.clear()
-    selectedFiles.value.add(file.name)
-  }
-
-  const paths = Array.from(selectedFiles.value)
-  event.dataTransfer?.setData('application/json', JSON.stringify(paths))
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move'
-  }
-}
-
-const handleDragOver = (event: DragEvent, folder: File) => {
-  if (isMobile.value) return
-  if (!folder.isFolder) return
-  
-  const selectedPaths = Array.from(selectedFiles.value)
-  if (selectedPaths.includes(folder.name)) return
-
-  event.preventDefault()
-  dragTarget.value = folder.name
-}
-
-const handleDragLeave = () => {
-  dragTarget.value = null
-}
-
-const handleDropToFolder = async (event: DragEvent, folder: File) => {
-  if (isMobile.value) return
-  dragTarget.value = null
-  if (!folder.isFolder) return
-
-  const data = event.dataTransfer?.getData('application/json')
-  if (!data) return
-
-  const paths = JSON.parse(data)
-  const destination = folder.name
-
-  try {
-    const response = await fetch('/api/move', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paths, destination })
-    })
-
-    if (!response.ok) throw new Error('Failed to move items')
-    
-    createNotification('Items moved successfully', NotificationType.SUCCESS)
-    selectedFiles.value.clear()
-    await fetchFavorites()
-  } catch (err) {
-    console.error('Error moving items:', err)
-    createNotification('Failed to move items', NotificationType.ERROR)
-  }
-}
-
 const getPreviewUrl = (fullPath: string) => {
   const url = useRequestURL()
   const baseUrl = url.origin
@@ -1185,11 +1123,6 @@ const getPreviewUrl = (fullPath: string) => {
           :key="file.name" 
           class="group relative file-item-container"
           :data-file-name="file.name"
-          :draggable="!isMobile"
-          @dragstart="handleDragStart($event, file)"
-          @dragover="handleDragOver($event, file)"
-          @dragleave="handleDragLeave"
-          @drop="handleDropToFolder($event, file)"
         >
           <template v-if="isFileVisible(index)">
             <!-- Grid Item -->
@@ -1201,8 +1134,7 @@ const getPreviewUrl = (fullPath: string) => {
                 class="relative aspect-square rounded-lg bg-base-100 border border-base-content/10 shadow-sm hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden flex items-center justify-center group/item ring-primary/30"
                 :class="{ 
                   'ring-1': selectedFiles.has(file.name),
-                  'video-thumbnail-container': isVideoFile(file.name),
-                  'ring-2 ring-primary scale-105 border-primary shadow-lg': dragTarget === file.name && file.isFolder
+                  'video-thumbnail-container': isVideoFile(file.name)
                 }"
                 :data-file-name="file.name"
                 @click="onFileClick($event, file)" 
@@ -1291,8 +1223,7 @@ const getPreviewUrl = (fullPath: string) => {
             <div v-else 
                  class="flex items-center gap-4 p-2.5 bg-base-100 rounded-lg border border-base-content/10 hover:border-primary/30 transition-all cursor-pointer group/row ring-primary/30 h-[56px]"
                  :class="{ 
-                   'ring-1 border-primary/30': selectedFiles.has(file.name),
-                   'ring-2 ring-primary border-primary shadow-md translate-x-1': dragTarget === file.name && file.isFolder
+                   'ring-1 border-primary/30': selectedFiles.has(file.name)
                  }"
                  @click="onFileClick($event, file)" 
                  @contextmenu.prevent="handleContextMenu($event, file)"
