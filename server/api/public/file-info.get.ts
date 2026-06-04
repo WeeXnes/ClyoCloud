@@ -4,6 +4,7 @@ import path from 'path'
 import type { FileMeta } from '~/types/File'
 import { isFilePublic } from '~/server/utils/publicCheck'
 import { getDirSize } from '~/server/utils/fileUtils'
+import { logActivity } from '../../utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -45,6 +46,9 @@ export default defineEventHandler(async (event) => {
         }
 
         const size = isFolder ? await getDirSize(fullPath) : stats.size
+
+        // Log public link view
+        await logActivity(username, 'PUBLIC_VIEW', decodedPath, `Public link viewed for ${decodedPath}`, event)
 
         return {
             name: path.basename(fullPath),

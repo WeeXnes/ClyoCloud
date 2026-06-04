@@ -88,6 +88,8 @@ const getActionIcon = (action: string) => {
     case 'DOWNLOAD': return 'mdi:download'
     case 'ZIP_DOWNLOAD': return 'mdi:folder-zip'
     case 'PUBLIC_ACCESS': return 'mdi:eye'
+    case 'PUBLIC_VIEW': return 'mdi:eye-outline'
+    case 'PUBLIC_STREAM': return 'mdi:play-circle-outline'
     case 'PUBLIC_ZIP_DOWNLOAD': return 'mdi:folder-zip'
     case 'REMOTE_DOWNLOAD_START': return 'mdi:cloud-download'
     case 'LOGIN_SUCCESS': return 'mdi:shield-check'
