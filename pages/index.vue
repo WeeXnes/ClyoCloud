@@ -341,7 +341,6 @@ interface Stats {
     model: string
     cores: number
     load: number
-    load_raw: number
   }
   ram: {
     total: number
@@ -392,7 +391,7 @@ onUnmounted(() => {
   if (pollingInterval) clearInterval(pollingInterval)
 })
 
-const cpuPercentage = computed(() => stats.value ? Math.round(stats.value.cpu.load_raw * 100) : 0)
+const cpuPercentage = computed(() => stats.value ? Math.round(stats.value.cpu.load) : 0)
 const ramPercentage = computed(() => {
   if (!stats.value) return 0
   return Math.round((stats.value.ram.used / stats.value.ram.total) * 100)
@@ -427,21 +426,50 @@ function formatTime(timestamp: number): string {
 }
 
 function getActionColor(action: string) {
-  const a = action.toLowerCase()
-  if (a.includes('upload') || a.includes('create')) return 'bg-success/10 text-success'
-  if (a.includes('delete')) return 'bg-error/10 text-error'
-  if (a.includes('move') || a.includes('rename')) return 'bg-primary/10 text-primary'
-  return 'bg-base-content/10 text-base-content/40'
+  switch (action) {
+    case 'UPLOAD': return 'text-blue-500 bg-blue-500/10'
+    case 'DOWNLOAD':
+    case 'ZIP_DOWNLOAD':
+    case 'PUBLIC_ZIP_DOWNLOAD': return 'text-sky-500 bg-sky-500/10'
+    case 'DELETE': return 'text-red-500 bg-red-500/10'
+    case 'RENAME':
+    case 'MOVE': return 'text-orange-500 bg-orange-500/10'
+    case 'MKDIR': return 'text-purple-500 bg-purple-500/10'
+    case 'TAG': return 'text-primary bg-primary/10'
+    case 'SHARE':
+    case 'PUBLIC_ACCESS': return 'text-success bg-success/10'
+    case 'FAVORITE': return 'text-orange-400 bg-orange-400/10'
+    case 'LOGIN_SUCCESS': return 'text-success bg-success/10'
+    case 'LOGIN_FAIL':
+    case '2FA_FAIL': return 'text-error bg-error/10'
+    case 'LOGIN_STEP1': return 'text-primary bg-primary/10'
+    case 'PASSWORD_CHANGE': return 'text-warning bg-warning/10'
+    default: return 'text-base-content/40 bg-base-content/5'
+  }
 }
 
 function getActionIcon(action: string) {
-  const a = action.toLowerCase()
-  if (a.includes('upload')) return 'mdi:cloud-upload'
-  if (a.includes('delete')) return 'mdi:delete'
-  if (a.includes('move')) return 'mdi:folder-move'
-  if (a.includes('rename')) return 'mdi:pencil'
-  if (a.includes('create')) return 'mdi:folder-plus'
-  return 'mdi:history'
+  switch (action) {
+    case 'UPLOAD': return 'mdi:cloud-upload'
+    case 'DELETE': return 'mdi:delete'
+    case 'RENAME': return 'mdi:pencil'
+    case 'MOVE': return 'mdi:file-move'
+    case 'MKDIR': return 'mdi:folder-plus'
+    case 'TAG': return 'mdi:tag'
+    case 'SHARE': return 'mdi:share-variant'
+    case 'FAVORITE': return 'mdi:star'
+    case 'DOWNLOAD': return 'mdi:download'
+    case 'ZIP_DOWNLOAD': return 'mdi:folder-zip'
+    case 'PUBLIC_ACCESS': return 'mdi:eye'
+    case 'PUBLIC_ZIP_DOWNLOAD': return 'mdi:folder-zip'
+    case 'REMOTE_DOWNLOAD_START': return 'mdi:cloud-download'
+    case 'LOGIN_SUCCESS': return 'mdi:shield-check'
+    case 'LOGIN_FAIL': return 'mdi:shield-alert'
+    case 'LOGIN_STEP1': return 'mdi:shield-outline'
+    case '2FA_FAIL': return 'mdi:shield-lock'
+    case 'PASSWORD_CHANGE': return 'mdi:key-variant'
+    default: return 'mdi:history'
+  }
 }
 
 function getTreemapColor(index: number) {
