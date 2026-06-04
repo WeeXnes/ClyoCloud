@@ -72,7 +72,7 @@ export default defineEventHandler(async (event) => {
             })
 
             const relativePath = path.relative(userStoragePath, resolvedPath)
-            await logActivity(event.context.user.name, 'UPLOAD', relativePath)
+            await logActivity(event.context.user.name, 'UPLOAD', relativePath, undefined, event)
         }
 
         return { message: 'Files uploaded successfully' }

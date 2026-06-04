@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
         const finalValid = isValid === true || (isValid && isValid.valid === true)
 
         if (!finalValid) {
-            await logActivity(user.name, '2FA_DISABLE_FAIL', 'Security', 'Failed attempt to disable 2FA (invalid code)')
+            await logActivity(user.name, '2FA_DISABLE_FAIL', 'Security', 'Failed attempt to disable 2FA (invalid code)', event)
             throw createError({ statusCode: 400, statusMessage: 'Invalid 2FA code' })
         }
     }
@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
     users[userIndex].twoFactorEnabled = false
 
     await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')
-    await logActivity(user.name, '2FA_DISABLED', 'Security', '2FA has been disabled')
+    await logActivity(user.name, '2FA_DISABLED', 'Security', '2FA has been disabled', event)
 
     return { success: true }
 })

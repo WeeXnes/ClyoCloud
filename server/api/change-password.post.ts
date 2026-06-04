@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
 
         await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')
 
-        await logActivity(user.name, 'PASSWORD_CHANGE', 'Account', 'Password updated successfully')
+        await logActivity(user.name, 'PASSWORD_CHANGE', 'Account', 'Password updated successfully', event)
 
         return { message: 'Password updated successfully' }
     } catch (error) {

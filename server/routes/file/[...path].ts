@@ -3,6 +3,7 @@ import { stat } from 'fs/promises'
 import { defineEventHandler, getRouterParam, setHeader, createError } from 'h3'
 import mime from 'mime-types'
 import path, { join, resolve } from 'path'
+import { logActivity } from '~/server/utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -41,6 +42,9 @@ export default defineEventHandler(async (event) => {
 
         const contentType = mime.lookup(resolvedPath) || 'application/octet-stream'
         console.log(`Serving file: ${resolvedPath}, MIME type: ${contentType}`)
+
+        // Log the download activity
+        await logActivity(event.context.user.name, 'DOWNLOAD', decodedPath, undefined, event)
 
         setHeader(event, 'Content-Type', contentType)
         setHeader(event, 'Content-Length', stats.size)

@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
       await fs.unlink(fullPath)
     }
 
-    await logActivity(event.context.user.name, 'DELETE', safeSubPath)
+    await logActivity(event.context.user.name, 'DELETE', safeSubPath, undefined, event)
 
     // Also delete .cloudinfo file if it exists
     try {

@@ -1,6 +1,7 @@
 import archiver from 'archiver';
 import fs from 'fs';
 import path from 'path';
+import { logActivity } from '../utils/activityLogger';
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
@@ -17,6 +18,9 @@ export default defineEventHandler(async (event) => {
   if (!fs.existsSync(fullPath) || !fs.lstatSync(fullPath).isDirectory()) {
     throw createError({ statusCode: 404, message: 'Folder not found' });
   }
+
+  // Log the ZIP download
+  await logActivity(event.context.user.name, 'ZIP_DOWNLOAD', folderPath || 'root', undefined, event)
 
   const archive = archiver('zip', { zlib: { level: 9 } });
   

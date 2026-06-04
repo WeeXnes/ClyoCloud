@@ -46,15 +46,15 @@ export default defineEventHandler(async (event) => {
         if (description !== undefined) meta.description = description
         if (tags !== undefined) {
             meta.tags = tags
-            await logActivity(event.context.user.name, 'TAG', fullPath, `Updated tags`)
+            await logActivity(event.context.user.name, 'TAG', fullPath, `Updated tags`, event)
         }
         if (isPublic !== undefined) {
             meta.isPublic = isPublic
-            await logActivity(event.context.user.name, 'SHARE', fullPath, isPublic ? 'Enabled public access' : 'Disabled public access')
+            await logActivity(event.context.user.name, 'SHARE', fullPath, isPublic ? 'Enabled public access' : 'Disabled public access', event)
         }
         if (isFavourite !== undefined) {
             meta.isFavourite = isFavourite
-            await logActivity(event.context.user.name, 'FAVORITE', fullPath, isFavourite ? 'Added to favorites' : 'Removed from favorites')
+            await logActivity(event.context.user.name, 'FAVORITE', fullPath, isFavourite ? 'Added to favorites' : 'Removed from favorites', event)
         }
 
         await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')

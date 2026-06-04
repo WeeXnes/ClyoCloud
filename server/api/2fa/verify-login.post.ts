@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
 
         if (!isValid) {
             console.warn(`[2FA] REJECTED: Code ${cleanCode} is NOT valid for user ${username}`)
-            await logActivity(username, '2FA_FAIL', 'Security', `Invalid 2FA code attempt: ${cleanCode}`)
+            await logActivity(username, '2FA_FAIL', 'Security', `Invalid 2FA code attempt: ${cleanCode}`, event)
             throw createError({
                 statusCode: 401,
                 statusMessage: 'Invalid 2FA code',
@@ -69,7 +69,7 @@ export default defineEventHandler(async (event) => {
         }
 
         console.log(`[2FA] ACCEPTED: Code ${cleanCode} is valid for user ${username}`)
-        await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful 2FA verification')
+        await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful 2FA verification', event)
 
         const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
             expiresIn: '30d',

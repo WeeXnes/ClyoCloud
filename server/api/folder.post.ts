@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     await fs.mkdir(fullPath, { recursive: true })
 
     const relativePath = path.relative(userStoragePath, fullPath)
-    await logActivity(event.context.user.name, 'MKDIR', relativePath)
+    await logActivity(event.context.user.name, 'MKDIR', relativePath, undefined, event)
 
     return { success: true }
   } catch (error) {

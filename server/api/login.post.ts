@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
         const isValid = await bcrypt.compare(password, user.password)
         if (!isValid) {
             try {
-                await logActivity(username, 'LOGIN_FAIL', 'Login', 'Invalid password attempt')
+                await logActivity(username, 'LOGIN_FAIL', 'Login', 'Invalid password attempt', event)
             } catch (logError) {
                 console.error('Failed to log login failure:', logError)
             }
@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
 
         if (user.twoFactorEnabled) {
             try {
-                await logActivity(username, 'LOGIN_STEP1', 'Login', 'Password verified, 2FA required')
+                await logActivity(username, 'LOGIN_STEP1', 'Login', 'Password verified, 2FA required', event)
             } catch (logError) {
                 console.error('Failed to log login step 1:', logError)
             }
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
         }
 
         try {
-            await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful login')
+            await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful login', event)
         } catch (logError) {
             console.error('Failed to log login success:', logError)
         }

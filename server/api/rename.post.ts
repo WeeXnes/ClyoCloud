@@ -40,7 +40,10 @@ export default defineEventHandler(async (event) => {
 
         const relativeOldPath = path.relative(userStoragePath, oldFullPath)
         const relativeNewPath = path.relative(userStoragePath, newFullPath)
-        await logActivity(event.context.user.name, 'RENAME', relativeOldPath, `Renamed to ${relativeNewPath}`)
+        await logActivity(event.context.user.name, 'RENAME', relativeOldPath, `Renamed to ${relativeNewPath}`, event, {
+            from: relativeOldPath,
+            to: relativeNewPath
+        })
 
         // Also rename the .cloudinfo file if it exists
         const oldCloudInfo = `${oldFullPath}.cloudinfo`

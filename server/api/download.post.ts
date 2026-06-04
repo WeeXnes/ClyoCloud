@@ -48,6 +48,8 @@ export default defineEventHandler(async (event) => {
 
   const userPath = path.join(config.storagePath, user.name, userDownloadSubPath);
   
+  await logActivity(user.name, 'REMOTE_DOWNLOAD_START', url, `Starting remote download to ${userDownloadSubPath || 'root'}`, event)
+
   const job = await startDownloadJob(user.name, url, userPath);
 
   return {
