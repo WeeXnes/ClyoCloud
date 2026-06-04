@@ -88,7 +88,7 @@ const getActionIcon = (action: string) => {
     case 'DOWNLOAD': return 'mdi:download'
     case 'ZIP_DOWNLOAD': return 'mdi:file-zip'
     case 'PUBLIC_ACCESS': return 'mdi:eye'
-    case 'PUBLIC_ZIP_DOWNLOAD': return 'mdi:file-zip-outline'
+    case 'PUBLIC_ZIP_DOWNLOAD': return 'mdi:file-zip'
     case 'REMOTE_DOWNLOAD_START': return 'mdi:cloud-download'
     case 'LOGIN_SUCCESS': return 'mdi:shield-check'
     case 'LOGIN_FAIL': return 'mdi:shield-alert'
@@ -103,7 +103,8 @@ const getActionColor = (action: string) => {
   switch (action) {
     case 'UPLOAD': return 'text-blue-500 bg-blue-500/10'
     case 'DOWNLOAD':
-    case 'ZIP_DOWNLOAD': return 'text-sky-500 bg-sky-500/10'
+    case 'ZIP_DOWNLOAD':
+    case 'PUBLIC_ZIP_DOWNLOAD': return 'text-sky-500 bg-sky-500/10'
     case 'DELETE': return 'text-red-500 bg-red-500/10'
     case 'RENAME':
     case 'MOVE': return 'text-orange-500 bg-orange-500/10'
@@ -220,7 +221,7 @@ onMounted(fetchLogs)
                 class="p-3 sm:p-4 flex items-center gap-4 hover:bg-base-200/50 cursor-pointer"
                 @click="toggleExpand(activity.id)"
               >
-                <div :class="`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border border-current/10 ${getActionColor(activity.action)}`">
+                <div :class="`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${getActionColor(activity.action)}`">
                   <Icon :name="getActionIcon(activity.action)" class="w-5 h-5" />
                 </div>
                 
