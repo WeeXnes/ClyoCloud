@@ -927,6 +927,18 @@ watch(() => useRoute().params.path, async () => {
   await fetchFiles()
 })
 
+watch(() => useRoute().query.select, (newSelect) => {
+  if (newSelect && files.value.length > 0) {
+    const file = files.value.find(f => f.name === newSelect)
+    if (file) {
+      selectedFile.value = file
+      isEditingDescription.value = false
+      editableDescription.value = ''
+      showFileInfoModal.value = true
+    }
+  }
+})
+
 const isLoading = ref(true)
 
 const fetchFiles = async () => {
@@ -941,6 +953,18 @@ const fetchFiles = async () => {
       throw new Error('Failed to fetch files')
     }
     files.value = await response.json()
+
+    // Handle 'select' query param to open file info modal
+    if (route.query.select) {
+      const fileName = route.query.select as string
+      const file = files.value.find(f => f.name === fileName)
+      if (file) {
+        selectedFile.value = file
+        isEditingDescription.value = false
+        editableDescription.value = ''
+        showFileInfoModal.value = true
+      }
+    }
   } catch (error) {
     console.error('Error fetching files:', error)
   } finally {

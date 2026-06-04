@@ -35,12 +35,44 @@ const toggleExpand = (id: string) => {
   expandedId.value = expandedId.value === id ? null : id
 }
 
-const navigateToPath = (path: string) => {
+const navigateToPath = (activity: ActivityEntry) => {
+  let path = activity.path
+  const action = activity.action
+
+  // For MOVE and RENAME, the 'to' path is the current location
+  if (activity.metadata && activity.metadata.to) {
+    path = activity.metadata.to
+  }
+
   // If it's a security/system log, don't navigate
   if (['Security', 'Login', 'Account'].includes(path)) return
+  if (path === 'root') {
+    router.push('/files')
+    return
+  }
   
-  // Clean path (remove root etc if necessary, but here we assume it's relative to storage)
-  router.push(`/files/${path}`)
+  const segments = path.split('/')
+  const lastSegment = segments[segments.length - 1]
+
+  // For DELETE, the file is gone, so we just go to the parent directory
+  if (action === 'DELETE') {
+    segments.pop()
+    const parentPath = segments.join('/')
+    router.push(`/files/${parentPath}`)
+    return
+  }
+
+  // Heuristic to detect if it's a file: has an extension in the last segment
+  // EXCEPT for MKDIR which we know is a folder
+  const isLikelyFile = lastSegment.includes('.') && action !== 'MKDIR'
+
+  if (isLikelyFile) {
+    segments.pop()
+    const parentPath = segments.join('/')
+    router.push(`/files/${parentPath}?select=${encodeURIComponent(lastSegment)}`)
+  } else {
+    router.push(`/files/${path}`)
+  }
 }
 
 const getActionIcon = (action: string) => {
@@ -195,7 +227,7 @@ onMounted(fetchLogs)
                 <div class="flex-grow min-w-0">
                   <div class="flex items-center justify-between gap-2 mb-0.5">
                     <button 
-                      @click.stop="navigateToPath(activity.path)"
+                      @click.stop="navigateToPath(activity)"
                       class="text-xs font-bold truncate text-base-content leading-none hover:text-primary transition-colors text-left"
                       :class="{'cursor-default pointer-events-none': ['Security', 'Login', 'Account'].includes(activity.path)}"
                     >

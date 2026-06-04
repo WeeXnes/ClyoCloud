@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
         try {
             const data = await fs.readFile(activityFilePath, 'utf-8')
             const activity: ActivityEntry[] = JSON.parse(data)
-            return activity // Return all (limited to 100 by logger)
+            return activity // Return all (limited to 1000 by logger)
         } catch (err) {
             return [] // No activity yet
         }
