@@ -1205,7 +1205,13 @@ const downloadFile = (file: File) => {
     const folderPath = parentFolderPath ? `${parentFolderPath}/${file.name}` : file.name
     window.location.href = `/api/zip?path=${encodeURIComponent(folderPath)}`
   } else {
-    window.location.href = getStaticUrl(file)
+    const url = getStaticUrl(file)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 }
 

@@ -822,7 +822,13 @@ const downloadFile = (file: File) => {
   if (file.isFolder) {
     window.location.href = `/api/zip?path=${encodeURIComponent(file.name)}`
   } else {
-    window.location.href = getStaticUrl(file)
+    const url = getStaticUrl(file)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.name.split('/').pop() || file.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 }
 
