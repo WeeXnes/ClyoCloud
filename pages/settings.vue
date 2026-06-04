@@ -32,6 +32,17 @@ const isScanningStorage = ref(false)
 const cleanupStatus = ref<any>(null)
 let cleanupInterval: any = null
 
+const formatSize = (bytes: number) => {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let value = bytes
+  let unitIndex = 0
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex++
+  }
+  return `${value.toFixed(1)} ${units[unitIndex]}`
+}
+
 async function fetchCleanupData() {
   isScanningStorage.value = true
   try {
