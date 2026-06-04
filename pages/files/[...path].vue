@@ -1399,10 +1399,10 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
          }">
     </div>
     <!-- Edge-to-Edge Sticky Header -->
-    <header class="sticky top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
+    <header class="md:sticky md:top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          
+
           <!-- Title and Breadcrumbs -->
           <div class="flex flex-col gap-1 min-w-0">
             <div class="flex items-center gap-2">
@@ -1414,7 +1414,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 Files
               </h1>
             </div>
-            
+
             <!-- Breadcrumbs -->
             <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-base-content/40 pl-1">
               <NuxtLink to="/files" class="hover:text-primary transition-colors">Root</NuxtLink>
@@ -1502,8 +1502,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
     <!-- Bulk Action Bar -->
     <transition name="slide-down">
-      <div v-if="selectedFiles.size > 0" class="sticky top-[124px] md:top-[72px] z-[30] w-full bg-primary text-primary-content shadow-lg py-3 px-4 sm:px-8">
-        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div v-if="selectedFiles.size > 0" class="sticky top-0 md:top-[80px] z-[30] w-full bg-primary text-primary-content shadow-lg py-3 px-4 sm:px-8">        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-4">
             <button class="btn btn-xs btn-outline btn-ghost border-white/30 text-white rounded-md font-bold" @click="toggleSelectAll">
               {{ selectedFiles.size === sortedFiles.length ? 'Deselect All' : 'Select All' }}
