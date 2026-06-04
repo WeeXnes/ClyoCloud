@@ -62,7 +62,7 @@
                     <span>Media</span>
                   </NuxtLink>
                 </li>
-                <li>
+                <li v-if="isTvEnabled">
                   <NuxtLink to="/tv" class="nav-link" active-class="active">
                     <Icon name="mdi:television-classic" class="w-5 h-5" />
                     <span>TV</span>
@@ -151,32 +151,38 @@ import { onMounted, watch } from 'vue'
 const user = useState<{ name: string } | null>('user')
 const themeCookie = useCookie('theme', { default: () => 'onedev' })
 const currentTheme = useState<string>('currentTheme', () => themeCookie.value)
+const userSettings = useState<any>('userSettings', () => null)
+
+const isTvEnabled = computed(() => !!userSettings.value?.tvheadendHost)
 
 watch(currentTheme, (newTheme) => {
   themeCookie.value = newTheme
 })
 
-async function fetchTheme() {
+async function refreshUserSettings() {
   if (!user.value) return
   try {
     const data: any = await $fetch('/api/user-settings')
+    userSettings.value = data
     if (data.theme) {
       currentTheme.value = data.theme
     }
   } catch (err) {
-    console.error('Failed to fetch theme:', err)
+    console.error('Failed to fetch settings:', err)
   }
 }
 
 onMounted(() => {
   if (user.value) {
-    fetchTheme()
+    refreshUserSettings()
   }
 })
 
 watch(user, (newUser) => {
   if (newUser) {
-    fetchTheme()
+    refreshUserSettings()
+  } else {
+    userSettings.value = null
   }
 })
 </script>

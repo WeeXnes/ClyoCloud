@@ -1,5 +1,6 @@
 import { defineEventHandler, createError, readBody } from 'h3'
 import { stopCloudRecording } from '~/server/utils/tvRecorder'
+import { logActivity } from '../utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     const user = event.context.user

@@ -1,8 +1,17 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
+import { logActivity } from '../utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
+    const user = event.context.user
+    if (!user || !user.name) {
+        throw createError({
+            statusCode: 401,
+            statusMessage: 'Unauthorized',
+        })
+    }
+
     const body = await readBody(event)
     const { tags } = body
     const config = useRuntimeConfig()
@@ -22,6 +31,8 @@ export default defineEventHandler(async (event) => {
         await fs.mkdir(dir, { recursive: true });
 
         await fs.writeFile(tagsFilePath, JSON.stringify({ tags }, null, 2), 'utf-8')
+
+        await logActivity(user.name, 'TAG_UPDATE', 'Settings', `Updated predefined tag library (${tags.length} tags)`, event)
 
         return { message: 'Tags updated successfully' }
     } catch (error) {

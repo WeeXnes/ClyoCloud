@@ -5,6 +5,8 @@ import mime from 'mime-types'
 import path, { join, resolve } from 'path'
 import { isFilePublic } from '~/server/utils/publicCheck'
 
+import { logActivity } from '~/server/utils/activityLogger'
+
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const username = getRouterParam(event, 'username')
@@ -54,6 +56,9 @@ export default defineEventHandler(async (event) => {
                 statusMessage: 'Unsupported media type',
             })
         }
+
+        // Log public streaming access
+        await logActivity(username, 'PUBLIC_STREAM', decodedPath, `Public streaming access to ${decodedPath}`, event)
 
         setHeader(event, 'Content-Type', contentType)
         setHeader(event, 'Accept-Ranges', 'bytes')

@@ -1,5 +1,6 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
+import { logActivity } from '../utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
@@ -48,6 +49,8 @@ export default defineEventHandler(async (event) => {
         }
 
         await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')
+
+        await logActivity(user.name, 'SETTINGS_UPDATE', 'Settings', 'User preferences updated', event)
 
         return { message: 'Settings updated successfully' }
     } catch (error) {
