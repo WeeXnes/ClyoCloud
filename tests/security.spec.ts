@@ -20,8 +20,14 @@ const protectedEndpoints = [
   '/api/files',
   '/api/folder',
   '/api/move',
+  '/api/previews-clear',
+  '/api/previews-generate',
+  '/api/previews-status',
   '/api/rename',
+  '/api/shared',
   '/api/stats',
+  '/api/storage-clean',
+  '/api/storage-duplicates',
   '/api/storage-map',
   '/api/tags',
   '/api/upload',
@@ -56,7 +62,12 @@ const protectedEndpoints = [
   '/settings',
   '/logs',
   '/favorites',
-  '/shared'
+  '/shared',
+  '/duplicates',
+  '/downloader',
+  '/shorts',
+  '/tv',
+  '/media'
 ]
 
 // All endpoints that are EXPLICITLY PUBLIC
