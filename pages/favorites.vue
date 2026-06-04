@@ -149,6 +149,77 @@ watch(isGridView, (newVal) => {
   isGridViewCookie.value = newVal
 })
 
+const hoveredFile = ref<string | null>(null)
+const visibleFiles = ref<Set<string>>(new Set())
+const isMobile = ref(false)
+const mobileAutoPreview = ref(true)
+let touchTimer: any = null
+let observer: IntersectionObserver | null = null
+
+const fetchUserSettings = async () => {
+  try {
+    const response = await fetch('/api/user-settings', { credentials: 'include' })
+    if (response.ok) {
+      const data = await response.json()
+      mobileAutoPreview.value = data.mobileAutoPreview ?? true
+    }
+  } catch (err) {
+    console.error('Error fetching user settings:', err)
+  }
+}
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+const handleTouchStart = (fileName: string) => {
+  if (isMobile.value && mobileAutoPreview.value) return 
+  if (touchTimer) clearTimeout(touchTimer)
+  touchTimer = setTimeout(() => {
+    hoveredFile.value = fileName
+  }, 200)
+}
+
+const handleTouchEnd = () => {
+  if (isMobile.value && mobileAutoPreview.value) return
+  if (touchTimer) clearTimeout(touchTimer)
+  hoveredFile.value = null
+}
+
+const setupObserver = () => {
+  if (!mobileAutoPreview.value) {
+    if (observer) observer.disconnect()
+    visibleFiles.value.clear()
+    return
+  }
+  
+  if (observer) observer.disconnect()
+  
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const fileName = (entry.target as HTMLElement).dataset.fileName
+      if (!fileName) return
+      
+      if (entry.isIntersecting) {
+        visibleFiles.value.add(fileName)
+      } else {
+        visibleFiles.value.delete(fileName)
+      }
+    })
+  }, { threshold: 0.5 })
+
+  setTimeout(() => {
+    const elements = document.querySelectorAll('.video-thumbnail-container')
+    elements.forEach(el => observer?.observe(el))
+  }, 100)
+}
+
+watch(sortedFiles, () => {
+  if (isMobile.value) {
+    setupObserver()
+  }
+}, { deep: true })
+
 const openBulkTagModal = () => {
   selectedTags.value = []
   showNewTagForm.value = true
@@ -602,8 +673,15 @@ const handleContextAction = (action: string) => {
 onMounted(async () => {
   await fetchFavorites()
   await fetchPredefinedTags()
+  await fetchUserSettings()
   updateItemsPerRow()
-  window.addEventListener('resize', updateItemsPerRow)
+  checkMobile()
+  if (isMobile.value && mobileAutoPreview.value) setupObserver()
+  
+  window.addEventListener('resize', () => {
+    updateItemsPerRow()
+    checkMobile()
+  })
   window.addEventListener('scroll', handleMainScroll, { passive: true })
   window.addEventListener('keydown', handleKeydown)
 
@@ -613,8 +691,10 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   window.removeEventListener('resize', updateItemsPerRow)
+  window.removeEventListener('resize', checkMobile)
   window.removeEventListener('scroll', handleMainScroll)
   window.removeEventListener('keydown', handleKeydown)
+  if (observer) observer.disconnect()
 })
 
 const isLoading = ref(true)
@@ -836,10 +916,154 @@ const toggleFavourite = async (file: File) => {
     createNotification('Failed to update favorite status', NotificationType.ERROR)
   }
 }
+
+// Mouse Area Selection
+const isSelecting = ref(false)
+const selectionBox = ref({ x: 0, y: 0, width: 0, height: 0 })
+const selectionStart = ref({ x: 0, y: 0 })
+
+const handleMouseDown = (event: MouseEvent) => {
+  if (isMobile.value) return
+  const target = event.target as HTMLElement
+  if (target.closest('.file-item-container') || target.closest('.btn') || target.closest('.input') || target.closest('.modal')) return
+  if (event.button !== 0) return 
+
+  isSelecting.value = true
+  selectionStart.value = { x: event.clientX, y: event.clientY }
+  selectionBox.value = { x: event.clientX, y: event.clientY, width: 0, height: 0 }
+
+  window.addEventListener('mousemove', handleMouseMove)
+  window.addEventListener('mouseup', handleMouseUp)
+}
+
+const handleMouseMove = (event: MouseEvent) => {
+  if (!isSelecting.value) return
+
+  const currentX = event.clientX
+  const currentY = event.clientY
+
+  selectionBox.value = {
+    x: Math.min(selectionStart.value.x, currentX),
+    y: Math.min(selectionStart.value.y, currentY),
+    width: Math.abs(selectionStart.value.x - currentX),
+    height: Math.abs(selectionStart.value.y - currentY)
+  }
+
+  updateSelection()
+}
+
+const updateSelection = () => {
+  const elements = document.querySelectorAll('.file-item-container')
+  elements.forEach((el) => {
+    const rect = el.getBoundingClientRect()
+    const fileName = (el as HTMLElement).dataset.fileName
+    if (!fileName) return
+
+    const intersects = (
+      rect.left < selectionBox.value.x + selectionBox.value.width &&
+      rect.right > selectionBox.value.x &&
+      rect.top < selectionBox.value.y + selectionBox.value.height &&
+      rect.bottom > selectionBox.value.y
+    )
+
+    if (intersects) {
+      selectedFiles.value.add(fileName)
+    } else if (!window.event?.ctrlKey && !window.event?.metaKey) {
+      selectedFiles.value.delete(fileName)
+    }
+  })
+}
+
+const handleMouseUp = () => {
+  isSelecting.value = false
+  window.removeEventListener('mousemove', handleMouseMove)
+  window.removeEventListener('mouseup', handleMouseUp)
+}
+
+// Drag and Drop
+const dragTarget = ref<string | null>(null)
+
+const handleDragStart = (event: DragEvent, file: File) => {
+  if (isMobile.value) return
+  
+  if (!selectedFiles.value.has(file.name)) {
+    selectedFiles.value.clear()
+    selectedFiles.value.add(file.name)
+  }
+
+  const paths = Array.from(selectedFiles.value)
+  event.dataTransfer?.setData('application/json', JSON.stringify(paths))
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const handleDragOver = (event: DragEvent, folder: File) => {
+  if (isMobile.value) return
+  if (!folder.isFolder) return
+  
+  const selectedPaths = Array.from(selectedFiles.value)
+  if (selectedPaths.includes(folder.name)) return
+
+  event.preventDefault()
+  dragTarget.value = folder.name
+}
+
+const handleDragLeave = () => {
+  dragTarget.value = null
+}
+
+const handleDropToFolder = async (event: DragEvent, folder: File) => {
+  if (isMobile.value) return
+  dragTarget.value = null
+  if (!folder.isFolder) return
+
+  const data = event.dataTransfer?.getData('application/json')
+  if (!data) return
+
+  const paths = JSON.parse(data)
+  const destination = folder.name
+
+  try {
+    const response = await fetch('/api/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths, destination })
+    })
+
+    if (!response.ok) throw new Error('Failed to move items')
+    
+    createNotification('Items moved successfully', NotificationType.SUCCESS)
+    selectedFiles.value.clear()
+    await fetchFavorites()
+  } catch (err) {
+    console.error('Error moving items:', err)
+    createNotification('Failed to move items', NotificationType.ERROR)
+  }
+}
+
+const getPreviewUrl = (fullPath: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  const segments = fullPath.split('/')
+  const encodedPath = segments.map(segment => encodeURIComponent(segment)).join('/')
+  return `${baseUrl}/preview/${encodedPath}`
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/50">
+  <div class="min-h-screen bg-base-200/50" @mousedown="handleMouseDown">
+    <!-- Selection Box -->
+    <div v-if="isSelecting" 
+         class="fixed border-2 border-primary bg-primary/10 z-[100] pointer-events-none"
+         :style="{
+           left: selectionBox.x + 'px',
+           top: selectionBox.y + 'px',
+           width: selectionBox.width + 'px',
+           height: selectionBox.height + 'px'
+         }">
+    </div>
+
     <!-- Edge-to-Edge Sticky Header -->
     <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
@@ -959,7 +1183,13 @@ const toggleFavourite = async (file: File) => {
         <div 
           v-for="(file, index) in sortedFiles" 
           :key="file.name" 
-          class="group relative"
+          class="group relative file-item-container"
+          :data-file-name="file.name"
+          :draggable="!isMobile"
+          @dragstart="handleDragStart($event, file)"
+          @dragover="handleDragOver($event, file)"
+          @dragleave="handleDragLeave"
+          @drop="handleDropToFolder($event, file)"
         >
           <template v-if="isFileVisible(index)">
             <!-- Grid Item -->
@@ -969,9 +1199,19 @@ const toggleFavourite = async (file: File) => {
               <!-- Thumbnail Container -->
               <div 
                 class="relative aspect-square rounded-lg bg-base-100 border border-base-content/10 shadow-sm hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden flex items-center justify-center group/item ring-primary/30"
-                :class="{ 'ring-1': selectedFiles.has(file.name) }"
+                :class="{ 
+                  'ring-1': selectedFiles.has(file.name),
+                  'video-thumbnail-container': isVideoFile(file.name),
+                  'ring-2 ring-primary scale-105 border-primary shadow-lg': dragTarget === file.name && file.isFolder
+                }"
+                :data-file-name="file.name"
                 @click="onFileClick($event, file)" 
                 @contextmenu.prevent="handleContextMenu($event, file)"
+                @mouseenter="hoveredFile = file.name"
+                @mouseleave="hoveredFile = null"
+                @touchstart.passive="handleTouchStart(file.name)"
+                @touchend="handleTouchEnd"
+                @touchmove="handleTouchEnd"
               >
                 <!-- Selection Checkbox (Top Left) -->
                 <div class="absolute top-2 left-2 z-20 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">
@@ -985,7 +1225,7 @@ const toggleFavourite = async (file: File) => {
                 </div>
 
                 <!-- Shared Indicator (Top Right) -->
-                <div class="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
+                <div class="absolute top-2 right-2 z-30 flex flex-col gap-1.5">
                   <div v-if="file.meta.isPublic" 
                        class="bg-success text-success-content w-6 h-6 flex items-center justify-center rounded shadow-sm backdrop-blur-md hover:scale-105 transition-all" 
                        title="Copy Shared Link"
@@ -1014,6 +1254,15 @@ const toggleFavourite = async (file: File) => {
                         class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300" 
                         :name="getIconForExtension(file.name)" 
                         data-is-thumbnail="true" />
+
+                  <!-- Video Preview Overlay -->
+                  <div v-if="isVideoFile(file.name) && (hoveredFile === file.name || (isMobile && visibleFiles.has(file.name)))" 
+                       class="absolute inset-0 z-10 animate-in fade-in duration-200">
+                    <img :src="getPreviewUrl(file.name)" 
+                         class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                         @load="$event.target.classList.remove('opacity-0')"
+                         alt="Preview" />
+                  </div>
                 </template>
 
                 <!-- Hover Action Overlay -->
@@ -1041,10 +1290,14 @@ const toggleFavourite = async (file: File) => {
             <!-- Modernized List Item -->
             <div v-else 
                  class="flex items-center gap-4 p-2.5 bg-base-100 rounded-lg border border-base-content/10 hover:border-primary/30 transition-all cursor-pointer group/row ring-primary/30 h-[56px]"
-                 :class="{ 'ring-1 border-primary/30': selectedFiles.has(file.name) }"
+                 :class="{ 
+                   'ring-1 border-primary/30': selectedFiles.has(file.name),
+                   'ring-2 ring-primary border-primary shadow-md translate-x-1': dragTarget === file.name && file.isFolder
+                 }"
                  @click="onFileClick($event, file)" 
                  @contextmenu.prevent="handleContextMenu($event, file)"
             >
+              <!-- Checkbox -->
               <div class="flex items-center justify-center shrink-0">
                 <input type="checkbox" 
                        class="checkbox checkbox-xs checkbox-primary rounded-sm" 
@@ -1053,11 +1306,14 @@ const toggleFavourite = async (file: File) => {
                        @click.stop />
               </div>
               
+              <!-- Icon -->
               <div class="flex items-center justify-center shrink-0 w-8 h-8">
                 <Icon class="w-6 h-6" :name="file.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(file.name)" />
               </div>
 
+              <!-- Content Area -->
               <div class="flex-grow flex items-center justify-between min-w-0">
+                <!-- Name & Editing -->
                 <div class="flex-grow min-w-0 mr-4 flex flex-col">
                   <input v-if="editingName === file.name" 
                          v-model="newName" 
@@ -1069,6 +1325,7 @@ const toggleFavourite = async (file: File) => {
                   <span class="text-[9px] font-bold text-base-content/20 truncate">{{ file.name }}</span>
                 </div>
                 
+                <!-- Metadata Group -->
                 <div class="flex items-center gap-6 text-[9px] font-bold text-base-content/40 uppercase tracking-widest shrink-0">
                   <div class="flex items-center gap-2">
                     <div v-if="file.meta.isPublic" 
@@ -1086,12 +1343,14 @@ const toggleFavourite = async (file: File) => {
                   
                   <span v-if="!file.isFolder" class="hidden sm:inline w-20 text-right">{{ formatSize(file.size) }}</span>
                   <span v-else class="hidden sm:inline w-20 text-right">&nbsp;</span>
+                  
                   <span class="hidden md:inline w-24 text-right">{{ new Date(file.lastModified).toLocaleDateString() }}</span>
                 </div>
               </div>
             </div>
           </template>
 
+          <!-- Placeholder -->
           <div v-else :class="isGridView ? 'flex flex-col gap-2' : 'h-[56px] bg-base-100/30 rounded-lg border border-dashed border-base-content/10'">
             <div v-if="isGridView" class="aspect-square bg-base-100/30 rounded-lg border border-dashed border-base-content/10"></div>
             <div v-if="isGridView" class="h-[40px]"></div>
@@ -1128,6 +1387,8 @@ const toggleFavourite = async (file: File) => {
           <div class="h-px bg-base-content/5 mx-2 my-1"></div>
           <li><a class="py-2.5 px-4" @click="handleContextAction('rename')"><Icon name="mdi:pencil" class="w-4 h-4 text-blue-500" /> Rename</a></li>
           <li><a class="py-2.5 px-4" @click="handleContextAction('move')"><Icon name="mdi:folder-move" class="w-4 h-4 text-primary" /> Move</a></li>
+          <li><a class="py-2.5 px-4" @click="handleContextAction('description')"><Icon name="mdi:text-box-edit-outline" class="w-4 h-4 text-orange-500" /> Edit Notes</a></li>
+          <li><a class="py-2.5 px-4" @click="handleContextAction('info')"><Icon name="mdi:information" class="w-4 h-4 text-primary" /> Details</a></li>
           <li><a class="py-2.5 px-4" @click="handleContextAction('favourite')">
             <Icon name="mdi:star" class="w-4 h-4 text-orange-500" /> Unstar
           </a></li>
@@ -1140,10 +1401,11 @@ const toggleFavourite = async (file: File) => {
 
     <!-- File Info Modal -->
     <div class="modal backdrop-blur-md" :class="{ 'modal-open': showFileInfoModal }" @click="closeFileModal">
-      <div class="modal-box rounded-xl shadow-xl p-0 max-w-lg border border-base-content/10 overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
+      <div class="modal-box rounded-xl shadow-xl p-0 max-w-2xl border border-base-content/10 overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
+        <!-- Modal Header -->
         <div class="bg-base-200/30 p-6 border-b border-base-content/10 shrink-0">
           <div class="flex items-center gap-4">
-            <div class="bg-base-100 p-3 rounded-lg border border-base-content/10 shadow-sm">
+            <div class="bg-base-100 p-3 rounded-lg border border-base-content/10 shadow-sm shrink-0">
               <Icon
                   :name="selectedFile?.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(selectedFile?.name || '')"
                   class="w-10 h-10"
@@ -1152,115 +1414,144 @@ const toggleFavourite = async (file: File) => {
             <div class="min-w-0">
               <h3 class="font-bold text-lg tracking-tight truncate text-base-content">{{ selectedFile?.name.split('/').pop() }}</h3>
               <p class="text-[9px] font-bold text-base-content/30 truncate mb-0.5">{{ selectedFile?.name }}</p>
-              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">
-                {{ selectedFile?.isFolder ? 'Folder' : 'Document' }}
-              </p>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/40">
+                  {{ selectedFile?.isFolder ? 'Folder' : 'Document' }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div v-if="selectedFile" class="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
-          <div class="grid grid-cols-2 gap-4">
+        <!-- Scrollable Content -->
+        <div v-if="selectedFile" class="p-6 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
+          <!-- Main Visual Preview -->
+          <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))" class="w-full">
+             <div class="flex items-center gap-2 mb-3">
+                <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">File Preview</span>
+             </div>
+             <div :key="selectedFile.name" class="rounded-lg overflow-hidden border border-base-content/10 bg-black flex items-center justify-center aspect-video group/preview relative">
+                <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
+                  <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
+                </video>
+                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-contain transition-transform duration-300 group-hover/preview:scale-105 cursor-pointer" @click="selectedImageUrl = getStaticUrl(selectedFile), showImageViewerModal = true" />
+             </div>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div v-if="!selectedFile.isFolder" class="bg-base-200/50 p-4 rounded-lg flex flex-col gap-0.5 border border-base-content/10">
               <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Size</span>
               <span class="text-sm font-bold text-base-content">{{ formatSize(selectedFile.size) }}</span>
             </div>
-            <div class="bg-base-200/50 p-4 rounded-lg flex flex-col gap-0.5 border border-base-content/10" :class="selectedFile.isFolder ? 'col-span-2' : ''">
+            <div class="bg-base-200/50 p-4 rounded-lg flex flex-col gap-0.5 border border-base-content/10" :class="{ 'col-span-2': selectedFile.isFolder }">
               <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Modified</span>
               <span class="text-sm font-bold text-base-content">{{ new Date(selectedFile.lastModified).toLocaleDateString() }}</span>
             </div>
+            <div class="bg-base-200/50 p-4 rounded-lg flex flex-col gap-0.5 border border-base-content/10">
+              <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Access</span>
+              <span class="text-sm font-bold text-success uppercase tracking-wider">Writeable</span>
+            </div>
           </div>
 
-          <div>
-             <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30 block mb-3">Tags</span>
-             <div class="flex flex-wrap gap-2 items-center bg-base-200/30 p-3 rounded-lg border border-base-content/10">
-                <span v-for="tag in selectedFile.meta.tags"
-                      :key="tag.name"
-                      class="badge badge-sm border-none text-white font-bold py-2.5 px-3 shadow-sm rounded-md group/tag"
-                      :style="{ backgroundColor: tag.color }"> 
-                  {{ tag.name }} 
-                  <Icon name="mdi:close" 
-                        class="w-3 h-3 ml-1.5 cursor-pointer opacity-50 hover:opacity-100" 
-                        @click.stop="removeTag(tag)" />
-                </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Left Column: Notes & Tags -->
+            <div class="space-y-6">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Description / Notes</span>
+                  <button v-if="!isEditingDescription" class="btn btn-ghost btn-xs rounded-md h-6 font-bold text-[9px] uppercase tracking-wider" @click="startEditDescription">
+                    Edit
+                  </button>
+                </div>
                 
-                <button
-                  class="btn btn-ghost btn-xs bg-base-100 hover:bg-base-200 border border-base-content/10 rounded-md px-3 h-7 transition-all font-bold text-[9px] uppercase tracking-wider"
-                  @click="openSingleTagModal"
-                >
-                  <Icon name="mdi:tag-plus-outline" class="w-3.5 h-3.5 mr-1 text-primary" /> 
-                  Add
-                </button>
-             </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Description</span>
-              <button v-if="!isEditingDescription" class="btn btn-ghost btn-xs rounded-md h-6 font-bold text-[9px] uppercase tracking-wider" @click="startEditDescription">
-                Edit
-              </button>
-            </div>
-            
-            <div v-if="isEditingDescription" class="space-y-3">
-              <textarea
-                  v-model="editableDescription"
-                  class="textarea textarea-bordered w-full h-24 bg-base-100 focus:bg-base-100 transition-all font-bold text-xs rounded-lg"
-                  placeholder="Enter details..."
-              ></textarea>
-              <div class="flex justify-end gap-2">
-                <button class="btn btn-ghost btn-xs h-7 rounded-md px-3 font-bold text-[9px] uppercase" @click="isEditingDescription = false">Cancel</button>
-                <button class="btn btn-primary btn-xs h-7 rounded-md px-4 font-bold text-[9px] uppercase" @click="saveDescription">Save</button>
+                <div v-if="isEditingDescription" class="space-y-3">
+                  <textarea
+                      v-model="editableDescription"
+                      class="textarea textarea-bordered w-full h-24 bg-base-100 focus:bg-base-100 transition-all font-bold text-xs rounded-lg"
+                      placeholder="Add some notes about this file..."
+                  ></textarea>
+                  <div class="flex justify-end gap-2">
+                    <button class="btn btn-ghost btn-xs h-7 rounded-md px-3 font-bold text-[9px] uppercase" @click="isEditingDescription = false">Cancel</button>
+                    <button class="btn btn-primary btn-xs h-7 rounded-md px-4 font-bold text-[9px] uppercase" @click="saveDescription">Save</button>
+                  </div>
+                </div>
+                <div v-else>
+                  <div v-if="selectedFile.meta.description" class="bg-base-200/30 p-4 rounded-lg text-xs font-bold leading-relaxed text-base-content/70 border border-base-content/10">
+                    {{ selectedFile.meta.description }}
+                  </div>
+                  <button v-else class="w-full border border-dashed border-base-content/20 rounded-lg py-6 font-bold text-base-content/30 text-[10px] uppercase tracking-widest hover:border-primary/30 hover:bg-primary/5 transition-all" @click="startEditDescription">
+                    Add description
+                  </button>
+                </div>
               </div>
-            </div>
-            <div v-else>
-              <div v-if="selectedFile.meta.description" class="bg-base-200/30 p-4 rounded-lg text-xs font-bold leading-relaxed text-base-content/70 border border-base-content/10">
-                {{ selectedFile.meta.description }}
-              </div>
-              <button v-else class="w-full border border-dashed border-base-content/20 rounded-lg py-6 font-bold text-base-content/30 text-[10px] uppercase tracking-widest hover:border-primary/30 hover:bg-primary/5 transition-all" @click="startEditDescription">
-                Add details
-              </button>
-            </div>
-          </div>
 
-          <div class="bg-base-100 rounded-lg p-4 border border-base-content/10 space-y-4 shadow-sm">
-            <div class="flex items-center justify-between">
               <div>
-                <span class="text-xs font-bold tracking-tight text-base-content uppercase">Favorite</span>
-                <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Pin for quick access</p>
+                <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30 mb-3 block">Tags</span>
+                <div class="flex flex-wrap gap-2 items-center bg-base-200/30 p-3 rounded-lg border border-base-content/10">
+                    <span v-for="tag in (selectedFile.meta.tags || [])"
+                          :key="tag.name"
+                          class="badge badge-sm border-none text-white font-bold py-2.5 px-3 shadow-sm rounded-md"
+                          :style="{ backgroundColor: tag.color }"> 
+                      {{ tag.name }} 
+                      <Icon name="mdi:close" 
+                            class="w-3 h-3 ml-1.5 cursor-pointer opacity-50 hover:opacity-100" 
+                            @click.stop="removeTag(tag)" />
+                    </span>
+                    
+                    <button
+                      class="btn btn-ghost btn-xs bg-base-100 hover:bg-base-200 border border-base-content/10 rounded-md px-3 h-7 transition-all font-bold text-[9px] uppercase tracking-wider"
+                      @click="openSingleTagModal"
+                    >
+                      <Icon name="mdi:plus" class="w-3.5 h-3.5 mr-1 text-primary" /> 
+                      Add
+                    </button>
+                </div>
               </div>
-              <button 
-                class="btn btn-xs btn-ghost btn-circle rounded-md h-8 w-8 bg-base-200/50 text-orange-500"
-                @click="toggleFavourite(selectedFile)"
-              >
-                <Icon name="mdi:star" class="w-4 h-4" />
-              </button>
             </div>
 
-            <div class="h-px bg-base-content/5"></div>
+            <!-- Right Column: Settings -->
+            <div class="space-y-6">
+              <div class="bg-base-100 rounded-lg p-5 border border-base-content/10 space-y-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-xs font-bold tracking-tight text-base-content uppercase">Favorite</span>
+                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Pin for quick access</p>
+                  </div>
+                  <button 
+                    class="btn btn-xs btn-ghost btn-circle rounded-md h-8 w-8 bg-base-200/50 text-orange-500"
+                    @click="toggleFavourite(selectedFile)"
+                  >
+                    <Icon name="mdi:star" class="w-4 h-4" />
+                  </button>
+                </div>
 
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="text-xs font-bold tracking-tight text-base-content uppercase">Public Access</span>
-                <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Share via link</p>
+                <div class="h-px bg-base-content/5"></div>
+
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-xs font-bold tracking-tight text-base-content uppercase">Public Access</span>
+                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Share via link</p>
+                  </div>
+                  <input type="checkbox" class="toggle toggle-success toggle-xs rounded-sm" :checked="selectedFile.meta.isPublic" @change="togglePublicAccess" />
+                </div>
+                
+                <transition name="fade">
+                  <div v-if="selectedFile.meta.isPublic" class="bg-success/5 p-3 rounded-lg flex flex-col gap-2 border border-success/10">
+                    <p class="text-[9px] font-bold text-success uppercase tracking-widest">Link Active</p>
+                    <button class="btn btn-xs btn-success text-white w-full rounded-md font-bold uppercase tracking-wider h-8 shadow-sm" @click="copyPublicLink">
+                      <Icon name="mdi:content-copy" class="w-3.5 h-3.5 mr-1.5" />
+                      Copy Link
+                    </button>
+                  </div>
+                </transition>
               </div>
-              <input type="checkbox" class="toggle toggle-success toggle-xs rounded-sm" :checked="selectedFile.meta.isPublic" @change="togglePublicAccess" />
             </div>
-          </div>
-
-          <!-- Preview -->
-          <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))">
-             <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30 block mb-3">Quick Preview</span>
-             <div :key="selectedFile.name" class="rounded-lg overflow-hidden border border-base-content/10 bg-black flex items-center justify-center aspect-video">
-                <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
-                  <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
-                </video>
-                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-contain" />
-             </div>
           </div>
         </div>
 
-        <div class="p-4 bg-base-100 border-t border-base-content/10 flex flex-wrap gap-2 justify-between items-center shrink-0 px-6">
+        <!-- Sticky Footer -->
+        <div class="p-4 bg-base-100 border-t border-base-content/10 flex items-center justify-between gap-3 px-6 shrink-0">
           <button class="btn btn-sm btn-error btn-ghost font-bold text-[10px] uppercase tracking-widest rounded-md px-4" @click="deleteFile(selectedFile)">
             Delete
           </button>
@@ -1268,13 +1559,15 @@ const toggleFavourite = async (file: File) => {
             <button class="btn btn-sm bg-base-200 hover:bg-base-300 border-none font-bold text-[10px] uppercase tracking-widest rounded-md px-4" @click="downloadFile(selectedFile)">
               Download
             </button>
-            <button class="btn btn-sm btn-primary font-bold text-[10px] uppercase tracking-widest rounded-md px-8 shadow-sm" @click="closeFileModal">Done</button>
+            <button class="btn btn-sm btn-primary font-bold text-[10px] uppercase tracking-widest rounded-md px-8 shadow-sm" @click="closeFileModal">
+              Close
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Image Viewer Modal -->
+    <!-- Image Viewer -->
     <div class="modal image-viewer-modal backdrop-blur-md" :class="{ 'modal-open': showImageViewerModal }" @click="closeImageViewer">
       <div class="modal-box-image p-2 bg-transparent border-none shadow-none" @click.stop>
         <div class="relative group">
@@ -1300,8 +1593,14 @@ const toggleFavourite = async (file: File) => {
           </button>
         </div>
 
+        <!-- Breadcrumbs for picker -->
         <div class="px-4 py-2.5 bg-base-100 border-b border-base-content/5 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
-          <button class="btn btn-xs btn-ghost gap-1 px-1.5 h-7 rounded-md font-bold text-[9px] uppercase tracking-wider" @click="fetchPickerFolders('')">Root</button>
+          <button 
+            class="btn btn-xs btn-ghost gap-1 px-1.5 h-7 rounded-md font-bold text-[9px] uppercase tracking-wider"
+            @click="fetchPickerFolders('')"
+          >
+            Root
+          </button>
           <template v-for="(part, index) in pickerCurrentPath.split('/')" :key="index">
             <Icon v-if="part" name="mdi:chevron-right" class="w-3 h-3 opacity-30" />
             <button 
@@ -1315,13 +1614,21 @@ const toggleFavourite = async (file: File) => {
         </div>
 
         <div class="flex-1 overflow-y-auto p-2 min-h-[240px] custom-scrollbar">
-          <div v-if="pickerCurrentPath" class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200/50 cursor-pointer group" @click="navigatePickerUp">
+          <div v-if="pickerCurrentPath" 
+               class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200/50 cursor-pointer group"
+               @click="navigatePickerUp">
             <Icon name="mdi:arrow-up" class="w-4 h-4 text-base-content/30 group-hover:text-primary" />
             <span class="text-xs font-bold text-base-content/70">Go Up</span>
           </div>
-          <div v-for="folder in pickerFolders" :key="folder.name" class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200/50 cursor-pointer group" @click="navigatePicker(folder.name)">
+
+          <div v-for="folder in pickerFolders" 
+               :key="folder.name"
+               class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200/50 cursor-pointer group"
+               @click="navigatePicker(folder.name)">
             <Icon name="vscode-icons:default-folder" class="w-4 h-4" />
-            <div class="flex-grow min-w-0"><span class="text-xs font-bold truncate block text-base-content">{{ folder.name }}</span></div>
+            <div class="flex-grow min-w-0">
+              <span class="text-xs font-bold truncate block text-base-content">{{ folder.name }}</span>
+            </div>
             <Icon name="mdi:chevron-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
           </div>
         </div>
@@ -1333,7 +1640,11 @@ const toggleFavourite = async (file: File) => {
           </div>
           <div class="flex gap-2">
             <button class="btn btn-xs h-8 px-4 rounded-md font-bold uppercase tracking-widest text-[9px]" @click="showMoveModal = false">Cancel</button>
-            <button class="btn btn-xs btn-primary h-8 px-6 rounded-md font-bold uppercase tracking-widest text-[9px] shadow-sm" @click="executeMove" :disabled="isMoving">
+            <button 
+              class="btn btn-xs btn-primary h-8 px-6 rounded-md font-bold uppercase tracking-widest text-[9px] shadow-sm"
+              @click="executeMove"
+              :disabled="isMoving"
+            >
               <span v-if="isMoving" class="loading loading-spinner loading-xs mr-1"></span>
               Move Here
             </button>
@@ -1350,8 +1661,8 @@ const toggleFavourite = async (file: File) => {
             <Icon name="mdi:tag-multiple" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-bold text-base tracking-tight text-base-content">Manage Identity</h3>
-            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Establish asset classifications</p>
+            <h3 class="font-bold text-base tracking-tight text-base-content">Manage Tags</h3>
+            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Add tags to your favorites</p>
           </div>
         </div>
 
@@ -1364,12 +1675,12 @@ const toggleFavourite = async (file: File) => {
         <div v-else-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Identity Label</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Tag Name</span>
             </label>
             <input
               v-model="newTagName"
               type="text"
-              placeholder="Archives, Logs, Private..."
+              placeholder="Work, Personal, Favorites..."
               class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10"
             />
           </div>
@@ -1384,12 +1695,12 @@ const toggleFavourite = async (file: File) => {
                 class="w-11 h-11 rounded-lg cursor-pointer border-none bg-base-200/50"
               />
               <div class="flex-grow h-11 rounded-lg flex items-center px-4 font-bold text-[11px] bg-base-200/50 border border-dashed border-base-content/10 uppercase tracking-widest" :style="{ color: newTagColor }">
-                 Style Sample
+                 Color Preview
               </div>
             </div>
           </div>
           <div class="flex flex-col gap-2 mt-10">
-            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="bulkAddTags">Establish & Apply</button>
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="bulkAddTags">Create & Apply</button>
             <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = false">Existing Tags</button>
             <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
@@ -1398,7 +1709,7 @@ const toggleFavourite = async (file: File) => {
         <div v-else class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Select Established</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Select Existing Tags</span>
             </label>
             <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
               <div

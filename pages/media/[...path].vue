@@ -568,11 +568,11 @@ watch(() => route.params.path, () => {
               <div class="flex flex-wrap items-center justify-between gap-6 py-5 border-y border-base-content/10">
                 <div class="flex items-center gap-8">
                   <div class="flex flex-col gap-1">
-                    <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Metadata Size</span>
+                    <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">File Size</span>
                     <span class="text-sm font-bold text-base-content">{{ formatFileSize(currentVideo.size) }}</span>
                   </div>
                   <div class="flex flex-col gap-1">
-                    <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Registry Date</span>
+                    <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Date Added</span>
                     <span class="text-sm font-bold text-base-content">{{ formatDate(currentVideo.lastModified) }}</span>
                   </div>
                 </div>
@@ -592,7 +592,7 @@ watch(() => route.params.path, () => {
                    </button>
                    <button class="btn btn-sm btn-primary gap-2 rounded-lg px-6 shadow-sm font-bold text-[10px] uppercase tracking-widest" @click="showShareModal = true">
                      <Icon name="mdi:share-variant" class="w-4 h-4" />
-                     Share Access
+                     Share
                    </button>
                 </div>
               </div>
@@ -617,7 +617,7 @@ watch(() => route.params.path, () => {
                   @click="openTagModal"
                 >
                   <Icon name="mdi:tag-plus-outline" class="w-3.5 h-3.5 mr-1 text-primary" /> 
-                  Add Identity
+                  Add Tag
                 </button>
               </div>
 
@@ -626,14 +626,14 @@ watch(() => route.params.path, () => {
                 <div class="flex items-center justify-between mb-6">
                   <div class="flex items-center gap-2">
                     <Icon name="mdi:text-subject" class="w-4 h-4 text-base-content/30" />
-                    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40">Technical Logs / Description</h3>
+                    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40">Description</h3>
                   </div>
                   <button 
                     v-if="!isEditingDescription"
                     class="btn btn-ghost btn-xs rounded-md h-7 px-3 border border-base-content/5 font-bold text-[9px] uppercase tracking-widest"
                     @click="startEditDescription"
                   >
-                    Edit Records
+                    Edit Description
                   </button>
                 </div>
 
@@ -641,11 +641,11 @@ watch(() => route.params.path, () => {
                   <textarea
                     v-model="editableDescription"
                     class="textarea textarea-bordered w-full h-32 bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs rounded-lg"
-                    placeholder="Establish descriptive records for this asset..."
+                    placeholder="Add a description for this video..."
                   ></textarea>
                   <div class="flex justify-end gap-2">
                     <button class="btn btn-ghost btn-xs h-8 px-4 rounded-md font-bold text-[10px] uppercase tracking-widest" @click="isEditingDescription = false">Cancel</button>
-                    <button class="btn btn-primary btn-xs h-8 px-6 rounded-md shadow-sm font-bold text-[10px] uppercase tracking-widest" @click="saveDescription">Update Registry</button>
+                    <button class="btn btn-primary btn-xs h-8 px-6 rounded-md shadow-sm font-bold text-[10px] uppercase tracking-widest" @click="saveDescription">Save Description</button>
                   </div>
                 </div>
                 
@@ -654,9 +654,9 @@ watch(() => route.params.path, () => {
                     {{ currentVideo.meta.description }}
                   </div>
                   <div v-else class="flex flex-col items-center py-6 text-center">
-                    <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-[0.2em] mb-4">No data established</p>
+                    <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-[0.2em] mb-4">No description yet</p>
                     <button class="btn btn-ghost btn-sm border border-dashed border-base-content/20 rounded-lg font-bold text-[9px] uppercase tracking-widest px-8" @click="startEditDescription">
-                      Initialize Records
+                      Add Description
                     </button>
                   </div>
                 </div>
@@ -680,7 +680,7 @@ watch(() => route.params.path, () => {
           <div class="sticky top-24 space-y-6">
             <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40 pl-1 flex items-center gap-2">
               <Icon name="mdi:sparkles" class="w-4 h-4 text-primary/60" />
-              Related Media Clusters
+              Related Media
             </h2>
 
             <div v-if="isLoading" class="space-y-4">
@@ -746,14 +746,14 @@ watch(() => route.params.path, () => {
                   class="btn btn-ghost btn-xs w-full font-bold uppercase tracking-widest text-[9px] h-9 rounded-lg border border-base-content/5 bg-base-100/50"
                   @click="loadMore"
                 >
-                  Retrieve More
+                  Show More
                 </button>
               </div>
             </div>
 
             <div v-else class="bg-base-100 p-8 rounded-xl text-center shadow-sm border border-base-content/10">
               <Icon name="mdi:video-off-outline" class="w-10 h-10 text-base-content/10 mx-auto mb-3" />
-              <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">No matching media signatures</p>
+              <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">No matching videos</p>
             </div>
           </div>
         </div>
@@ -768,8 +768,8 @@ watch(() => route.params.path, () => {
             <Icon name="mdi:share-variant" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-bold text-base tracking-tight text-base-content">Share Exposure</h3>
-            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Establish public access gateway</p>
+            <h3 class="font-bold text-base tracking-tight text-base-content">Share Video</h3>
+            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Manage public sharing access</p>
           </div>
         </div>
 
@@ -777,7 +777,7 @@ watch(() => route.params.path, () => {
           <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-content/5">
             <div>
               <span class="text-xs font-bold tracking-tight text-base-content uppercase">Public Link</span>
-              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Enable shared access</p>
+              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Enable public sharing</p>
             </div>
             <input 
               type="checkbox" 
@@ -790,10 +790,10 @@ watch(() => route.params.path, () => {
           <transition name="fade">
             <div v-if="currentVideo.meta.isPublic" class="space-y-3">
               <div class="bg-success/5 p-4 rounded-lg flex flex-col gap-3 border border-success/10">
-                <p class="text-[10px] font-bold text-success uppercase tracking-widest leading-relaxed">Exposure active. Anyone with the signature link can view.</p>
+                <p class="text-[10px] font-bold text-success uppercase tracking-widest leading-relaxed">Sharing active. Anyone with the link can view.</p>
                 <button class="btn btn-sm btn-success text-white w-full rounded-md shadow-sm font-bold uppercase tracking-widest text-[10px] h-9" @click="copyPublicLinkForVideo">
                   <Icon name="mdi:content-copy" class="w-3.5 h-3.5 mr-2" />
-                  Copy Gateway Link
+                  Copy Public Link
                 </button>
               </div>
             </div>
@@ -814,20 +814,20 @@ watch(() => route.params.path, () => {
             <Icon name="mdi:tag-multiple" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-bold text-base tracking-tight text-base-content">Manage Identity</h3>
-            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Establish asset classifications</p>
+            <h3 class="font-bold text-base tracking-tight text-base-content">Manage Tags</h3>
+            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Add tags to your media</p>
           </div>
         </div>
 
         <div v-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Identity Label</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Tag Name</span>
             </label>
             <input
               v-model="newTagName"
               type="text"
-              placeholder="Archives, Logs, Private..."
+              placeholder="Work, Personal, Favorites..."
               class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10"
             />
           </div>
@@ -842,12 +842,12 @@ watch(() => route.params.path, () => {
                 class="w-11 h-11 rounded-lg cursor-pointer border-none bg-base-200/50"
               />
               <div class="flex-grow h-11 rounded-lg flex items-center px-4 font-bold text-[11px] bg-base-200/50 border border-dashed border-base-content/10 uppercase tracking-widest" :style="{ color: newTagColor }">
-                 Style Sample
+                 Color Preview
               </div>
             </div>
           </div>
           <div class="flex flex-col gap-2 mt-10">
-            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTag">Establish & Apply</button>
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTag">Create & Apply</button>
             <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = false">Existing Tags</button>
             <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
@@ -856,7 +856,7 @@ watch(() => route.params.path, () => {
         <div v-else class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Select Established</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Select Existing Tags</span>
             </label>
             <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
               <div

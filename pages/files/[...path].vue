@@ -624,6 +624,73 @@ const isFileVisible = (index: number) => {
   return index >= scrollIndex.value - (buffer / 2) && index <= scrollIndex.value + buffer
 }
 
+// Mouse Area Selection
+const isSelecting = ref(false)
+const selectionBox = ref({ x: 0, y: 0, width: 0, height: 0 })
+const selectionStart = ref({ x: 0, y: 0 })
+
+const handleMouseDown = (event: MouseEvent) => {
+  if (isMobile.value) return
+  // Only start selection if clicking on the main container or grid container (not on a file item)
+  const target = event.target as HTMLElement
+  if (target.closest('.file-item-container') || target.closest('.btn') || target.closest('.input') || target.closest('.modal')) return
+  if (event.button !== 0) return // Only left click
+
+  isSelecting.value = true
+  selectionStart.value = { x: event.clientX, y: event.clientY }
+  selectionBox.value = { x: event.clientX, y: event.clientY, width: 0, height: 0 }
+
+  window.addEventListener('mousemove', handleMouseMove)
+  window.addEventListener('mouseup', handleMouseUp)
+}
+
+const handleMouseMove = (event: MouseEvent) => {
+  if (!isSelecting.value) return
+
+  const currentX = event.clientX
+  const currentY = event.clientY
+
+  selectionBox.value = {
+    x: Math.min(selectionStart.value.x, currentX),
+    y: Math.min(selectionStart.value.y, currentY),
+    width: Math.abs(selectionStart.value.x - currentX),
+    height: Math.abs(selectionStart.value.y - currentY)
+  }
+
+  updateSelection()
+}
+
+const updateSelection = () => {
+  const elements = document.querySelectorAll('.file-item-container')
+  elements.forEach((el) => {
+    const rect = el.getBoundingClientRect()
+    const fileName = (el as HTMLElement).dataset.fileName
+    if (!fileName) return
+
+    const intersects = (
+      rect.left < selectionBox.value.x + selectionBox.value.width &&
+      rect.right > selectionBox.value.x &&
+      rect.top < selectionBox.value.y + selectionBox.value.height &&
+      rect.bottom > selectionBox.value.y
+    )
+
+    if (intersects) {
+      selectedFiles.value.add(fileName)
+    } else if (!window.event?.ctrlKey && !window.event?.metaKey) {
+      // If not holding Ctrl, deselect items outside the box that were previously selected by THIS selection action
+      // But actually, typical behavior is to deselect if not holding Ctrl.
+      // Let's stick to standard: if not holding Ctrl, selection box defines the TOTAL selection.
+      selectedFiles.value.delete(fileName)
+    }
+  })
+}
+
+const handleMouseUp = () => {
+  isSelecting.value = false
+  window.removeEventListener('mousemove', handleMouseMove)
+  window.removeEventListener('mouseup', handleMouseUp)
+}
+
 const updateItemsPerRow = () => {
   const width = window.innerWidth
   if (width >= 1280) itemsPerRow.value = 6
@@ -1218,10 +1285,95 @@ const toggleFavourite = async (file: File) => {
     createNotification('Failed to update favorite status', NotificationType.ERROR)
   }
 }
+
+// Drag and Drop
+const dragTarget = ref<string | null>(null)
+
+const handleDragStart = (event: DragEvent, file: File) => {
+  if (isMobile.value) return
+  
+  if (!selectedFiles.value.has(file.name)) {
+    selectedFiles.value.clear()
+    selectedFiles.value.add(file.name)
+  }
+
+  const route = useRoute()
+  const pathParam = route.params.path
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  const paths = Array.from(selectedFiles.value).map(name => folderPath ? `${folderPath}/${name}` : name)
+  
+  event.dataTransfer?.setData('application/json', JSON.stringify(paths))
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const handleDragOver = (event: DragEvent, folder: File) => {
+  if (isMobile.value) return
+  if (!folder.isFolder) return
+  
+  // Prevent dropping into one of the selected items
+  const route = useRoute()
+  const pathParam = route.params.path
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  const fullFolderPath = folderPath ? `${folderPath}/${folder.name}` : folder.name
+  
+  const selectedPaths = Array.from(selectedFiles.value).map(name => folderPath ? `${folderPath}/${name}` : name)
+  if (selectedPaths.includes(fullFolderPath)) return
+
+  event.preventDefault()
+  dragTarget.value = folder.name
+}
+
+const handleDragLeave = () => {
+  dragTarget.value = null
+}
+
+const handleDropToFolder = async (event: DragEvent, folder: File) => {
+  if (isMobile.value) return
+  dragTarget.value = null
+  if (!folder.isFolder) return
+
+  const data = event.dataTransfer?.getData('application/json')
+  if (!data) return
+
+  const paths = JSON.parse(data)
+  const route = useRoute()
+  const pathParam = route.params.path
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  const destination = folderPath ? `${folderPath}/${folder.name}` : folder.name
+
+  try {
+    const response = await fetch('/api/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths, destination })
+    })
+
+    if (!response.ok) throw new Error('Failed to move items')
+    
+    createNotification('Items moved successfully', NotificationType.SUCCESS)
+    selectedFiles.value.clear()
+    await fetchFiles()
+  } catch (err) {
+    console.error('Error moving items:', err)
+    createNotification('Failed to move items', NotificationType.ERROR)
+  }
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/50">
+  <div class="min-h-screen bg-base-200/50" @mousedown="handleMouseDown">
+    <!-- Selection Box -->
+    <div v-if="isSelecting" 
+         class="fixed border-2 border-primary bg-primary/10 z-[100] pointer-events-none"
+         :style="{
+           left: selectionBox.x + 'px',
+           top: selectionBox.y + 'px',
+           width: selectionBox.width + 'px',
+           height: selectionBox.height + 'px'
+         }">
+    </div>
     <!-- Edge-to-Edge Sticky Header -->
     <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
@@ -1377,7 +1529,13 @@ const toggleFavourite = async (file: File) => {
         <div 
           v-for="(file, index) in sortedFiles" 
           :key="file.name" 
-          class="group relative"
+          class="group relative file-item-container"
+          :data-file-name="file.name"
+          :draggable="!isMobile"
+          @dragstart="handleDragStart($event, file)"
+          @dragover="handleDragOver($event, file)"
+          @dragleave="handleDragLeave"
+          @drop="handleDropToFolder($event, file)"
         >
           <template v-if="isFileVisible(index)">
             <!-- Grid Item -->
@@ -1389,7 +1547,8 @@ const toggleFavourite = async (file: File) => {
                 class="relative aspect-square rounded-lg bg-base-100 border border-base-content/10 shadow-sm hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden flex items-center justify-center group/item ring-primary/30"
                 :class="{ 
                   'ring-1': selectedFiles.has(file.name),
-                  'video-thumbnail-container': isVideoFile(file.name)
+                  'video-thumbnail-container': isVideoFile(file.name),
+                  'ring-2 ring-primary scale-105 border-primary shadow-lg': dragTarget === file.name && file.isFolder
                 }"
                 :data-file-name="file.name"
                 @click="onFileClick($event, file)" 
@@ -1478,7 +1637,10 @@ const toggleFavourite = async (file: File) => {
             <!-- Modernized List Item -->
             <div v-else 
                  class="flex items-center gap-4 p-2.5 bg-base-100 rounded-lg border border-base-content/10 hover:border-primary/30 transition-all cursor-pointer group/row ring-primary/30 h-[56px]"
-                 :class="{ 'ring-1 border-primary/30': selectedFiles.has(file.name) }"
+                 :class="{ 
+                   'ring-1 border-primary/30': selectedFiles.has(file.name),
+                   'ring-2 ring-primary border-primary shadow-md translate-x-1': dragTarget === file.name && file.isFolder
+                 }"
                  @click="onFileClick($event, file)" 
                  @contextmenu.prevent="handleContextMenu($event, file)"
             >
@@ -2031,8 +2193,8 @@ const toggleFavourite = async (file: File) => {
             <Icon name="mdi:tag-multiple" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-bold text-base tracking-tight text-base-content">Manage Identity</h3>
-            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Establish asset classifications</p>
+            <h3 class="font-bold text-base tracking-tight text-base-content">Manage Tags</h3>
+            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Add tags to your files</p>
           </div>
         </div>
 
@@ -2045,12 +2207,12 @@ const toggleFavourite = async (file: File) => {
         <div v-else-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Identity Label</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Tag Name</span>
             </label>
             <input
               v-model="newTagName"
               type="text"
-              placeholder="Archives, Logs, Private..."
+              placeholder="Work, Personal, Favorites..."
               class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10"
             />
           </div>
@@ -2065,12 +2227,12 @@ const toggleFavourite = async (file: File) => {
                 class="w-11 h-11 rounded-lg cursor-pointer border-none bg-base-200/50"
               />
               <div class="flex-grow h-11 rounded-lg flex items-center px-4 font-bold text-[11px] bg-base-200/50 border border-dashed border-base-content/10 uppercase tracking-widest" :style="{ color: newTagColor }">
-                 Style Sample
+                 Color Preview
               </div>
             </div>
           </div>
           <div class="flex flex-col gap-2 mt-10">
-            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="bulkAddTags">Establish & Apply</button>
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="bulkAddTags">Create & Apply</button>
             <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = false">Existing Tags</button>
             <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
@@ -2079,7 +2241,7 @@ const toggleFavourite = async (file: File) => {
         <div v-else class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Select Established</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Select Existing Tags</span>
             </label>
             <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
               <div

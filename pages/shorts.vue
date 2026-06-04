@@ -462,20 +462,20 @@ const refresh = () => {
             <Icon name="mdi:tag-multiple" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-bold text-base tracking-tight text-white">Manage Identity</h3>
-            <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Establish asset classifications</p>
+            <h3 class="font-bold text-base tracking-tight text-white">Manage Tags</h3>
+            <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Add tags to your media</p>
           </div>
         </div>
 
         <div v-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Identity Label</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Tag Name</span>
             </label>
             <input
               v-model="newTagName"
               type="text"
-              placeholder="Archives, Logs, Private..."
+              placeholder="Work, Personal, Favorites..."
               class="input input-bordered w-full bg-white/5 focus:bg-white/10 transition-all font-bold text-xs h-11 rounded-lg border-white/10 text-white"
             />
           </div>
@@ -490,12 +490,12 @@ const refresh = () => {
                 class="w-11 h-11 rounded-lg cursor-pointer border-none bg-white/5"
               />
               <div class="flex-grow h-11 rounded-lg flex items-center px-4 font-bold text-[11px] bg-white/5 border border-dashed border-white/10 uppercase tracking-widest" :style="{ color: newTagColor }">
-                 Style Sample
+                 Color Preview
               </div>
             </div>
           </div>
           <div class="flex flex-col gap-2 mt-10">
-            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTags">Establish & Apply</button>
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTags">Create & Apply</button>
             <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-white/70" @click="showNewTagForm = false">Existing Tags</button>
             <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
@@ -504,7 +504,7 @@ const refresh = () => {
         <div v-else class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Select Established</span>
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Select Existing Tags</span>
             </label>
             <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar no-scrollbar">
               <div
