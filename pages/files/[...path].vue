@@ -1502,7 +1502,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
     <!-- Bulk Action Bar -->
     <transition name="slide-down">
-      <div v-if="selectedFiles.size > 0" class="sticky top-[113px] md:top-[80px] z-[50] w-full bg-primary text-primary-content shadow-lg py-2 md:py-2.5 px-4 sm:px-8">
+      <div v-if="selectedFiles.size > 0" class="sticky top-[111px] md:top-[80px] z-[50] w-full bg-primary text-primary-content shadow-lg py-2 md:py-2.5 px-4 sm:px-8">
         <div class="max-w-[1600px] mx-auto flex flex-nowrap items-center justify-between gap-4 overflow-x-auto no-scrollbar">
           <div class="flex items-center gap-4 shrink-0">
             <button class="btn btn-xs btn-outline btn-ghost border-white/30 text-white rounded-md font-bold" @click="toggleSelectAll">
