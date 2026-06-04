@@ -79,6 +79,16 @@ onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
 })
 
+const isVideo = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return ['mp4', 'webm', 'mov', 'mkv'].includes(ext)
+}
+
+const isImage = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)
+}
+
 const formatSize = (bytes: number) => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let value = bytes
