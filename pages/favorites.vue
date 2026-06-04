@@ -1075,16 +1075,16 @@ const getPreviewUrl = (fullPath: string) => {
 
     <!-- Bulk Action Bar -->
     <transition name="slide-down">
-      <div v-if="selectedFiles.size > 0" class="sticky top-[104px] md:top-[80px] z-[50] w-full bg-primary text-primary-content shadow-lg py-2.5 px-4 sm:px-8">
-        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
+      <div v-if="selectedFiles.size > 0" class="sticky top-[101px] md:top-[80px] z-[50] w-full bg-primary text-primary-content shadow-lg py-2 md:py-2.5 px-4 sm:px-8">
+        <div class="max-w-[1600px] mx-auto flex flex-nowrap items-center justify-between gap-4 overflow-x-auto no-scrollbar">
+          <div class="flex items-center gap-4 shrink-0">
             <button class="btn btn-xs btn-outline btn-ghost border-white/30 text-white rounded-md font-bold" @click="toggleSelectAll">
               {{ selectedFiles.size === sortedFiles.length ? 'Deselect All' : 'Select All' }}
             </button>
             <span class="text-[10px] font-bold uppercase tracking-widest">{{ selectedFiles.size }} selected</span>
           </div>
           
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 shrink-0">
             <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="bulkDownload">
               <Icon name="mdi:download" class="w-3.5 h-3.5" /> Download
             </button>
