@@ -1146,25 +1146,25 @@ const getPreviewUrl = (fullPath: string) => {
                 @touchmove="handleTouchEnd"
               >
                 <!-- Selection Checkbox (Top Left) -->
-                <div class="absolute top-2 left-2 z-20 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">
-                  <input 
-                    type="checkbox" 
-                    class="checkbox checkbox-xs checkbox-primary bg-base-100/80 backdrop-blur-md rounded-sm" 
-                    :checked="selectedFiles.has(file.name)" 
-                    @change="toggleSelection(file.name)" 
-                    @click.stop 
+                <div class="absolute top-2 left-2 z-10 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-xs checkbox-primary bg-base-100/80 backdrop-blur-md rounded-sm"
+                    :checked="selectedFiles.has(file.name)"
+                    @change="toggleSelection(file.name)"
+                    @click.stop
                   />
                 </div>
 
                 <!-- Shared Indicator (Top Right) -->
-                <div class="absolute top-2 right-2 z-30 flex flex-col gap-1.5">
-                  <div v-if="file.meta.isPublic" 
-                       class="bg-success text-success-content w-6 h-6 flex items-center justify-center rounded shadow-sm backdrop-blur-md hover:scale-105 transition-all" 
+                <div class="absolute top-2 right-2 z-10 flex flex-col gap-1.5">
+                  <div v-if="file.meta.isPublic"
+                       class="bg-success text-success-content w-6 h-6 flex items-center justify-center rounded shadow-sm backdrop-blur-md hover:scale-105 transition-all"
                        title="Copy Shared Link"
                        @click.stop="copyPublicLinkForFile(file)">
                     <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
                   </div>
-                  <div class="bg-base-100/80 text-orange-500 w-6 h-6 flex items-center justify-center rounded shadow-sm backdrop-blur-md hover:scale-105 transition-all" 
+                  <div class="bg-base-100/80 text-orange-500 w-6 h-6 flex items-center justify-center rounded shadow-sm backdrop-blur-md hover:scale-105 transition-all"
                        title="Remove from Favorite"
                        @click.stop="toggleFavourite(file)">
                     <Icon name="mdi:star" class="w-3.5 h-3.5" />
@@ -1176,27 +1176,26 @@ const getPreviewUrl = (fullPath: string) => {
                   <Icon name="vscode-icons:default-folder" class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300" />
                 </template>
                 <template v-else>
-                  <img v-if="hasThumbnail(file.name)" 
-                       :src="getThumbnailUrl(file.name)" 
-                       class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" 
-                       alt="" 
+                  <img v-if="hasThumbnail(file.name)"
+                       :src="getThumbnailUrl(file.name)"
+                       class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105"
+                       alt=""
                        data-is-thumbnail="true"
                        loading="lazy" />
-                  <Icon v-else 
-                        class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300" 
-                        :name="getIconForExtension(file.name)" 
+                  <Icon v-else
+                        class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300"
+                        :name="getIconForExtension(file.name)"
                         data-is-thumbnail="true" />
 
                   <!-- Video Preview Overlay -->
-                  <div v-if="isVideoFile(file.name) && (hoveredFile === file.name || (isMobile && visibleFiles.has(file.name)))" 
-                       class="absolute inset-0 z-10 animate-in fade-in duration-200">
-                    <img :src="getPreviewUrl(file.name)" 
-                         class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                  <div v-if="isVideoFile(file.name) && (hoveredFile === file.name || (isMobile && visibleFiles.has(file.name)))"
+                       class="absolute inset-0 animate-in fade-in duration-200">
+                    <img :src="getPreviewUrl(file.name)"
+                         class="w-full h-full object-cover opacity-0 transition-opacity duration-300"
                          @load="$event.target.classList.remove('opacity-0')"
                          alt="Preview" />
                   </div>
                 </template>
-
                 <!-- Hover Action Overlay -->
                 <div class="absolute inset-0 bg-black/5 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none"></div>
               </div>
