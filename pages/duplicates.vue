@@ -171,25 +171,25 @@ async function cleanSelected() {
 
 <template>
   <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
-    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
-      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
-              <Icon name="mdi:menu" class="w-5 h-5" />
-            </label>
-            <div>
-              <h1 class="text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+    <header class="sticky top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
+      <div class="w-full px-4 py-3 md:py-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+          <div class="flex flex-col gap-0.5 md:gap-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-xs md:btn-sm lg:hidden">
+                <Icon name="mdi:menu" class="w-5 h-5" />
+              </label>
+              <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
                 <Icon name="mdi:content-copy" class="text-primary w-5 h-5" />
                 Duplicate Scanner
               </h1>
-              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Identify & Remove Redundant Data</p>
             </div>
+            <p class="text-[9px] md:text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Identify & Remove Redundant Data</p>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2 md:gap-3">
              <button 
-               class="btn btn-primary btn-sm h-10 rounded-lg px-6 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+               class="btn btn-xs md:btn-sm btn-primary h-8 md:h-10 rounded-lg px-4 md:px-6 shadow-sm gap-2 font-bold text-[9px] md:text-[10px] uppercase tracking-widest" 
                @click="fetchDuplicates"
                :disabled="isLoading"
              >

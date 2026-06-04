@@ -83,32 +83,34 @@ onMounted(fetchShared)
 
 <template>
   <div class="min-h-screen bg-base-200/50">
-    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
-      <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
-              <Icon name="mdi:menu" class="w-5 h-5" />
-            </label>
-            <div>
-              <h1 class="text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+    <header class="sticky top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
+      <div class="w-full px-4 py-3 md:py-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+          <div class="flex flex-col gap-0.5 md:gap-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-xs md:btn-sm lg:hidden">
+                <Icon name="mdi:menu" class="w-5 h-5" />
+              </label>
+              <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
                 <Icon name="mdi:share-variant" class="text-success w-5 h-5" />
                 Shared Files
               </h1>
-              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Manage your public links</p>
             </div>
+            <p class="text-[9px] md:text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Manage your public links</p>
           </div>
 
-          <div class="relative w-full md:w-64">
-            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
-            </div>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search shared files..."
-              class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs rounded-lg"
-            />
+          <div class="flex flex-wrap items-center gap-2 md:gap-3">
+             <div class="relative flex-1 md:flex-none md:min-w-[240px]">
+                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
+                </div>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search shared files..."
+                  class="input input-xs md:input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs h-8 md:h-10"
+                />
+             </div>
           </div>
         </div>
       </div>
