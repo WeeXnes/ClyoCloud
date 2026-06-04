@@ -106,6 +106,18 @@ const formatSize = (bytes: number) => {
   return `${value.toFixed(1)} ${units[unitIndex]}`
 }
 
+const getThumbnailUrl = (fullPath: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  return `${baseUrl}/thumbnail/${encodeURIComponent(fullPath)}`
+}
+
+const getPreviewUrl = (fullPath: string) => {
+  const url = useRequestURL()
+  const baseUrl = url.origin
+  return `${baseUrl}/preview/${encodeURIComponent(fullPath)}`
+}
+
 const formatDate = (timestamp: number) => {
   return new Date(timestamp).toLocaleString()
 }
