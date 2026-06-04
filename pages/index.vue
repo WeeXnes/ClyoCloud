@@ -159,81 +159,79 @@ onUnmounted(() => {
 <template>
   <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
     <!-- Header Area -->
-    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-3">
           <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
             <Icon name="mdi:menu" class="w-5 h-5" />
           </label>
           <div>
-            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
-              <Icon name="mdi:view-dashboard-outline" class="text-primary w-6 h-6" />
+            <h1 class="text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+              <Icon name="mdi:view-dashboard-outline" class="text-primary w-5 h-5" />
               Dashboard
             </h1>
-            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">System Overview</p>
+            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest pl-1">System Overview</p>
           </div>
         </div>
       </div>
     </header>
 
-    <main class="flex-1 w-full max-w-[1400px] mx-auto px-4 py-8 sm:px-8 space-y-10">
+    <main class="flex-1 w-full max-w-[1400px] mx-auto px-4 py-6 sm:px-8 space-y-8">
       <!-- Welcome Section -->
       <section class="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 class="text-3xl sm:text-4xl font-black tracking-tight mb-2">Welcome back, <span class="text-primary">{{ stats?.username || 'User' }}</span></h2>
-          <p class="text-sm font-bold text-base-content/40 uppercase tracking-widest">Your personal cloud is synchronized and secure</p>
+          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-1 text-base-content">Welcome back, <span class="text-primary">{{ stats?.username || 'User' }}</span></h2>
+          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Your personal cloud is synchronized and secure</p>
         </div>
         <div class="flex items-center gap-4">
-           <NuxtLink to="/files" class="btn btn-primary rounded-2xl px-8 shadow-lg shadow-primary/20 gap-2">
-             <Icon name="mdi:cloud-upload" class="w-5 h-5" />
+           <NuxtLink to="/files" class="btn btn-primary rounded-lg px-6 shadow-sm gap-2 font-bold text-xs uppercase tracking-wider">
+             <Icon name="mdi:cloud-upload" class="w-4 h-4" />
              Upload New
            </NuxtLink>
         </div>
       </section>
 
       <!-- Stats Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
         <!-- Main Column (Storage & CPU) -->
-        <div class="lg:col-span-7 flex flex-col gap-8">
+        <div class="lg:col-span-7 flex flex-col gap-6">
           <!-- Multi-Drive Storage Section -->
-          <div class="flex flex-col gap-6">
-            <div class="flex items-center gap-3 px-2">
-               <div class="w-8 h-8 rounded-lg bg-base-content/5 flex items-center justify-center">
-                 <Icon name="mdi:harddisk" class="text-base-content/40 w-5 h-5" />
-               </div>
-               <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">System Storage</h2>
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-2 px-1">
+               <Icon name="mdi:harddisk" class="text-base-content/30 w-4 h-4" />
+               <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40">System Storage</h2>
             </div>
 
             <!-- Drive Grid -->
             <div class="grid grid-cols-1 gap-6">
               <template v-if="isLoading">
-                <div v-for="i in 2" :key="i" class="bg-base-100 rounded-[2.5rem] p-8 border border-base-content/5 animate-pulse h-48"></div>
+                <div v-for="i in 2" :key="i" class="bg-base-100 rounded-xl p-6 border border-base-content/10 animate-pulse h-40"></div>
               </template>
               <template v-else>
                 <section 
                   v-for="drive in stats?.drives" 
                   :key="drive.mount"
-                  class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col justify-between"
+                  class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 p-6 sm:p-8 flex flex-col justify-between"
                 >
-                  <div class="flex items-center justify-between mb-8">
+                  <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                        <Icon :name="drive.mount === '/' ? 'mdi:folder-home' : 'mdi:database-outline'" class="text-primary w-6 h-6" />
+                      <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Icon :name="drive.mount === '/' ? 'mdi:folder-home' : 'mdi:database-outline'" class="text-primary w-5 h-5" />
                       </div>
                       <div>
-                        <h3 class="font-black text-lg tracking-tight">{{ drive.mount }}</h3>
-                        <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">{{ drive.label }}</p>
+                        <h3 class="font-bold text-base tracking-tight text-base-content">{{ drive.mount }}</h3>
+                        <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ drive.label }}</p>
                       </div>
                     </div>
                     <div class="text-right">
-                      <span class="text-2xl font-black tracking-tight">{{ Math.round(drive.use) }}%</span>
+                      <span class="text-xl font-bold tracking-tight text-base-content">{{ Math.round(drive.use) }}%</span>
                     </div>
                   </div>
 
-                  <div class="space-y-6">
-                    <div class="relative pt-1">
-                      <div class="overflow-hidden h-4 text-xs flex rounded-full bg-base-200 shadow-inner">
+                  <div class="space-y-4">
+                    <div class="relative">
+                      <div class="overflow-hidden h-2.5 text-xs flex rounded-full bg-base-200">
                         <div 
                           :style="{ width: drive.use + '%' }" 
                           class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-1000 ease-out"
@@ -242,18 +240,18 @@ onUnmounted(() => {
                       </div>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                      <div class="flex flex-col gap-1">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Used</span>
-                        <span class="text-base font-bold">{{ formatSize(drive.used) }}</span>
+                    <div class="grid grid-cols-3 gap-4">
+                      <div class="flex flex-col gap-0.5">
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Used</span>
+                        <span class="text-sm font-bold text-base-content/70">{{ formatSize(drive.used) }}</span>
                       </div>
-                      <div class="flex flex-col gap-1">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Available</span>
-                        <span class="text-base font-bold">{{ formatSize(drive.available) }}</span>
+                      <div class="flex flex-col gap-0.5">
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Available</span>
+                        <span class="text-sm font-bold text-base-content/70">{{ formatSize(drive.available) }}</span>
                       </div>
-                      <div class="flex flex-col gap-1 col-span-2 sm:col-span-1">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Total</span>
-                        <span class="text-base font-bold text-base-content/60">{{ formatSize(drive.total) }}</span>
+                      <div class="flex flex-col gap-0.5 text-right">
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Total</span>
+                        <span class="text-sm font-bold text-base-content/40">{{ formatSize(drive.total) }}</span>
                       </div>
                     </div>
                   </div>
@@ -262,118 +260,103 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- CPU Card -->
-          <section class="flex-1 bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col justify-between">
-            <div class="flex items-center justify-between mb-8">
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center">
-                  <Icon name="mdi:cpu-64-bit" class="text-orange-500 w-6 h-6" />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <!-- CPU Card -->
+            <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 p-6 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                    <Icon name="mdi:cpu-64-bit" class="text-orange-500 w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-sm tracking-tight text-base-content">CPU Load</h3>
+                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Processor</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 class="font-black text-lg tracking-tight">Processor Load</h3>
-                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Computational Power</p>
-                </div>
-              </div>
-              <div v-if="!isLoading" class="text-right">
-                <span class="text-2xl font-black tracking-tight">{{ cpuPercentage }}%</span>
-              </div>
-            </div>
-
-            <div v-if="isLoading" class="space-y-4">
-               <div class="h-4 w-full bg-base-200 animate-pulse rounded-full"></div>
-            </div>
-
-            <div v-else class="space-y-6">
-              <div class="relative pt-1">
-                <div class="overflow-hidden h-4 text-xs flex rounded-full bg-base-200 shadow-inner">
-                  <div 
-                    :style="{ width: cpuPercentage + '%' }" 
-                    class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-orange-500 transition-all duration-1000 ease-out"
-                  ></div>
+                <div v-if="!isLoading" class="text-right">
+                  <span class="text-xl font-bold tracking-tight text-base-content">{{ cpuPercentage }}%</span>
                 </div>
               </div>
 
-              <div class="flex flex-col gap-1">
-                <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Model Identity</span>
-                <span class="text-sm font-bold truncate max-w-full">{{ stats?.cpu.model }}</span>
-                <div class="flex items-center gap-4 mt-1 text-base-content/40">
-                  <span class="text-[10px] font-bold uppercase tracking-widest">{{ stats?.cpu.cores }} Logical Cores</span>
-                  <span class="w-1 h-1 rounded-full bg-base-content/20"></span>
-                  <span class="text-[10px] font-bold uppercase tracking-widest">Load: {{ stats?.cpu.load.toFixed(2) }}</span>
-                </div>
+              <div v-if="isLoading" class="space-y-2">
+                 <div class="h-2.5 w-full bg-base-200 animate-pulse rounded-full"></div>
               </div>
-            </div>
-          </section>
+              <div v-else class="space-y-4">
+                <div class="relative">
+                  <div class="overflow-hidden h-2.5 text-xs flex rounded-full bg-base-200">
+                    <div 
+                      :style="{ width: cpuPercentage + '%' }" 
+                      class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-orange-500 transition-all duration-1000 ease-out"
+                    ></div>
+                  </div>
+                </div>
+                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest truncate">{{ stats?.cpu.model }}</p>
+              </div>
+            </section>
 
-          <!-- Memory Load Card -->
-          <section class="flex-1 bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col justify-between">
-            <div class="flex items-center justify-between mb-8">
-               <div class="flex items-center gap-4">
-                 <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Icon name="mdi:memory" class="text-primary w-6 h-6" />
+            <!-- Memory Card -->
+            <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 p-6 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-6">
+                 <div class="flex items-center gap-3">
+                   <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon name="mdi:memory" class="text-primary w-5 h-5" />
+                   </div>
+                   <div>
+                     <h3 class="font-bold text-sm tracking-tight text-base-content">RAM Load</h3>
+                     <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Memory</p>
+                   </div>
+                 </div>
+                 <div v-if="!isLoading" class="text-right">
+                   <span class="text-xl font-bold tracking-tight text-base-content">{{ ramPercentage }}%</span>
+                 </div>
+              </div>
+
+              <div v-if="isLoading" class="space-y-2">
+                 <div class="h-2.5 w-full bg-base-200 animate-pulse rounded-full"></div>
+              </div>
+              <div v-else class="space-y-4">
+                 <div class="relative">
+                   <div class="overflow-hidden h-2.5 text-xs flex rounded-full bg-base-200">
+                     <div 
+                       :style="{ width: ramPercentage + '%' }" 
+                       class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-1000 ease-out"
+                     ></div>
+                   </div>
+                 </div>
+                 <div class="flex justify-between text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
+                   <span>{{ formatSize(stats?.ram.used || 0) }} used</span>
+                   <span>{{ formatSize(stats?.ram.total || 0) }} total</span>
+                 </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Storage Distribution -->
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 p-6 flex flex-col gap-6">
+            <div class="flex items-center justify-between">
+               <div class="flex items-center gap-3">
+                 <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Icon name="mdi:chart-tree" class="text-primary w-5 h-5" />
                  </div>
                  <div>
-                   <h3 class="font-black text-lg tracking-tight">Memory Load</h3>
-                   <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">System RAM</p>
-                 </div>
-               </div>
-               <div v-if="!isLoading" class="text-right">
-                 <span class="text-2xl font-black tracking-tight">{{ ramPercentage }}%</span>
-               </div>
-            </div>
-
-            <div v-if="isLoading" class="space-y-4">
-               <div class="h-4 w-full bg-base-200 animate-pulse rounded-full"></div>
-            </div>
-            <div v-else class="space-y-6">
-               <div class="relative pt-1">
-                 <div class="overflow-hidden h-4 text-xs flex rounded-full bg-base-200 shadow-inner">
-                   <div 
-                     :style="{ width: ramPercentage + '%' }" 
-                     class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-1000 ease-out"
-                   ></div>
-                 </div>
-               </div>
-               <div class="grid grid-cols-2 gap-6">
-                  <div class="flex flex-col gap-1">
-                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Used</span>
-                    <span class="text-base font-bold">{{ formatSize(stats?.ram.used || 0) }}</span>
-                  </div>
-                  <div class="flex flex-col gap-1">
-                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">Total</span>
-                    <span class="text-base font-bold text-base-content/60">{{ formatSize(stats?.ram.total || 0) }}</span>
-                  </div>
-               </div>
-            </div>
-          </section>
-
-          <!-- Storage Map Card (Treemap) -->
-          <section class="flex-1 bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 p-8 sm:p-10 flex flex-col">
-            <div class="flex items-center justify-between mb-8 shrink-0">
-               <div class="flex items-center gap-4">
-                 <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Icon name="mdi:chart-tree" class="text-primary w-6 h-6" />
-                 </div>
-                 <div>
-                   <h3 class="font-black text-lg tracking-tight">Storage Distribution</h3>
-                   <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Resource Allocation</p>
+                   <h3 class="font-bold text-sm tracking-tight text-base-content">Storage Distribution</h3>
+                   <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Resource Allocation</p>
                  </div>
                </div>
             </div>
 
-            <div v-if="isLoading" class="flex-1 flex items-center justify-center min-h-[300px]">
-              <div class="loading loading-spinner loading-lg text-primary"></div>
+            <div v-if="isLoading" class="h-48 flex items-center justify-center">
+              <div class="loading loading-spinner loading-md text-primary"></div>
             </div>
-            <div v-else class="flex-1 flex flex-col gap-8">
-              <!-- Optimized Treemap -->
-              <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 auto-rows-[100px] gap-2">
+            <div v-else class="flex flex-col gap-6">
+              <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 auto-rows-[80px] gap-2">
                 <div 
                   v-for="(node, index) in treemapNodes" 
                   :key="node.name"
-                  class="rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer flex flex-col justify-end group border border-white/10"
+                  class="rounded-lg p-3 transition-all duration-200 hover:brightness-110 cursor-pointer flex flex-col justify-end group border border-white/5"
                   :class="[
                     getTreemapColor(index),
-                    index === 0 ? 'col-span-4 row-span-2 sm:col-span-3' : 
+                    index === 0 ? 'col-span-4 row-span-2 sm:col-span-4' : 
                     index === 1 ? 'col-span-2 row-span-2' : 
                     'col-span-2 row-span-1'
                   ]"
@@ -381,140 +364,119 @@ onUnmounted(() => {
                   @mouseleave="hoveredNode = null"
                 >
                   <div class="flex flex-col min-w-0 text-white">
-                    <span class="text-[10px] font-black uppercase tracking-widest opacity-60 truncate">{{ formatSize(node.size) }}</span>
-                    <h4 class="text-xs font-black truncate group-hover:whitespace-normal">{{ node.name }}</h4>
+                    <span class="text-[9px] font-bold uppercase tracking-widest opacity-70 truncate">{{ formatSize(node.size) }}</span>
+                    <h4 class="text-[11px] font-bold truncate">{{ node.name }}</h4>
                   </div>
                 </div>
               </div>
 
-              <!-- Legend/Details -->
-              <div class="bg-base-200/50 rounded-3xl p-6 border border-base-content/5">
-                <div v-if="hoveredNode" class="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div class="flex items-center gap-3 mb-2">
-                    <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Active Selection</span>
-                  </div>
-                  <h4 class="font-black text-xl tracking-tight text-primary truncate">{{ hoveredNode.name }}</h4>
-                  <div class="flex items-baseline gap-2 mt-1">
-                    <p class="text-2xl font-black tracking-tighter">{{ formatSize(hoveredNode.size) }}</p>
-                    <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest">
+              <div class="bg-base-200/50 rounded-lg p-4 border border-base-content/5 min-h-[80px] flex flex-col justify-center">
+                <div v-if="hoveredNode" class="animate-in fade-in slide-in-from-bottom-1 duration-200">
+                  <h4 class="font-bold text-sm text-primary truncate">{{ hoveredNode.name }}</h4>
+                  <div class="flex items-baseline gap-2 mt-0.5">
+                    <p class="text-lg font-bold tracking-tight text-base-content">{{ formatSize(hoveredNode.size) }}</p>
+                    <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">
                       ~{{ storageMapData ? ((hoveredNode.size / storageMapData.size) * 100).toFixed(1) : 0 }}% of total
                     </p>
                   </div>
                 </div>
-                <div v-else class="flex items-center justify-between opacity-40">
-                  <div>
-                    <h4 class="font-black text-sm uppercase tracking-tight">Explore Allocation</h4>
-                    <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Select segments to analyze space</p>
-                  </div>
-                  <Icon name="mdi:gesture-tap" class="w-6 h-6" />
+                <div v-else class="flex items-center justify-between opacity-30">
+                  <p class="text-[10px] font-bold text-base-content uppercase tracking-widest">Hover items to explore allocation</p>
+                  <Icon name="mdi:gesture-tap" class="w-4 h-4" />
                 </div>
               </div>
             </div>
           </section>
         </div>
 
-        <!-- Secondary Column (Quick Terminal) -->
-        <div class="lg:col-span-5 flex flex-col gap-8">
-          <div class="flex flex-col gap-6">
-            <div class="flex items-center gap-3 px-2">
-               <div class="w-8 h-8 rounded-lg bg-base-content/5 flex items-center justify-center">
-                 <Icon name="mdi:chevron-right" class="text-base-content/40 w-5 h-5" />
-               </div>
-               <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Quick Terminal</h2>
+        <!-- Secondary Column (Quick Actions & Activity) -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-2 px-1">
+               <Icon name="mdi:chevron-right" class="text-base-content/30 w-4 h-4" />
+               <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40">Quick Terminal</h2>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <NuxtLink to="/files" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Icon name="mdi:folder-multiple-outline" class="text-blue-500 w-5 h-5" />
+            <div class="grid grid-cols-2 gap-3">
+               <NuxtLink to="/files" class="group bg-base-100 p-5 rounded-xl border border-base-content/10 shadow-sm hover:border-primary/30 transition-all duration-200">
+                  <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
+                    <Icon name="mdi:folder-multiple-outline" class="text-blue-500 w-4 h-4" />
                   </div>
-                  <h4 class="font-black text-sm uppercase tracking-tight">Explore Files</h4>
-                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Manage Storage</p>
+                  <h4 class="font-bold text-xs uppercase tracking-tight text-base-content">Explore Files</h4>
+                  <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-0.5">Manage Storage</p>
                </NuxtLink>
 
-               <NuxtLink to="/media" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Icon name="mdi:play-box-multiple-outline" class="text-purple-500 w-5 h-5" />
+               <NuxtLink to="/media" class="group bg-base-100 p-5 rounded-xl border border-base-content/10 shadow-sm hover:border-primary/30 transition-all duration-200">
+                  <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3">
+                    <Icon name="mdi:play-box-multiple-outline" class="text-purple-500 w-4 h-4" />
                   </div>
-                  <h4 class="font-black text-sm uppercase tracking-tight">Media Library</h4>
-                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Direct Playback</p>
+                  <h4 class="font-bold text-xs uppercase tracking-tight text-base-content">Media Library</h4>
+                  <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-0.5">Direct Playback</p>
                </NuxtLink>
 
-               <NuxtLink to="/shared" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Icon name="mdi:share-variant-outline" class="text-success w-5 h-5" />
+               <NuxtLink to="/shared" class="group bg-base-100 p-5 rounded-xl border border-base-content/10 shadow-sm hover:border-primary/30 transition-all duration-200">
+                  <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center mb-3">
+                    <Icon name="mdi:share-variant-outline" class="text-success w-4 h-4" />
                   </div>
-                  <h4 class="font-black text-sm uppercase tracking-tight">Shared</h4>
-                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Manage Public</p>
+                  <h4 class="font-bold text-xs uppercase tracking-tight text-base-content">Shared</h4>
+                  <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-0.5">Manage Public</p>
                </NuxtLink>
 
-               <NuxtLink to="/downloader" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Icon name="mdi:cloud-download-outline" class="text-orange-500 w-5 h-5" />
+               <NuxtLink to="/downloader" class="group bg-base-100 p-5 rounded-xl border border-base-content/10 shadow-sm hover:border-primary/30 transition-all duration-200">
+                  <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center mb-3">
+                    <Icon name="mdi:cloud-download-outline" class="text-orange-500 w-4 h-4" />
                   </div>
-                  <h4 class="font-black text-sm uppercase tracking-tight">Downloader</h4>
-                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Remote Ingest</p>
+                  <h4 class="font-bold text-xs uppercase tracking-tight text-base-content">Downloader</h4>
+                  <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-0.5">Remote Ingest</p>
                </NuxtLink>
+            </div>
+          </div>
 
-               <NuxtLink to="/settings" class="group bg-base-100 p-6 rounded-[2rem] border border-base-content/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div class="w-10 h-10 rounded-xl bg-base-content/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Icon name="mdi:cog-outline" class="text-base-content/40 w-5 h-5" />
-                  </div>
-                  <h4 class="font-black text-sm uppercase tracking-tight">Preferences</h4>
-                  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Configure Core</p>
-               </NuxtLink>
+          <!-- Recent Activity -->
+          <div class="flex flex-col gap-4 flex-1">
+            <div class="flex items-center justify-between px-1">
+              <div class="flex items-center gap-2">
+                 <Icon name="mdi:history" class="text-base-content/30 w-4 h-4" />
+                 <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40">Recent Activity</h2>
+              </div>
+              <NuxtLink to="/files" class="text-[9px] font-bold uppercase tracking-widest text-primary hover:underline">View All</NuxtLink>
+            </div>
+
+            <div class="bg-base-100 rounded-xl border border-base-content/10 shadow-sm overflow-hidden flex-1">
+              <div v-if="isLoading" class="p-4 space-y-3">
+                 <div v-for="i in 5" :key="i" class="h-10 w-full bg-base-200 animate-pulse rounded-lg"></div>
+              </div>
+              <div v-else-if="activities.length" class="divide-y divide-base-content/5">
+                 <div v-for="(activity, index) in activities" :key="index" class="p-3.5 flex items-center gap-3 hover:bg-base-200/50 transition-colors group">
+                    <div :class="`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${getActionColor(activity.action)}`">
+                       <Icon :name="getActionIcon(activity.action)" class="w-4 h-4" />
+                    </div>
+                    <div class="flex-grow min-w-0">
+                       <div class="flex items-center justify-between gap-2">
+                          <h4 class="text-xs font-bold truncate text-base-content">{{ activity.path }}</h4>
+                          <span class="text-[9px] font-bold text-base-content/30 whitespace-nowrap">{{ formatTime(activity.timestamp) }}</span>
+                       </div>
+                       <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest truncate">
+                          {{ activity.action }} {{ activity.details ? '• ' + activity.details : '' }}
+                       </p>
+                    </div>
+                 </div>
+              </div>
+              <div v-else class="h-48 flex flex-col items-center justify-center text-center p-6">
+                 <Icon name="mdi:tray-blank-outline" class="w-10 h-10 text-base-content/10 mb-2" />
+                 <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest">No recent activity detected</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Recent Activity Section -->
-      <section class="space-y-6">
-        <div class="flex items-center justify-between px-2">
-          <div class="flex items-center gap-3">
-             <div class="w-8 h-8 rounded-lg bg-base-content/5 flex items-center justify-center">
-               <Icon name="mdi:history" class="text-base-content/40 w-5 h-5" />
-             </div>
-             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Recent Activity</h2>
-          </div>
-          <NuxtLink to="/files" class="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">View All Files</NuxtLink>
-        </div>
-
-        <div class="bg-base-100 rounded-[2.5rem] border border-base-content/5 shadow-xl shadow-base-content/5 overflow-hidden">
-          <div v-if="isLoading" class="p-8 space-y-4">
-             <div v-for="i in 3" :key="i" class="h-12 w-full bg-base-200 animate-pulse rounded-2xl"></div>
-          </div>
-          <div v-else-if="activities.length" class="divide-y divide-base-content/5">
-             <div v-for="(activity, index) in activities" :key="index" class="p-4 sm:p-6 flex items-center gap-4 hover:bg-base-200/30 transition-colors group">
-                <div :class="`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${getActionColor(activity.action)}`">
-                   <Icon :name="getActionIcon(activity.action)" class="w-5 h-5" />
-                </div>
-                <div class="flex-grow min-w-0">
-                   <div class="flex items-center justify-between gap-2">
-                      <h4 class="text-sm font-black truncate">{{ activity.path }}</h4>
-                      <span class="text-[10px] font-bold text-base-content/30 whitespace-nowrap">{{ formatTime(activity.timestamp) }}</span>
-                   </div>
-                   <p class="text-[11px] font-medium text-base-content/40 truncate">
-                      {{ activity.action }} {{ activity.details ? '• ' + activity.details : '' }}
-                   </p>
-                </div>
-                <Icon name="mdi:chevron-right" class="w-4 h-4 text-base-content/10 group-hover:text-primary transition-colors" />
-             </div>
-          </div>
-          <div v-else class="p-12 text-center">
-             <Icon name="mdi:tray-blank-outline" class="w-12 h-12 text-base-content/10 mx-auto mb-4" />
-             <p class="text-xs font-bold text-base-content/30 uppercase tracking-widest">No recent activity detected</p>
-          </div>
-        </div>
-      </section>
     </main>
 
-    <footer class="w-full py-8 px-8 flex flex-col items-center gap-4 mt-auto">
-       <div class="flex items-center gap-6 opacity-30">
-          <span class="text-[9px] font-black uppercase tracking-[0.4em]">ClyoCloud Kernel</span>
+    <footer class="w-full py-6 px-8 flex flex-col items-center gap-2 mt-auto">
+       <div class="flex items-center gap-4 opacity-20">
+          <span class="text-[8px] font-bold uppercase tracking-[0.4em]">ClyoCloud Kernel</span>
           <div class="w-1 h-1 rounded-full bg-base-content"></div>
-          <span class="text-[9px] font-black uppercase tracking-[0.4em]">Node v{{ useRuntimeConfig().public.version }}</span>
+          <span class="text-[8px] font-bold uppercase tracking-[0.4em]">Node v{{ useRuntimeConfig().public.version }}</span>
        </div>
     </footer>
   </div>

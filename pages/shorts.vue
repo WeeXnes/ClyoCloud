@@ -358,7 +358,7 @@ const refresh = () => {
     <!-- Loading State -->
     <div v-if="isLoading" class="h-full w-full flex flex-col items-center justify-center text-white gap-4">
       <span class="loading loading-spinner loading-lg text-primary"></span>
-      <p class="font-black uppercase tracking-[0.2em] text-[10px] opacity-50">Preparing your feed...</p>
+      <p class="font-bold uppercase tracking-[0.2em] text-[10px] opacity-50">Syncing Media Cluster...</p>
     </div>
 
     <!-- Video Feed -->
@@ -389,44 +389,44 @@ const refresh = () => {
           </video>
         </template>
         
-        <!-- Placeholder for non-rendered videos -->
+        <!-- Placeholder -->
         <div v-else class="h-full w-full flex items-center justify-center bg-black">
-          <span class="loading loading-spinner loading-md text-white/20"></span>
+          <span class="loading loading-spinner loading-md text-white/10"></span>
         </div>
 
         <!-- Pause Overlay -->
         <transition name="fade">
           <div v-if="isPaused && currentVisibleVideo?.fullPath === video.fullPath" class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-            <div class="bg-black/40 p-6 rounded-full backdrop-blur-sm">
-              <Icon name="mdi:play" class="w-16 h-16 text-white opacity-80" />
+            <div class="bg-black/40 p-5 rounded-full backdrop-blur-md border border-white/10">
+              <Icon name="mdi:play" class="w-12 h-12 text-white opacity-80" />
             </div>
           </div>
         </transition>
 
         <!-- Video Info Overlay -->
-        <div class="absolute bottom-0 left-0 right-0 p-8 pt-24 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none">
+        <div class="absolute bottom-0 left-0 right-0 p-8 pt-24 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none">
           <div class="max-w-md pointer-events-auto">
-            <h2 class="text-white font-black text-xl tracking-tight mb-3 drop-shadow-lg">
+            <h2 class="text-white font-bold text-lg tracking-tight mb-4 drop-shadow-md">
               {{ video.name }}
             </h2>
             <div class="flex flex-wrap items-center gap-2">
               <span 
                 v-for="tag in video.meta.tags.slice(0, 3)" 
                 :key="tag.name"
-                class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm"
+                class="badge badge-sm border-none text-white font-bold py-2.5 px-3 rounded shadow-sm"
                 :style="{ backgroundColor: tag.color }"
               >
                 {{ tag.name }}
               </span>
-              <span v-if="video.meta.tags.length > 3" class="text-[10px] text-white/60 font-bold self-center">
-                +{{ video.meta.tags.length - 3 }}
+              <span v-if="video.meta.tags.length > 3" class="text-[9px] text-white/50 font-bold self-center uppercase tracking-widest">
+                +{{ video.meta.tags.length - 3 }} more
               </span>
               <button
-                class="btn btn-ghost btn-xs bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-3 text-white transition-all ml-1"
+                class="btn btn-ghost btn-xs bg-white/10 hover:bg-white/20 border border-white/10 rounded-md px-3 h-7 text-white transition-all ml-1 font-bold text-[9px] uppercase tracking-widest"
                 @click="openTagModal"
               >
                 <Icon name="mdi:tag-plus-outline" class="w-3.5 h-3.5 mr-1" /> 
-                <span class="font-bold text-[10px] uppercase tracking-wide">Add Tag</span>
+                Tags
               </button>
             </div>
           </div>
@@ -434,65 +434,65 @@ const refresh = () => {
       </div>
     </div>
 
-    <!-- Tag Modal (Overhauled - matches File Browser) -->
+    <!-- Tag Modal -->
     <div v-if="showTagModal" class="modal modal-open backdrop-blur-md z-[60]">
-      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-white/10 bg-base-900 text-white">
+      <div class="modal-box rounded-xl shadow-2xl p-8 max-w-sm border border-white/10 bg-[#0d1117] text-white">
         <div class="flex items-center gap-3 mb-8">
-          <div class="bg-primary/20 p-3 rounded-2xl">
-            <Icon name="mdi:tag-multiple" class="w-6 h-6 text-primary" />
+          <div class="bg-primary/20 p-2.5 rounded-lg border border-primary/10">
+            <Icon name="mdi:tag-multiple" class="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 class="font-black text-xl tracking-tight">Manage Tags</h3>
-            <p class="text-[11px] font-bold opacity-40 uppercase tracking-widest">Label your content for quick discovery</p>
+            <h3 class="font-bold text-base tracking-tight">Identity Management</h3>
+            <p class="text-[9px] font-bold opacity-40 uppercase tracking-widest">Classify media content</p>
           </div>
         </div>
 
-        <div v-if="showNewTagForm" class="space-y-6">
+        <div v-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
-            <label class="label mb-1">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest opacity-50 text-white">Tag Name</span>
+            <label class="label py-1">
+              <span class="label-text font-bold text-[9px] uppercase tracking-widest opacity-50 text-white">Identity Label</span>
             </label>
             <input
               v-model="newTagName"
               type="text"
-              placeholder="Work, Personal, Invoices..."
-              class="input input-bordered w-full bg-white/5 focus:bg-white/10 transition-all font-bold text-sm h-12 rounded-xl border-white/10 text-white"
+              placeholder="Archives, Logs, Private..."
+              class="input input-bordered w-full bg-white/5 focus:bg-white/10 transition-all font-bold text-xs h-11 rounded-lg border-white/10 text-white"
             />
           </div>
           <div class="form-control">
-            <label class="label mb-1">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest opacity-50 text-white">Color Identity</span>
+            <label class="label py-1">
+              <span class="label-text font-bold text-[9px] uppercase tracking-widest opacity-50 text-white">Visual Chroma</span>
             </label>
-            <div class="flex gap-4 items-center">
+            <div class="flex gap-3 items-center">
               <input
                 v-model="newTagColor"
                 type="color"
-                class="w-16 h-12 rounded-xl cursor-pointer border-none bg-white/5"
+                class="w-11 h-11 rounded-lg cursor-pointer border-none bg-white/5"
               />
-              <div class="flex-grow h-12 rounded-xl flex items-center px-4 font-bold text-sm bg-white/5 border border-dashed border-white/20" :style="{ color: newTagColor }">
-                 Preview Style
+              <div class="flex-grow h-11 rounded-lg flex items-center px-4 font-bold text-[11px] bg-white/5 border border-dashed border-white/10 uppercase tracking-widest" :style="{ color: newTagColor }">
+                 Style Sample
               </div>
             </div>
           </div>
-          <div class="flex flex-col gap-3 mt-10">
-            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="addTags">Create & Apply</button>
-            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = false">Use Existing</button>
-            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
+          <div class="flex flex-col gap-2 mt-10">
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTags">Establish & Apply</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = false">Existing Tags</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Dismiss</button>
           </div>
         </div>
 
-        <div v-else class="space-y-6">
+        <div v-else class="space-y-5">
           <div class="form-control">
-            <label class="label mb-3">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest opacity-50 text-white">Select Existing Tags</span>
+            <label class="label py-1">
+              <span class="label-text font-bold text-[9px] uppercase tracking-widest opacity-50 text-white">Select Established</span>
             </label>
-            <div class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
+            <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar no-scrollbar">
               <div
                 v-for="tag in predefinedTags"
                 :key="tag.name"
-                class="p-4 rounded-xl cursor-pointer text-center font-bold text-xs transition-all border-2"
+                class="p-3 rounded-lg cursor-pointer text-center font-bold text-[9px] uppercase tracking-wider transition-all border border-white/10"
                 :style="{ 
-                  borderColor: tag.color,
+                  borderColor: isTagSelected(tag) ? tag.color : '',
                   backgroundColor: isTagSelected(tag) ? tag.color : 'transparent', 
                   color: isTagSelected(tag) ? 'white' : tag.color
                 }"
@@ -502,23 +502,25 @@ const refresh = () => {
               </div>
             </div>
           </div>
-          <div class="flex flex-col gap-3 mt-10">
-            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="addTags">Apply Selection</button>
-            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = true">New Identity</button>
-            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
+          <div class="flex flex-col gap-2 mt-10">
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTags">Apply Selection</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = true">New Identity</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Dismiss</button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Empty State -->
-    <div v-else class="h-full w-full flex flex-col items-center justify-center text-white p-8 text-center">
-      <div class="bg-white/5 p-8 rounded-full mb-6">
+    <div v-else class="h-full w-full flex flex-col items-center justify-center text-white p-8 text-center gap-6">
+      <div class="bg-white/5 p-8 rounded-xl border border-white/10">
         <Icon name="mdi:video-off-outline" class="w-16 h-16 opacity-20" />
       </div>
-      <h3 class="text-xl font-black mb-2">No videos found</h3>
-      <p class="text-white/50 text-sm max-w-xs mb-8">Upload some MP4 files to your cloud to see them here.</p>
-      <NuxtLink to="/files" class="btn btn-primary rounded-xl px-8 shadow-lg">Go to Files</NuxtLink>
+      <div>
+        <h3 class="text-lg font-bold uppercase tracking-widest mb-1">No Media Identified</h3>
+        <p class="text-white/40 text-[10px] font-bold uppercase tracking-widest max-w-xs">Populate your data cluster with supported video files to generate a vertical feed.</p>
+      </div>
+      <NuxtLink to="/files" class="btn btn-primary btn-sm rounded-lg px-8 shadow-sm font-bold uppercase tracking-widest text-[10px]">Go to Files</NuxtLink>
     </div>
   </div>
 </template>

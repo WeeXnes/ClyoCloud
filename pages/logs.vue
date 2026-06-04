@@ -79,7 +79,7 @@ onMounted(fetchLogs)
 
 <template>
   <div class="min-h-screen bg-base-200/50">
-    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
@@ -87,11 +87,11 @@ onMounted(fetchLogs)
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div>
-              <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
-                <Icon name="mdi:history" class="text-primary w-6 h-6" />
+              <h1 class="text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+                <Icon name="mdi:history" class="text-primary w-5 h-5" />
                 Activity Logs
               </h1>
-              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Security and Operation Audit</p>
+              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Security and Operation Audit</p>
             </div>
           </div>
 
@@ -102,8 +102,8 @@ onMounted(fetchLogs)
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search logs..."
-              class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-medium"
+              placeholder="Filter logs..."
+              class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs rounded-lg"
             />
           </div>
         </div>
@@ -111,37 +111,38 @@ onMounted(fetchLogs)
     </header>
 
     <main class="max-w-[1200px] mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <div class="bg-base-100 rounded-[2.5rem] border border-base-content/5 shadow-xl shadow-base-content/5 overflow-hidden">
-        <div v-if="isLoading" class="p-8 space-y-4">
-          <div v-for="i in 8" :key="i" class="h-16 w-full bg-base-200 animate-pulse rounded-2xl"></div>
+      <div class="bg-base-100 rounded-xl border border-base-content/10 shadow-sm overflow-hidden">
+        <div v-if="isLoading" class="p-6 space-y-3">
+          <div v-for="i in 8" :key="i" class="h-12 w-full bg-base-200 animate-pulse rounded-lg"></div>
         </div>
         
         <div v-else-if="filteredActivities.length" class="divide-y divide-base-content/5">
-          <div v-for="(activity, index) in filteredActivities" :key="index" class="p-4 sm:p-6 flex items-center gap-4 hover:bg-base-200/30 transition-colors group">
-            <div :class="`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${getActionColor(activity.action)}`">
-              <Icon :name="getActionIcon(activity.action)" class="w-6 h-6" />
+          <div v-for="(activity, index) in filteredActivities" :key="index" class="p-3 sm:p-4 flex items-center gap-4 hover:bg-base-200/50 transition-colors group">
+            <div :class="`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border border-current/10 ${getActionColor(activity.action)}`">
+              <Icon :name="getActionIcon(activity.action)" class="w-5 h-5" />
             </div>
             <div class="flex-grow min-w-0">
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <h4 class="text-sm font-black truncate">{{ activity.path }}</h4>
-                <span class="text-[10px] font-bold text-base-content/30 whitespace-nowrap">{{ formatTime(activity.timestamp) }}</span>
+              <div class="flex items-center justify-between gap-2 mb-0.5">
+                <h4 class="text-xs font-bold truncate text-base-content leading-none">{{ activity.path }}</h4>
+                <span class="text-[9px] font-bold text-base-content/30 whitespace-nowrap uppercase tracking-widest">{{ formatTime(activity.timestamp).split(',')[1] }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-base-200 text-base-content/60">{{ activity.action }}</span>
-                <p v-if="activity.details" class="text-[11px] font-medium text-base-content/40 truncate">
+                <span class="text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-base-200 text-base-content/60 border border-base-content/5">{{ activity.action }}</span>
+                <p v-if="activity.details" class="text-[10px] font-bold text-base-content/40 truncate uppercase tracking-wide">
                    {{ activity.details }}
                 </p>
+                <span class="text-[9px] font-bold text-base-content/20 ml-auto hidden sm:block">{{ formatTime(activity.timestamp).split(',')[0] }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div v-else class="p-24 text-center">
-          <div class="bg-base-200/50 p-8 rounded-full inline-block mb-6">
-            <Icon name="mdi:tray-blank-outline" class="w-16 h-16 text-base-content/10" />
+        <div v-else class="py-24 text-center">
+          <div class="bg-base-200/50 p-6 rounded-xl inline-block mb-4 border border-base-content/5">
+            <Icon name="mdi:tray-blank-outline" class="w-12 h-12 text-base-content/10" />
           </div>
-          <h3 class="text-xl font-black tracking-tight">No logs found</h3>
-          <p class="text-xs font-bold text-base-content/30 uppercase tracking-widest mt-2">Try adjusting your search query</p>
+          <h3 class="text-base font-bold tracking-tight text-base-content">No logs identified</h3>
+          <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest mt-1">Try adjusting filter parameters</p>
         </div>
       </div>
     </main>

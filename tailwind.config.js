@@ -46,6 +46,10 @@ module.exports = {
                     'warning-content': 'oklch(0% 0 0)',
                     'error': 'oklch(75% 0.23 20)',       // Red for errors
                     'error-content': 'oklch(0% 0 0)',
+
+                    '--rounded-box': '0.75rem',          // rounded-xl
+                    '--rounded-btn': '0.5rem',           // rounded-lg
+                    '--rounded-badge': '0.25rem',        // rounded-sm
                 },
             }
         ]

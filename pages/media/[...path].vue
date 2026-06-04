@@ -474,51 +474,51 @@ watch(() => route.params.path, () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/30">
-    <!-- Edge-to-Edge Header area (modern and clean) -->
-    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5 mb-6">
+  <div class="min-h-screen bg-base-200/50 flex flex-col font-sans text-base-content">
+    <!-- Edge-to-Edge Sticky Header -->
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-4">
           <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
             <Icon name="mdi:menu" class="w-5 h-5" />
           </label>
           
-          <NuxtLink to="/media" class="btn btn-ghost btn-circle btn-sm bg-base-100 shadow-sm border border-base-content/5">
+          <NuxtLink to="/media" class="btn btn-ghost btn-circle btn-sm border border-base-content/10 bg-base-100/50 hover:bg-base-100">
             <Icon name="mdi:arrow-left" class="w-5 h-5" />
           </NuxtLink>
           
-          <div>
-            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
-              <Icon name="mdi:play-box-multiple-outline" class="text-primary w-6 h-6" />
+          <div class="min-w-0">
+            <h1 class="text-lg font-bold tracking-tight flex items-center gap-2">
+              <Icon name="mdi:play-box-multiple-outline" class="text-primary w-5 h-5" />
               Media Player
             </h1>
-            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1 truncate max-w-[150px] sm:max-w-md">
-              {{ currentVideo?.name || 'Loading video...' }}
+            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1 truncate max-w-[200px] sm:max-w-md">
+              {{ currentVideo?.name || 'Processing Stream...' }}
             </p>
           </div>
         </div>
       </div>
     </header>
 
-    <div class="max-w-[1800px] mx-auto px-4 pb-8 sm:px-6 lg:px-8">
+    <main class="max-w-[1800px] mx-auto px-4 py-8 sm:px-6 lg:px-8 flex-1 w-full">
       <!-- Main Content Layout -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <!-- Player Column -->
-        <div class="lg:col-span-8 xl:col-span-9">
+        <div class="lg:col-span-8 xl:col-span-9 space-y-8">
           <!-- Loading State -->
-          <div v-if="isLoading" class="aspect-video bg-base-300 animate-pulse rounded-2xl shadow-lg"></div>
+          <div v-if="isLoading" class="aspect-video bg-base-300 animate-pulse rounded-xl border border-base-content/10 shadow-sm"></div>
 
           <!-- Error State -->
-          <div v-else-if="error" class="alert alert-error shadow-lg rounded-2xl">
+          <div v-else-if="error" class="alert alert-error py-4 rounded-lg text-xs font-bold text-white shadow-sm border-none">
             <Icon name="mdi:alert-circle" class="w-6 h-6" />
             <span>{{ error }}</span>
           </div>
 
           <!-- Video Content -->
-          <div v-else-if="currentVideo">
+          <div v-else-if="currentVideo" class="animate-in fade-in duration-300">
             <!-- Player Wrapper -->
-            <div class="relative group aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/5">
+            <div class="relative group aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-white/5">
               <video
                 id="previewVideo"
                 controls
@@ -527,134 +527,144 @@ watch(() => route.params.path, () => {
                 :key="currentVideo.fullPath"
               >
                 <source :src="getStreamUrl()" :type="getSourceType(currentVideo.name)" />
-                Your browser does not support the video tag.
-              </video>            </div>
+                Your browser does not support video.
+              </video>
+            </div>
 
             <!-- Header Info -->
-            <div class="mt-6">
-              <h1 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight mb-3">
-                {{ currentVideo.name }}
-              </h1>
+            <div class="mt-8 space-y-6">
+              <div>
+                <h1 class="text-2xl font-bold tracking-tight text-base-content leading-tight mb-2">
+                  {{ currentVideo.name }}
+                </h1>
+                <div class="flex items-center gap-3 text-[10px] font-bold text-base-content/30 uppercase tracking-[0.2em]">
+                   <span>Encrypted Stream</span>
+                   <div class="w-1 h-1 rounded-full bg-current"></div>
+                   <span>Direct Access</span>
+                </div>
+              </div>
 
-              <div class="flex flex-wrap items-center justify-between gap-4 py-4 border-y border-base-content/5">
-                <div class="flex items-center gap-6">
-                  <div class="flex flex-col">
-                    <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider">Size</span>
-                    <span class="text-sm font-bold">{{ formatFileSize(currentVideo.size) }}</span>
+              <div class="flex flex-wrap items-center justify-between gap-6 py-5 border-y border-base-content/10">
+                <div class="flex items-center gap-8">
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Metadata Size</span>
+                    <span class="text-sm font-bold text-base-content">{{ formatFileSize(currentVideo.size) }}</span>
                   </div>
-                  <div class="h-8 w-px bg-base-content/10"></div>
-                  <div class="flex flex-col">
-                    <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider">Modified</span>
-                    <span class="text-sm font-bold">{{ formatDate(currentVideo.lastModified) }}</span>
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Registry Date</span>
+                    <span class="text-sm font-bold text-base-content">{{ formatDate(currentVideo.lastModified) }}</span>
                   </div>
                 </div>
 
                 <div class="flex items-center gap-2">
                    <button 
-                     class="btn btn-sm btn-ghost gap-2 rounded-full border border-base-content/10"
-                     :class="{ 'text-orange-500': currentVideo.meta.isFavourite }"
+                     class="btn btn-sm btn-ghost gap-2 rounded-lg border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest"
+                     :class="{ 'text-orange-500 bg-orange-500/10 border-orange-500/20 shadow-sm': currentVideo.meta.isFavourite }"
                      @click="toggleFavourite(currentVideo)"
                    >
                      <Icon :name="currentVideo.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
-                     {{ currentVideo.meta.isFavourite ? 'Favourited' : 'Favourite' }}
+                     {{ currentVideo.meta.isFavourite ? 'Pinned' : 'Pin' }}
                    </button>
-                   <button class="btn btn-sm btn-ghost gap-2 rounded-full border border-base-content/10" @click="downloadVideo">
-                     <Icon name="mdi:download" class="w-4 h-4" />
-                     Download
+                   <button class="btn btn-sm btn-ghost gap-2 rounded-lg border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest" @click="downloadVideo">
+                     <Icon name="mdi:download" class="w-4 h-4 text-success" />
+                     Inbound
                    </button>
-                   <button class="btn btn-sm btn-primary gap-2 rounded-full px-4 shadow-lg" @click="showShareModal = true">
+                   <button class="btn btn-sm btn-primary gap-2 rounded-lg px-6 shadow-sm font-bold text-[10px] uppercase tracking-widest" @click="showShareModal = true">
                      <Icon name="mdi:share-variant" class="w-4 h-4" />
-                     Share
+                     Share Access
                    </button>
                 </div>
               </div>
 
-              <!-- Tags & Actions -->
-              <div class="flex flex-wrap items-center gap-3 mt-6">
-                <div v-if="currentVideo.meta.tags?.length" class="flex flex-wrap gap-1.5">
+              <!-- Tags -->
+              <div class="flex flex-wrap items-center gap-2">
+                <div v-if="currentVideo.meta.tags?.length" class="flex flex-wrap gap-2">
                   <span
                     v-for="tag in currentVideo.meta.tags"
                     :key="tag.name"
-                    class="badge badge-md border-none text-white font-bold py-3.5 shadow-sm group/tag"
+                    class="badge badge-sm border-none text-white font-bold py-2.5 px-3 rounded-md shadow-sm group/tag"
                     :style="{ backgroundColor: tag.color }"
                   >
                     {{ tag.name }}
                     <Icon name="mdi:close" 
-                          class="w-0 group-hover/tag:w-3 h-3 ml-0 group-hover/tag:ml-1 cursor-pointer transition-all" 
+                          class="w-3 h-3 ml-1.5 cursor-pointer opacity-50 hover:opacity-100" 
                           @click.stop="removeTag(tag)" />
                   </span>
                 </div>
                 <button
-                  class="btn btn-ghost btn-xs sm:btn-sm bg-base-100 hover:bg-base-200 border border-base-content/5 rounded-full px-3 transition-all"
+                  class="btn btn-ghost btn-xs bg-base-100/50 hover:bg-base-100 border border-base-content/10 rounded-md px-3 h-7 transition-all font-bold text-[9px] uppercase tracking-widest"
                   @click="openTagModal"
                 >
-                  <Icon name="mdi:tag-plus-outline" class="w-4 h-4 mr-1 text-primary" /> 
-                  <span class="font-bold text-[11px] uppercase tracking-wide">Add Tag</span>
+                  <Icon name="mdi:tag-plus-outline" class="w-3.5 h-3.5 mr-1 text-primary" /> 
+                  Add Identity
                 </button>
               </div>
 
               <!-- Description Section -->
-              <div class="mt-8 bg-base-100 rounded-2xl p-6 shadow-sm ring-1 ring-base-content/5">
-                <div class="flex items-center justify-between mb-4">
-                  <h3 class="text-xs font-black uppercase tracking-widest text-base-content/40">Description</h3>
+              <section class="bg-base-100 rounded-xl p-6 sm:p-8 shadow-sm border border-base-content/10">
+                <div class="flex items-center justify-between mb-6">
+                  <div class="flex items-center gap-2">
+                    <Icon name="mdi:text-subject" class="w-4 h-4 text-base-content/30" />
+                    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40">Technical Logs / Description</h3>
+                  </div>
                   <button 
                     v-if="!isEditingDescription"
-                    class="btn btn-ghost btn-circle btn-sm"
+                    class="btn btn-ghost btn-xs rounded-md h-7 px-3 border border-base-content/5 font-bold text-[9px] uppercase tracking-widest"
                     @click="startEditDescription"
                   >
-                    <Icon name="mdi:pencil" class="w-4 h-4" />
+                    Edit Records
                   </button>
                 </div>
 
                 <div v-if="isEditingDescription" class="space-y-4">
                   <textarea
                     v-model="editableDescription"
-                    class="textarea textarea-bordered w-full h-40 bg-base-200/50 focus:bg-base-100 transition-all font-medium text-sm rounded-xl"
-                    placeholder="Tell us more about this video..."
+                    class="textarea textarea-bordered w-full h-32 bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs rounded-lg"
+                    placeholder="Establish descriptive records for this asset..."
                   ></textarea>
-                  <div class="flex justify-end gap-3">
-                    <button class="btn btn-ghost btn-sm rounded-lg" @click="isEditingDescription = false">Cancel</button>
-                    <button class="btn btn-primary btn-sm rounded-lg px-6 shadow-md" @click="saveDescription">Save Changes</button>
+                  <div class="flex justify-end gap-2">
+                    <button class="btn btn-ghost btn-xs h-8 px-4 rounded-md font-bold text-[10px] uppercase tracking-widest" @click="isEditingDescription = false">Cancel</button>
+                    <button class="btn btn-primary btn-xs h-8 px-6 rounded-md shadow-sm font-bold text-[10px] uppercase tracking-widest" @click="saveDescription">Update Registry</button>
                   </div>
                 </div>
                 
                 <div v-else>
-                  <p v-if="currentVideo.meta.description" class="text-sm leading-relaxed font-medium text-base-content/80 whitespace-pre-line">
+                  <div v-if="currentVideo.meta.description" class="bg-base-200/30 p-5 rounded-lg border border-base-content/5 text-xs font-bold leading-relaxed text-base-content/70 whitespace-pre-line">
                     {{ currentVideo.meta.description }}
-                  </p>
-                  <div v-else class="flex flex-col items-center py-4 text-center">
-                    <p class="text-sm font-bold text-base-content/30 italic mb-3">No description provided yet.</p>
-                    <button class="btn btn-ghost btn-sm border border-dashed border-base-content/20 rounded-xl" @click="startEditDescription">
-                      <Icon name="mdi:plus" class="w-4 h-4 mr-1" /> Add Details
+                  </div>
+                  <div v-else class="flex flex-col items-center py-6 text-center">
+                    <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-[0.2em] mb-4">No data established</p>
+                    <button class="btn btn-ghost btn-sm border border-dashed border-base-content/20 rounded-lg font-bold text-[9px] uppercase tracking-widest px-8" @click="startEditDescription">
+                      Initialize Records
                     </button>
                   </div>
                 </div>
-              </div>
+              </section>
             </div>
           </div>
 
           <!-- Video Not Found -->
           <div v-else class="flex flex-col items-center justify-center py-24 text-center">
-             <div class="bg-base-300 p-8 rounded-full mb-6">
-               <Icon name="mdi:movie-off-outline" class="w-20 h-20 text-base-content/20" />
+             <div class="bg-base-200/50 p-8 rounded-xl mb-6 border border-base-content/5">
+               <Icon name="mdi:movie-off-outline" class="w-16 h-16 text-base-content/10" />
              </div>
-             <h2 class="text-2xl font-black">Video not found</h2>
-             <p class="text-base-content/60 max-w-sm mt-3">The video you're looking for might have been moved, renamed, or deleted.</p>
-             <NuxtLink to="/media" class="btn btn-primary mt-8 px-8 rounded-full shadow-lg">Return to Library</NuxtLink>
+             <h2 class="text-xl font-bold text-base-content uppercase tracking-widest">Media Identifier Fault</h2>
+             <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest max-w-sm mt-2 leading-relaxed">The requested media signature could not be localized within the data cluster.</p>
+             <NuxtLink to="/media" class="btn btn-primary btn-sm mt-8 px-8 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]">Return to Registry</NuxtLink>
           </div>
         </div>
 
         <!-- Recommendations Column -->
         <div class="lg:col-span-4 xl:col-span-3">
-          <div class="sticky top-24">
-            <h2 class="text-xs font-black uppercase tracking-widest text-base-content/40 mb-5 pl-1 flex items-center gap-2">
-              <Icon name="mdi:sparkles" class="w-4 h-4 text-primary" />
-              Recommended for you
+          <div class="sticky top-24 space-y-6">
+            <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/40 pl-1 flex items-center gap-2">
+              <Icon name="mdi:sparkles" class="w-4 h-4 text-primary/60" />
+              Related Media Clusters
             </h2>
 
-            <div v-if="isLoading" class="flex flex-col gap-4">
-              <div v-for="i in 5" :key="i" class="flex gap-3">
-                 <div class="w-32 aspect-video bg-base-300 animate-pulse rounded-lg flex-shrink-0"></div>
+            <div v-if="isLoading" class="space-y-4">
+              <div v-for="i in 5" :key="i" class="flex gap-4">
+                 <div class="w-28 aspect-video bg-base-300 animate-pulse rounded-lg flex-shrink-0"></div>
                  <div class="flex-grow space-y-2">
                    <div class="h-3 w-full bg-base-300 animate-pulse rounded"></div>
                    <div class="h-2 w-1/2 bg-base-300 animate-pulse rounded"></div>
@@ -662,11 +672,11 @@ watch(() => route.params.path, () => {
               </div>
             </div>
 
-            <div v-else-if="visibleRecommendedVideos.length" class="flex flex-col gap-5">
+            <div v-else-if="visibleRecommendedVideos.length" class="space-y-1">
               <a
                 v-for="video in visibleRecommendedVideos"
                 :key="video.fullPath"
-                class="group flex gap-3 hover:bg-base-100 p-2 -m-2 rounded-xl transition-all video-thumbnail-container"
+                class="group flex gap-4 hover:bg-base-100 p-2.5 rounded-lg transition-all video-thumbnail-container border border-transparent hover:border-base-content/10"
                 :href="getVideoUrl(video.fullPath)"
                 :data-video-path="video.fullPath"
                 @click.prevent="goToVideo(video.fullPath)"
@@ -677,166 +687,163 @@ watch(() => route.params.path, () => {
                 @touchmove="handleTouchEnd"
               >
                 <!-- Compact Thumbnail -->
-                <div class="relative w-32 aspect-video overflow-hidden rounded-lg bg-base-300 shadow-sm flex-shrink-0 ring-1 ring-base-content/5">
+                <div class="relative w-28 aspect-video overflow-hidden rounded-md bg-base-300 shadow-sm shrink-0 border border-base-content/5">
                   <img
                     v-if="hasThumbnail(video.name)"
                     :src="getThumbnailUrl(video.fullPath)"
                     alt=""
-                    class="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div v-else class="flex h-full w-full items-center justify-center">
-                    <Icon name="mdi:play" class="w-5 h-5 text-base-content/20" />
+                    <Icon name="mdi:play" class="w-5 h-5 text-base-content/10" />
                   </div>
 
                   <!-- Video Preview Overlay -->
                   <div v-if="hoveredVideo === video.fullPath || (isMobile && visibleVideos.has(video.fullPath))" 
-                       class="absolute inset-0 z-10 animate-in fade-in duration-300">
+                       class="absolute inset-0 z-10 animate-in fade-in duration-200">
                     <img :src="getPreviewUrl(video.fullPath)" 
-                         class="w-full h-full object-cover opacity-0 transition-opacity duration-500" 
+                         class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
                          @load="$event.target.classList.remove('opacity-0')"
                          alt="Preview" />
                   </div>
                 </div>
 
                 <!-- Small Metadata -->
-                <div class="flex flex-col min-w-0">
-                  <h4 class="text-xs font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors mb-1">
+                <div class="flex flex-col min-w-0 justify-center">
+                  <h4 class="text-[11px] font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors mb-1 text-base-content">
                     {{ video.name }}
                   </h4>
-                  <div class="text-[10px] font-bold text-base-content/40">
-                    {{ formatDate(video.lastModified) }}
-                  </div>
-                  <div class="flex flex-wrap gap-1 mt-1">
-                     <span v-for="tag in video.meta.tags.slice(0, 1)" :key="tag.name" class="badge badge-xs border-none text-[8px]" :style="{ backgroundColor: tag.color, color: 'white' }">
-                       {{ tag.name }}
-                     </span>
+                  <div class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">
+                    {{ formatDate(video.lastModified).split(',')[0] }}
                   </div>
                 </div>
               </a>
 
-              <button 
-                v-if="visibleVideosCount < recommendedVideos.length"
-                class="btn btn-ghost btn-sm w-full font-bold uppercase tracking-widest text-[10px] mt-2 rounded-xl border-base-content/5"
-                @click="loadMore"
-              >
-                Load more suggestions
-              </button>
+              <div class="pt-4">
+                <button 
+                  v-if="visibleVideosCount < recommendedVideos.length"
+                  class="btn btn-ghost btn-xs w-full font-bold uppercase tracking-widest text-[9px] h-9 rounded-lg border border-base-content/5 bg-base-100/50"
+                  @click="loadMore"
+                >
+                  Retrieve More
+                </button>
+              </div>
             </div>
 
-            <div v-else class="bg-base-100 p-8 rounded-2xl text-center shadow-sm ring-1 ring-base-content/5">
-              <Icon name="mdi:video-off-outline" class="w-8 h-8 text-base-content/20 mx-auto mb-3" />
-              <p class="text-xs font-bold text-base-content/40 uppercase tracking-wider">No similar videos found</p>
+            <div v-else class="bg-base-100 p-8 rounded-xl text-center shadow-sm border border-base-content/10">
+              <Icon name="mdi:video-off-outline" class="w-10 h-10 text-base-content/10 mx-auto mb-3" />
+              <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">No matching media signatures</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
     <!-- Share Modal -->
     <div v-if="showShareModal" class="modal modal-open backdrop-blur-md">
-      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-md border border-base-content/5">
-        <div class="flex items-center gap-3 mb-6">
-          <div class="bg-primary/10 p-3 rounded-2xl">
-            <Icon name="mdi:share-variant" class="w-6 h-6 text-primary" />
+      <div class="modal-box rounded-xl shadow-xl p-8 max-w-sm border border-base-content/10">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="bg-primary/10 p-2.5 rounded-lg border border-primary/10 text-primary">
+            <Icon name="mdi:share-variant" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-black text-xl tracking-tight">Share Video</h3>
-            <p class="text-xs font-medium text-base-content/50">Manage how others access this video.</p>
+            <h3 class="font-bold text-base tracking-tight text-base-content">Share Exposure</h3>
+            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Establish public access gateway</p>
           </div>
         </div>
 
         <div v-if="currentVideo" class="space-y-6">
-          <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-2xl border border-base-content/5">
+          <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-content/5">
             <div>
-              <span class="text-sm font-black tracking-tight">Public Access</span>
-              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Enable to share via link</p>
+              <span class="text-xs font-bold tracking-tight text-base-content uppercase">Public Link</span>
+              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Enable shared access</p>
             </div>
             <input 
               type="checkbox" 
-              class="toggle toggle-success toggle-sm" 
+              class="toggle toggle-success toggle-xs rounded-sm" 
               :checked="currentVideo.meta.isPublic" 
               @change="togglePublicAccess" 
             />
           </div>
 
           <transition name="fade">
-            <div v-if="currentVideo.meta.isPublic" class="space-y-4">
-              <div class="bg-success/10 p-4 rounded-2xl flex flex-col gap-3 border border-success/20">
-                <p class="text-[11px] font-bold text-success-content/70">Anyone with the link can view this video.</p>
-                <button class="btn btn-sm btn-success text-white w-full rounded-xl shadow-lg shadow-success/20 h-11" @click="copyPublicLinkForVideo">
-                  <Icon name="mdi:content-copy" class="w-4 h-4 mr-2" />
-                  Copy Public Link
+            <div v-if="currentVideo.meta.isPublic" class="space-y-3">
+              <div class="bg-success/5 p-4 rounded-lg flex flex-col gap-3 border border-success/10">
+                <p class="text-[10px] font-bold text-success uppercase tracking-widest leading-relaxed">Exposure active. Anyone with the signature link can view.</p>
+                <button class="btn btn-sm btn-success text-white w-full rounded-md shadow-sm font-bold uppercase tracking-widest text-[10px] h-9" @click="copyPublicLinkForVideo">
+                  <Icon name="mdi:content-copy" class="w-3.5 h-3.5 mr-2" />
+                  Copy Gateway Link
                 </button>
               </div>
             </div>
           </transition>
 
-          <div class="flex flex-col gap-3 pt-4">
-            <button class="btn btn-ghost h-12 rounded-xl" @click="showShareModal = false">Close</button>
+          <div class="pt-4">
+            <button class="btn btn-ghost btn-sm w-full h-9 rounded-md font-bold uppercase tracking-widest text-[10px]" @click="showShareModal = false">Cancel</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Tag Modal (Overhauled - matches File Browser) -->
+    <!-- Tag Modal -->
     <div v-if="showTagModal" class="modal modal-open backdrop-blur-md">
-      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-base-content/5">
+      <div class="modal-box rounded-xl shadow-xl p-8 max-w-sm border border-base-content/10">
         <div class="flex items-center gap-3 mb-8">
-          <div class="bg-primary/10 p-3 rounded-2xl">
-            <Icon name="mdi:tag-multiple" class="w-6 h-6 text-primary" />
+          <div class="bg-primary/10 p-2.5 rounded-lg border border-primary/10 text-primary">
+            <Icon name="mdi:tag-multiple" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-black text-xl tracking-tight">Manage Tags</h3>
-            <p class="text-[11px] font-bold text-base-content/40 uppercase tracking-widest">Label your content for quick discovery</p>
+            <h3 class="font-bold text-base tracking-tight text-base-content">Manage Identity</h3>
+            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Establish asset classifications</p>
           </div>
         </div>
 
-        <div v-if="showNewTagForm" class="space-y-6">
+        <div v-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
-            <label class="label mb-1">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Tag Name</span>
+            <label class="label py-1">
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Identity Label</span>
             </label>
             <input
               v-model="newTagName"
               type="text"
-              placeholder="Work, Personal, Invoices..."
-              class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+              placeholder="Archives, Logs, Private..."
+              class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10"
             />
           </div>
           <div class="form-control">
-            <label class="label mb-1">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Color Identity</span>
+            <label class="label py-1">
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Visual Chroma</span>
             </label>
-            <div class="flex gap-4 items-center">
+            <div class="flex gap-3 items-center">
               <input
                 v-model="newTagColor"
                 type="color"
-                class="w-16 h-12 rounded-xl cursor-pointer border-none bg-base-200/50"
+                class="w-11 h-11 rounded-lg cursor-pointer border-none bg-base-200/50"
               />
-              <div class="flex-grow h-12 rounded-xl flex items-center px-4 font-bold text-sm bg-base-200/50 border border-dashed border-base-content/10" :style="{ color: newTagColor }">
-                 Preview Style
+              <div class="flex-grow h-11 rounded-lg flex items-center px-4 font-bold text-[11px] bg-base-200/50 border border-dashed border-base-content/10 uppercase tracking-widest" :style="{ color: newTagColor }">
+                 Style Sample
               </div>
             </div>
           </div>
-          <div class="flex flex-col gap-3 mt-10">
-            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="addTag">Create & Apply</button>
-            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = false">Use Existing</button>
-            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
+          <div class="flex flex-col gap-2 mt-10">
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTag">Establish & Apply</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = false">Existing Tags</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>
 
-        <div v-else class="space-y-6">
+        <div v-else class="space-y-5">
           <div class="form-control">
-            <label class="label mb-3">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Select Existing Tags</span>
+            <label class="label py-1">
+              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Select Established</span>
             </label>
-            <div class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+            <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
               <div
                 v-for="tag in predefinedTags"
                 :key="tag.name"
-                class="p-4 rounded-xl cursor-pointer text-center font-bold text-xs transition-all border-2"
+                class="p-3 rounded-lg cursor-pointer text-center font-bold text-[9px] uppercase tracking-wider transition-all border border-base-content/10"
                 :style="{ 
-                  borderColor: tag.color,
+                  borderColor: isTagSelected(tag) ? tag.color : '',
                   backgroundColor: isTagSelected(tag) ? tag.color : 'transparent', 
                   color: isTagSelected(tag) ? 'white' : tag.color
                 }"
@@ -846,10 +853,10 @@ watch(() => route.params.path, () => {
               </div>
             </div>
           </div>
-          <div class="flex flex-col gap-3 mt-10">
-            <button class="btn btn-primary h-12 rounded-xl shadow-lg" @click="addTag">Apply Selection</button>
-            <button class="btn btn-ghost h-12 rounded-xl" @click="showNewTagForm = true">New Identity</button>
-            <button class="btn btn-ghost h-12 rounded-xl text-error/60" @click="closeTagModal">Cancel</button>
+          <div class="flex flex-col gap-2 mt-10">
+            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTag">Apply Selection</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = true">New Identity</button>
+            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
           </div>
         </div>
       </div>

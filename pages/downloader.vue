@@ -1,18 +1,18 @@
 <template>
   <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
     <!-- Edge-to-Edge Sticky Header -->
-    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-3">
           <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden">
             <Icon name="mdi:menu" class="w-5 h-5" />
           </label>
           <div>
-            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
-              <Icon name="mdi:cloud-download" class="text-primary w-6 h-6" />
+            <h1 class="text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+              <Icon name="mdi:cloud-download" class="text-primary w-5 h-5" />
               Downloader
             </h1>
-            <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">yt-dlp Frontend</p>
+            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest pl-1">yt-dlp Frontend</p>
           </div>
         </div>
       </div>
@@ -20,32 +20,32 @@
 
     <main class="flex-1 p-4 sm:p-8 max-w-5xl mx-auto w-full space-y-6">
       <!-- Input Section -->
-      <div class="p-6 bg-base-100 border border-base-content/5 rounded-3xl shadow-sm">
-        <h3 class="text-lg font-black tracking-tight mb-4">Start New Download</h3>
+      <div class="p-6 bg-base-100 border border-base-content/10 rounded-xl shadow-sm">
+        <h3 class="text-base font-bold tracking-tight mb-4 text-base-content">Start New Download</h3>
         <div class="flex flex-col sm:flex-row gap-3">
           <input 
             v-model="downloadUrl" 
             type="text" 
             placeholder="Paste YouTube, Twitter, or any supported URL..." 
-            class="input input-bordered flex-1 bg-base-200/50 focus:bg-base-100 transition-all rounded-2xl"
+            class="input input-bordered flex-1 bg-base-200/50 focus:bg-base-100 transition-all rounded-lg font-bold text-xs"
             :disabled="isDownloading"
             @keyup.enter="startDownload"
           />
           <button 
             v-if="!isDownloading"
             @click="startDownload" 
-            class="btn btn-primary rounded-2xl gap-2 shadow-lg shadow-primary/20"
+            class="btn btn-primary rounded-lg gap-2 shadow-sm font-bold text-[10px] uppercase tracking-widest px-6"
             :disabled="!downloadUrl"
           >
-            <Icon name="mdi:download" class="w-5 h-5" />
+            <Icon name="mdi:download" class="w-4 h-4" />
             Download
           </button>
           <div v-else class="flex gap-2">
             <button 
               @click="stopDownload" 
-              class="btn btn-error rounded-2xl gap-2 shadow-lg shadow-error/20"
+              class="btn btn-error rounded-lg gap-2 shadow-sm font-bold text-[10px] uppercase tracking-widest px-6"
             >
-              <Icon name="mdi:stop-circle" class="w-5 h-5" />
+              <Icon name="mdi:stop-circle" class="w-4 h-4" />
               Stop
             </button>
           </div>
@@ -53,29 +53,29 @@
       </div>
 
       <!-- Progress Section -->
-      <div v-if="isDownloading || lastDownloadStatus" class="p-6 bg-base-100 border border-base-content/5 rounded-3xl shadow-sm space-y-4">
+      <div v-if="isDownloading || lastDownloadStatus" class="p-6 bg-base-100 border border-base-content/10 rounded-xl shadow-sm space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <Icon :name="statusIcon" class="w-6 h-6" :class="{ 'animate-pulse': isDownloading }" />
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+              <Icon :name="statusIcon" class="w-5 h-5" :class="{ 'animate-pulse': isDownloading }" />
             </div>
             <div>
-              <p class="font-black text-sm uppercase tracking-wider">{{ statusTitle }}</p>
-              <p class="text-xs text-base-content/40 font-bold uppercase tracking-widest">{{ statusSubtitle }}</p>
+              <p class="font-bold text-xs uppercase tracking-wider text-base-content">{{ statusTitle }}</p>
+              <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest">{{ statusSubtitle }}</p>
             </div>
           </div>
           <div class="flex items-center gap-6">
             <div v-if="progressData.percent" class="text-right">
-              <p class="text-2xl font-black text-primary">{{ progressData.percent }}</p>
-              <p class="text-[10px] font-bold text-base-content/30 uppercase tracking-widest">{{ progressData.speed }} • {{ progressData.eta }}</p>
+              <p class="text-xl font-bold text-primary">{{ progressData.percent }}</p>
+              <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">{{ progressData.speed }} • {{ progressData.eta }}</p>
             </div>
-            <button v-if="!isDownloading" @click="clearJobState" class="btn btn-ghost btn-sm btn-circle" title="Dismiss">
-              <Icon name="mdi:close" class="w-5 h-5" />
+            <button v-if="!isDownloading" @click="clearJobState" class="btn btn-ghost btn-xs btn-circle" title="Dismiss">
+              <Icon name="mdi:close" class="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div v-if="isDownloading" class="w-full bg-base-200 rounded-full h-3 overflow-hidden">
+        <div v-if="isDownloading" class="w-full bg-base-200 rounded-full h-2 overflow-hidden">
           <div 
             class="bg-primary h-full transition-all duration-300 ease-out"
             :style="{ width: progressData.percent || '0%' }"
@@ -84,20 +84,20 @@
       </div>
 
       <!-- Terminal / Logs -->
-      <div class="bg-[#0d1117] rounded-3xl overflow-hidden shadow-2xl border border-white/5 flex flex-col h-[500px]">
-        <div class="bg-white/5 px-6 py-3 flex items-center justify-between border-b border-white/5">
+      <div class="bg-[#0d1117] rounded-xl overflow-hidden shadow-lg border border-white/5 flex flex-col h-[500px]">
+        <div class="bg-white/5 px-6 py-2.5 flex items-center justify-between border-b border-white/5">
           <div class="flex items-center gap-2">
             <div class="flex gap-1.5">
-              <div class="w-3 h-3 rounded-full bg-error/50"></div>
-              <div class="w-3 h-3 rounded-full bg-warning/50"></div>
-              <div class="w-3 h-3 rounded-full bg-success/50"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-error/50"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-warning/50"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-success/50"></div>
             </div>
-            <span class="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-2">yt-dlp-output.log</span>
+            <span class="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em] ml-2">yt-dlp-output.log</span>
           </div>
-          <button @click="logs = []" class="text-[10px] font-black text-white/40 hover:text-white transition-colors uppercase tracking-widest">Clear</button>
+          <button @click="logs = []" class="text-[9px] font-bold text-white/40 hover:text-white transition-colors uppercase tracking-widest">Clear</button>
         </div>
         
-        <div ref="logContainer" class="flex-1 overflow-y-auto p-6 font-mono text-sm space-y-1 custom-scrollbar">
+        <div ref="logContainer" class="flex-1 overflow-y-auto p-6 font-mono text-[11px] space-y-1 custom-scrollbar">
           <div v-if="logs.length === 0" class="text-white/20 italic">Awaiting download...</div>
           <div v-for="(log, index) in logs" :key="index" :class="{
             'text-blue-400': log.type === 'info',

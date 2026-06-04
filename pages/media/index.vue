@@ -273,9 +273,9 @@ function setPage(page: number | string) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/50">
+  <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
     <!-- Edge-to-Edge Sticky Header -->
-    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
@@ -283,42 +283,42 @@ function setPage(page: number | string) {
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div>
-              <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
-                <Icon name="mdi:play-box-multiple-outline" class="text-primary w-6 h-6" />
+              <h1 class="text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+                <Icon name="mdi:play-box-multiple-outline" class="text-primary w-5 h-5" />
                 Media Library
               </h1>
-              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">{{ totalVideosCount }} videos stored</p>
+              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest pl-1">{{ totalVideosCount }} elements in cluster</p>
             </div>
           </div>
 
           <div class="relative w-full sm:max-w-xs lg:max-w-md">
             <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <Icon name="mdi:magnify" class="w-5 h-5 text-base-content/40" />
+              <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
             </div>
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search by name or tags..."
-              class="input input-bordered w-full pl-10 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10"
+              placeholder="Search media signatures..."
+              class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs rounded-lg"
             />
           </div>
         </div>
       </div>
     </header>
 
-    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 flex-1 w-full">
       <!-- Loading State -->
       <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         <div v-for="i in 10" :key="i" class="flex flex-col gap-3">
-          <div class="aspect-video w-full bg-base-300 animate-pulse rounded-xl"></div>
-          <div class="h-4 w-3/4 bg-base-300 animate-pulse rounded"></div>
-          <div class="h-3 w-1/2 bg-base-300 animate-pulse rounded"></div>
+          <div class="aspect-video w-full bg-base-300 animate-pulse rounded-lg"></div>
+          <div class="h-3.5 w-3/4 bg-base-300 animate-pulse rounded"></div>
+          <div class="h-2.5 w-1/2 bg-base-300 animate-pulse rounded"></div>
         </div>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="error" class="alert alert-error shadow-lg">
-        <Icon name="mdi:alert-circle" class="w-6 h-6" />
+      <div v-else-if="error" class="alert alert-error py-3 rounded-lg text-xs font-bold text-white shadow-sm border-none">
+        <Icon name="mdi:alert-circle" class="w-5 h-5" />
         <span>{{ error }}</span>
       </div>
 
@@ -331,7 +331,7 @@ function setPage(page: number | string) {
         >
           <!-- Thumbnail Container -->
           <div 
-            class="relative aspect-video overflow-hidden rounded-xl bg-base-300 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer group/thumb video-thumbnail-container"
+            class="relative aspect-video overflow-hidden rounded-lg bg-base-300 border border-base-content/5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 cursor-pointer group/thumb video-thumbnail-container"
             :data-video-path="video.fullPath"
             @click="goToVideo(video.fullPath)"
             @mouseenter="hoveredVideo = video.fullPath"
@@ -343,65 +343,65 @@ function setPage(page: number | string) {
             <img
               v-if="hasThumbnail(video.name)"
               :src="getThumbnailUrl(video.fullPath)"
-              class="h-full w-full object-cover transition-transform duration-500 group-hover/thumb:scale-110"
+              class="h-full w-full object-cover transition-transform duration-500 group-hover/thumb:scale-105"
               alt=""
               loading="lazy"
             />
             <div v-else class="flex h-full w-full items-center justify-center">
-              <Icon name="mdi:video-off-outline" class="w-12 h-12 text-base-content/20" />
+              <Icon name="mdi:video-off-outline" class="w-10 h-10 text-base-content/10" />
             </div>
 
             <!-- Video Preview Overlay -->
             <div v-if="hoveredVideo === video.fullPath || (isMobile && visibleVideos.has(video.fullPath))" 
-                 class="absolute inset-0 z-10 animate-in fade-in duration-300">
+                 class="absolute inset-0 z-10 animate-in fade-in duration-200">
               <img :src="getPreviewUrl(video.fullPath)" 
-                   class="w-full h-full object-cover opacity-0 transition-opacity duration-500" 
+                   class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
                    @load="$event.target.classList.remove('opacity-0')"
                    alt="Preview" />
             </div>
 
             <!-- Overlays -->
-            <div class="absolute inset-0 z-20 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300 flex items-end p-3">
-               <button class="btn btn-circle btn-sm btn-primary shadow-lg scale-90 group-hover/thumb:scale-100 transition-transform">
-                 <Icon name="mdi:play" class="w-5 h-5" />
-               </button>
+            <div class="absolute inset-0 z-20 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+               <div class="bg-primary/90 p-2.5 rounded-lg text-primary-content shadow-lg scale-90 group-hover/thumb:scale-100 transition-transform">
+                 <Icon name="mdi:play" class="w-6 h-6" />
+               </div>
             </div>
 
-            <!-- Shared Indicator (Top Right) -->
+            <!-- Shared Indicator -->
             <div v-if="video.meta.isPublic" 
-                 class="absolute top-2 right-2 z-20 bg-success text-success-content w-8 h-8 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-all" 
+                 class="absolute top-2 right-2 z-20 bg-success text-success-content w-6 h-6 flex items-center justify-center rounded shadow-sm backdrop-blur-md hover:scale-105 transition-all" 
                  title="Copy Shared Link"
                  @click.stop="copyPublicLinkForVideo(video.fullPath)">
-              <Icon name="mdi:share-variant" class="w-4 h-4" />
+              <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
             </div>
           </div>
 
           <!-- Metadata -->
           <div class="flex flex-col gap-1 px-1">
             <h3 
-              class="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors cursor-pointer"
+              class="font-bold text-xs leading-snug line-clamp-2 group-hover:text-primary transition-colors cursor-pointer text-base-content"
               @click="goToVideo(video.fullPath)"
             >
               {{ video.name }}
             </h3>
             
-            <div class="flex items-center gap-2 text-[11px] text-base-content/50 font-medium uppercase tracking-wider">
+            <div class="flex items-center gap-2 text-[9px] text-base-content/40 font-bold uppercase tracking-widest">
               <span>{{ formatFileSize(video.size) }}</span>
-              <span class="w-1 h-1 rounded-full bg-base-content/20"></span>
+              <span class="w-0.5 h-0.5 rounded-full bg-base-content/20"></span>
               <span>{{ formatDate(video.lastModified) }}</span>
             </div>
 
             <!-- Tags -->
-            <div v-if="video.meta.tags?.length" class="flex flex-wrap gap-1 mt-1">
+            <div v-if="video.meta.tags?.length" class="flex flex-wrap gap-1 mt-1.5">
               <span
                 v-for="tag in video.meta.tags.slice(0, 3)"
                 :key="tag.name"
-                class="badge badge-xs border-none text-[10px] font-bold py-2"
-                :style="{ backgroundColor: tag.color, color: 'white' }"
+                class="badge badge-xs border-none text-[8px] font-bold py-2 rounded-sm text-white"
+                :style="{ backgroundColor: tag.color }"
               >
                 {{ tag.name }}
               </span>
-              <span v-if="video.meta.tags.length > 3" class="text-[10px] text-base-content/40 font-bold self-center">
+              <span v-if="video.meta.tags.length > 3" class="text-[8px] text-base-content/30 font-bold self-center uppercase tracking-tighter">
                 +{{ video.meta.tags.length - 3 }}
               </span>
             </div>
@@ -411,48 +411,48 @@ function setPage(page: number | string) {
 
       <!-- Empty State -->
       <div v-else class="flex flex-col items-center justify-center py-24 text-center">
-        <div class="bg-base-300/50 p-6 rounded-full mb-4">
-          <Icon name="mdi:video-plus-outline" class="w-16 h-16 text-base-content/20" />
+        <div class="bg-base-200/50 p-6 rounded-xl mb-6">
+          <Icon name="mdi:video-plus-outline" class="w-16 h-16 text-base-content/10" />
         </div>
-        <h3 class="text-xl font-bold">No videos found</h3>
-        <p class="text-base-content/60 max-w-xs mt-2">Try adjusting your search or upload some new content to get started.</p>
-        <NuxtLink to="/files" class="btn btn-primary mt-6">Upload Videos</NuxtLink>
+        <h3 class="text-xl font-bold tracking-tight text-base-content">No media identified</h3>
+        <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-2 max-w-xs mx-auto leading-relaxed">Adjust your filter parameters or populate your cloud with video content to begin playback.</p>
+        <NuxtLink to="/files" class="btn btn-primary btn-sm mt-8 px-8 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]">Upload Content</NuxtLink>
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex justify-center items-center mt-16 gap-4">
+      <div v-if="totalPages > 1" class="flex justify-center items-center mt-16 gap-3">
         <button
           @click="prevPage"
           :disabled="currentPage === 1"
-          class="btn btn-outline btn-sm sm:btn-md gap-2"
+          class="btn btn-ghost btn-sm border border-base-content/10 bg-base-100/50 rounded-lg gap-2 font-bold text-[10px] uppercase tracking-widest"
         >
-          <Icon name="mdi:chevron-left" class="w-5 h-5" />
-          Previous
+          <Icon name="mdi:chevron-left" class="w-4 h-4" />
+          Prev
         </button>
         
-        <div class="join hidden sm:flex">
+        <div class="flex gap-1.5 hidden sm:flex">
           <button 
             v-for="(page, idx) in displayedPages" 
             :key="idx"
-            class="join-item btn btn-sm"
-            :class="{ 
-              'btn-active btn-primary': currentPage === page,
-              'btn-disabled': page === '...'
-            }"
+            class="btn btn-sm w-9 h-9 p-0 rounded-lg font-bold text-[10px]"
+            :class="[
+              currentPage === page ? 'btn-primary text-primary-content shadow-sm' : 'btn-ghost border border-base-content/5 bg-base-100/50',
+              page === '...' ? 'btn-disabled opacity-30 border-none' : ''
+            ]"
             @click="setPage(page)"
           >
             {{ page }}
           </button>
         </div>
-        <span class="sm:hidden text-sm font-medium">Page {{ currentPage }} / {{ totalPages }}</span>
+        <span class="sm:hidden text-[10px] font-bold uppercase tracking-widest text-base-content/40">Page {{ currentPage }} / {{ totalPages }}</span>
 
         <button
           @click="nextPage"
           :disabled="currentPage === totalPages"
-          class="btn btn-outline btn-sm sm:btn-md gap-2"
+          class="btn btn-ghost btn-sm border border-base-content/10 bg-base-100/50 rounded-lg gap-2 font-bold text-[10px] uppercase tracking-widest"
         >
           Next
-          <Icon name="mdi:chevron-right" class="w-5 h-5" />
+          <Icon name="mdi:chevron-right" class="w-4 h-4" />
         </button>
       </div>
     </main>

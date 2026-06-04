@@ -406,40 +406,40 @@ async function logout() {
              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                <Icon name="mdi:shield-lock-outline" class="text-primary w-5 h-5" />
              </div>
-             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Security</h2>
+             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Security</h2>
           </div>
 
-          <section class="bg-base-100 rounded-[2rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
-               <h3 class="text-lg font-black tracking-tight mb-6">Update Password</h3>
+               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Update Password</h3>
                
                <div class="space-y-4">
                  <div class="form-control">
                    <label class="label py-1">
-                     <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">New Secret Key</span>
+                     <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">New Secret Key</span>
                    </label>
                    <input 
                      v-model="newPassword" 
                      type="password" 
                      placeholder="Min. 6 characters" 
-                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
                    />
                  </div>
                  
                  <div class="form-control">
                    <label class="label py-1">
-                     <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Confirm Secret Key</span>
+                     <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Confirm Secret Key</span>
                    </label>
                    <input 
                      v-model="confirmPassword" 
                      type="password" 
-                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
                    />
                  </div>
 
                  <div class="pt-6">
                    <button 
-                     class="btn btn-primary btn-block h-12 rounded-xl shadow-lg shadow-primary/20 gap-2" 
+                     class="btn btn-primary btn-block h-11 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
                      @click="changePassword" 
                      :disabled="isChangingPassword"
                    >
@@ -453,54 +453,54 @@ async function logout() {
           </section>
 
           <!-- 2FA Section -->
-          <section class="bg-base-100 rounded-[2rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
             <div class="p-8 sm:p-10">
               <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-black tracking-tight">Two-Factor Auth</h3>
-                <div :class="`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${is2faEnabled ? 'bg-success/10 text-success' : 'bg-base-200 text-base-content/40'}`">
+                <h3 class="text-base font-bold tracking-tight text-base-content">Two-Factor Auth</h3>
+                <div :class="`px-3 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest ${is2faEnabled ? 'bg-success/10 text-success' : 'bg-base-200 text-base-content/40'}`">
                   {{ is2faEnabled ? 'Enabled' : 'Disabled' }}
                 </div>
               </div>
 
               <div v-if="!is2faEnabled">
-                <p class="text-xs font-medium text-base-content/50 mb-6 leading-relaxed">
+                <p class="text-[11px] font-bold text-base-content/50 mb-6 leading-relaxed">
                   Enhance your account security by requiring a code from your authenticator app when signing in.
                 </p>
                 <button 
                   v-if="!show2faSetup"
-                  class="btn btn-outline btn-primary btn-block h-12 rounded-xl gap-2 border-2"
+                  class="btn btn-outline btn-primary btn-block h-11 rounded-lg gap-2 font-bold text-[10px] uppercase tracking-widest"
                   @click="setup2fa"
                 >
-                  <Icon name="mdi:shield-plus-outline" class="w-5 h-5" />
+                  <Icon name="mdi:shield-plus-outline" class="w-4 h-4" />
                   Configure 2FA
                 </button>
 
-                <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                  <div class="flex flex-col items-center gap-4 p-4 bg-base-200/50 rounded-2xl">
-                    <img :src="qrCodeUrl" class="w-48 h-48 rounded-lg shadow-sm" alt="2FA QR Code" />
+                <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div class="flex flex-col items-center gap-4 p-4 bg-base-200/50 rounded-lg">
+                    <img :src="qrCodeUrl" class="w-40 h-40 rounded-lg shadow-sm" alt="2FA QR Code" />
                     <div class="text-center">
-                      <p class="text-[10px] font-black uppercase tracking-widest text-base-content/30 mb-1">Manual Entry Code</p>
-                      <code class="text-xs font-mono font-bold tracking-wider">{{ totpSecret }}</code>
+                      <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/30 mb-1">Manual Entry Code</p>
+                      <code class="text-[10px] font-mono font-bold tracking-wider text-base-content/60">{{ totpSecret }}</code>
                     </div>
                   </div>
 
                   <div class="form-control">
                     <label class="label py-1">
-                      <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Verification Code</span>
+                      <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Verification Code</span>
                     </label>
                     <input 
                       v-model="totpCode"
                       type="text"
                       placeholder="000 000"
-                      class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.3em] h-12 rounded-xl border-base-content/10"
+                      class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.3em] h-11 rounded-lg border-base-content/10"
                       maxlength="6"
                     />
                   </div>
 
                   <div class="flex gap-3">
-                    <button class="btn btn-ghost flex-1 h-12 rounded-xl" @click="show2faSetup = false">Cancel</button>
+                    <button class="btn btn-ghost flex-1 h-11 rounded-lg font-bold text-[10px] uppercase tracking-widest" @click="show2faSetup = false">Cancel</button>
                     <button 
-                      class="btn btn-primary flex-1 h-12 rounded-xl shadow-lg shadow-primary/20"
+                      class="btn btn-primary flex-1 h-11 rounded-lg shadow-sm font-bold text-[10px] uppercase tracking-widest"
                       @click="enable2fa"
                       :disabled="isVerifying2fa || totpCode.length < 6"
                     >
@@ -513,41 +513,41 @@ async function logout() {
 
               <div v-else>
                 <div v-if="!showDisableConfirm">
-                  <p class="text-xs font-medium text-base-content/50 mb-6 leading-relaxed">
+                  <p class="text-[11px] font-bold text-base-content/50 mb-6 leading-relaxed">
                     Your account is protected with two-factor authentication. You will need your authenticator app to log in.
                   </p>
                   <button 
-                    class="btn btn-error btn-outline btn-block h-12 rounded-xl gap-2 border-2"
+                    class="btn btn-error btn-outline btn-block h-11 rounded-lg gap-2 font-bold text-[10px] uppercase tracking-widest"
                     @click="disable2fa"
                   >
-                    <Icon name="mdi:shield-off-outline" class="w-5 h-5" />
+                    <Icon name="mdi:shield-off-outline" class="w-4 h-4" />
                     Disable 2FA
                   </button>
                 </div>
                 
-                <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                  <div class="p-4 bg-error/5 rounded-2xl border border-error/10 text-center">
-                    <p class="text-xs font-bold text-error uppercase tracking-widest mb-2">Confirm Identity</p>
-                    <p class="text-[10px] font-medium text-error/60">Please enter a code from your authenticator to disable security.</p>
+                <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div class="p-4 bg-error/5 rounded-lg border border-error/10 text-center">
+                    <p class="text-[9px] font-bold text-error uppercase tracking-widest mb-2">Confirm Identity</p>
+                    <p class="text-[10px] font-bold text-error/60">Please enter a code from your authenticator to disable security.</p>
                   </div>
 
                   <div class="form-control">
                     <label class="label py-1">
-                      <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Authenticator Code</span>
+                      <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Authenticator Code</span>
                     </label>
                     <input 
                       v-model="disableCode"
                       type="text"
                       placeholder="000 000"
-                      class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.3em] h-12 rounded-xl border-base-content/10"
+                      class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.3em] h-11 rounded-lg border-base-content/10"
                       maxlength="6"
                     />
                   </div>
 
                   <div class="flex gap-3">
-                    <button class="btn btn-ghost flex-1 h-12 rounded-xl" @click="showDisableConfirm = false">Cancel</button>
+                    <button class="btn btn-ghost flex-1 h-11 rounded-lg font-bold text-[10px] uppercase tracking-widest" @click="showDisableConfirm = false">Cancel</button>
                     <button 
-                      class="btn btn-error flex-1 h-12 rounded-xl shadow-lg shadow-error/20"
+                      class="btn btn-error flex-1 h-11 rounded-lg shadow-sm font-bold text-[10px] uppercase tracking-widest"
                       @click="confirmDisable2fa"
                       :disabled="isVerifying2fa || disableCode.length < 6"
                     >
@@ -561,14 +561,14 @@ async function logout() {
           </section>
 
           <!-- Quick Actions / Danger Zone -->
-          <section class="bg-error/5 rounded-[2rem] border border-error/10 p-8 sm:p-10">
-            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-error/60 mb-6">Session Control</h3>
+          <section class="bg-error/5 rounded-xl border border-error/10 p-8 sm:p-10">
+            <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-error/60 mb-6">Session Control</h3>
             <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
               <div class="text-center sm:text-left">
-                <p class="text-sm font-black tracking-tight">Logout everywhere</p>
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Disconnect from this device</p>
+                <p class="text-sm font-bold tracking-tight text-base-content">Logout everywhere</p>
+                <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Disconnect from this device</p>
               </div>
-              <button class="btn btn-error btn-outline h-12 px-8 rounded-xl border-2 font-black uppercase text-[11px] tracking-widest" @click="logout">
+              <button class="btn btn-error btn-outline h-11 px-8 rounded-lg font-bold uppercase text-[10px] tracking-widest" @click="logout">
                 Sign Out
               </button>
             </div>
@@ -581,17 +581,17 @@ async function logout() {
              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                <Icon name="mdi:palette-outline" class="text-primary w-5 h-5" />
              </div>
-             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Personalization</h2>
+             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Personalization</h2>
           </div>
 
-          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
             <div class="p-8 sm:p-10">
-              <h3 class="text-lg font-black tracking-tight mb-6">UI Visual Theme</h3>
-              <p class="text-xs font-medium text-base-content/50 mb-8 leading-relaxed">
+              <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">UI Visual Theme</h3>
+              <p class="text-[11px] font-bold text-base-content/50 mb-8 leading-relaxed">
                 Choose a visual identity that matches your style. This will update the colors and mood of the entire application.
               </p>
 
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div 
                   v-for="t in ['onedev', 'light', 'dark', 'dracula', 'forest', 'retro', 'cyberpunk', 'valentine', 'aqua', 'nord', 'sunset', 'dim', 'coffee']" 
                   :key="t"
@@ -599,8 +599,8 @@ async function logout() {
                   @click="theme = t; saveUserSettings()"
                 >
                   <div 
-                    class="h-20 rounded-2xl border-2 transition-all overflow-hidden flex flex-col"
-                    :class="theme === t ? 'border-primary ring-4 ring-primary/10' : 'border-base-content/5 hover:border-base-content/20'"
+                    class="h-20 rounded-lg border transition-all overflow-hidden flex flex-col"
+                    :class="theme === t ? 'border-primary ring-2 ring-primary/20 shadow-sm' : 'border-base-content/10 hover:border-base-content/30'"
                     :data-theme="t"
                   >
                     <div class="flex-1 bg-base-100 p-2">
@@ -610,12 +610,12 @@ async function logout() {
                           <div class="w-2 h-2 rounded-full bg-accent"></div>
                        </div>
                     </div>
-                    <div class="bg-base-200 p-2 text-[10px] font-black uppercase tracking-widest text-center">
+                    <div class="bg-base-200 p-2 text-[8px] font-bold uppercase tracking-widest text-center text-base-content/60">
                       {{ t }}
                     </div>
                   </div>
-                  <div v-if="theme === t" class="absolute -top-2 -right-2 w-6 h-6 bg-primary text-primary-content rounded-full flex items-center justify-center shadow-lg animate-in zoom-in">
-                    <Icon name="mdi:check" class="w-4 h-4" />
+                  <div v-if="theme === t" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary text-primary-content rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
+                    <Icon name="mdi:check" class="w-3 h-3" />
                   </div>
                 </div>
               </div>
@@ -626,34 +626,34 @@ async function logout() {
              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                <Icon name="mdi:television-classic" class="text-primary w-5 h-5" />
              </div>
-             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">TV Integration</h2>
+             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">TV Integration</h2>
           </div>
 
-          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
-               <h3 class="text-lg font-black tracking-tight mb-6">TVHeadend Connection</h3>
+               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">TVHeadend Connection</h3>
                <div class="space-y-4">
                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <div class="form-control">
                      <label class="label py-1">
-                       <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Host / IP</span>
+                       <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Host / IP</span>
                      </label>
                      <input 
                        v-model="tvheadendHost" 
                        type="text" 
                        placeholder="e.g. 192.168.1.10" 
-                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
                      />
                    </div>
                    <div class="form-control">
                      <label class="label py-1">
-                       <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Port</span>
+                       <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Port</span>
                      </label>
                      <input 
                        v-model="tvheadendPort" 
                        type="text" 
                        placeholder="9981" 
-                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
                      />
                    </div>
                  </div>
@@ -661,31 +661,31 @@ async function logout() {
                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <div class="form-control">
                      <label class="label py-1">
-                       <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Username</span>
+                       <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Username</span>
                      </label>
                      <input 
                        v-model="tvheadendUser" 
                        type="text" 
                        placeholder="tvheadend" 
-                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
                      />
                    </div>
                    <div class="form-control">
                      <label class="label py-1">
-                       <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Password</span>
+                       <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Password</span>
                      </label>
                      <input 
                        v-model="tvheadendPassword" 
                        type="password" 
                        placeholder="••••••••" 
-                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
                      />
                    </div>
                  </div>
 
                  <div class="pt-4">
                    <button 
-                     class="btn btn-primary btn-block h-12 rounded-xl shadow-lg shadow-primary/20 gap-2" 
+                     class="btn btn-primary btn-block h-11 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
                      @click="saveUserSettings" 
                      :disabled="isSavingSettings"
                    >
@@ -702,30 +702,30 @@ async function logout() {
              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                <Icon name="mdi:tag-multiple-outline" class="text-primary w-5 h-5" />
              </div>
-             <h2 class="text-sm font-black uppercase tracking-[0.2em] text-base-content/40">Organization</h2>
+             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Organization</h2>
           </div>
 
-          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
-               <h3 class="text-lg font-black tracking-tight mb-6">Download Configuration</h3>
+               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Download Configuration</h3>
                <div class="form-control">
                  <label class="label py-1">
-                   <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Custom Download Path</span>
+                   <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Custom Download Path</span>
                  </label>
                  <div class="flex flex-col sm:flex-row gap-3">
-                   <div class="flex-1 flex items-center bg-base-200/50 border border-base-content/10 rounded-xl focus-within:bg-base-100 focus-within:ring-1 focus-within:ring-primary/30 transition-all overflow-hidden px-4">
-                      <span class="text-base-content/30 text-xs font-bold whitespace-nowrap select-none">
+                   <div class="flex-1 flex items-center bg-base-200/50 border border-base-content/10 rounded-lg focus-within:bg-base-100 focus-within:ring-1 focus-within:ring-primary/30 transition-all overflow-hidden px-4">
+                      <span class="text-base-content/30 text-[11px] font-bold whitespace-nowrap select-none">
                         {{ user?.name }}/
                       </span>
                       <input 
                         v-model="downloadPath" 
                         type="text" 
                         placeholder="e.g. videos/youtube" 
-                        class="bg-transparent border-none outline-none w-full font-bold text-sm h-12 pl-1 focus:ring-0" 
+                        class="bg-transparent border-none outline-none w-full font-bold text-xs h-11 pl-1 focus:ring-0" 
                       />
                    </div>
                    <button 
-                     class="btn btn-primary h-12 rounded-xl px-8 shadow-lg shadow-primary/20 gap-2" 
+                     class="btn btn-primary h-11 rounded-lg px-8 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
                      @click="saveUserSettings" 
                      :disabled="isSavingSettings"
                    >
@@ -734,136 +734,136 @@ async function logout() {
                      Save
                    </button>
                  </div>
-                 <p class="mt-3 text-[10px] font-medium text-base-content/40 px-2 italic">Relative to your root storage folder. Leave empty for root.</p>
+                 <p class="mt-3 text-[9px] font-bold text-base-content/40 px-2 italic uppercase tracking-wider">Relative to your root storage folder. Leave empty for root.</p>
                </div>
              </div>
           </section>
 
-          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
                <div class="flex items-center justify-between mb-8">
                  <div>
-                   <h3 class="text-lg font-black tracking-tight">Storage Health</h3>
-                   <p class="text-xs font-medium text-base-content/40">Optimize your storage space</p>
+                   <h3 class="text-base font-bold tracking-tight text-base-content">Storage Health</h3>
+                   <p class="text-[11px] font-bold text-base-content/40">Optimize your storage space</p>
                  </div>
                  <button 
-                  class="btn btn-ghost btn-sm gap-2 border border-base-content/10 bg-base-100/50 rounded-xl"
+                  class="btn btn-ghost btn-sm gap-2 border border-base-content/10 bg-base-100/50 rounded-lg h-9"
                   @click="fetchCleanupData"
                   :disabled="isScanningStorage"
                  >
                    <Icon name="mdi:magnify-scan" class="w-4 h-4" :class="{ 'animate-pulse': isScanningStorage }" />
-                   <span class="text-[10px] font-black uppercase tracking-widest">{{ isScanningStorage ? 'Scanning...' : 'Scan Storage' }}</span>
+                   <span class="text-[9px] font-bold uppercase tracking-widest">{{ isScanningStorage ? 'Scanning...' : 'Scan Storage' }}</span>
                  </button>
                </div>
 
-               <div v-if="!cleanupData && !isScanningStorage" class="bg-base-200/50 p-10 rounded-[2rem] border border-dashed border-base-content/10 flex flex-col items-center justify-center text-center gap-4">
-                  <div class="w-16 h-16 rounded-full bg-base-100 flex items-center justify-center">
-                    <Icon name="mdi:broom" class="w-8 h-8 text-base-content/20" />
+               <div v-if="!cleanupData && !isScanningStorage" class="bg-base-200/30 p-10 rounded-xl border border-dashed border-base-content/10 flex flex-col items-center justify-center text-center gap-4">
+                  <div class="w-12 h-12 rounded-lg bg-base-100 flex items-center justify-center border border-base-content/5">
+                    <Icon name="mdi:broom" class="w-6 h-6 text-base-content/20" />
                   </div>
                   <div>
-                    <p class="text-sm font-black tracking-tight">Identify Storage Hogs</p>
-                    <p class="text-[10px] font-medium text-base-content/40 uppercase tracking-widest mt-1">Scan to find large and forgotten files</p>
+                    <p class="text-xs font-bold tracking-tight text-base-content">Identify Storage Hogs</p>
+                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Scan to find large and forgotten files</p>
                   </div>
-                  <button class="btn btn-primary btn-sm px-8 rounded-xl mt-2" @click="fetchCleanupData">Begin Scan</button>
+                  <button class="btn btn-primary btn-sm px-8 rounded-lg mt-2 font-bold text-[9px] uppercase tracking-widest" @click="fetchCleanupData">Begin Scan</button>
                </div>
 
-               <div v-else-if="cleanupData" class="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+               <div v-else-if="cleanupData" class="space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
                   <!-- Large Files Section -->
                   <div>
                     <div class="flex items-center gap-2 mb-4 px-2">
-                       <Icon name="mdi:weight" class="w-4 h-4 text-error/60" />
-                       <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Large Files (>500MB)</span>
+                       <Icon name="mdi:weight" class="w-3.5 h-3.5 text-error/60" />
+                       <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/40">Large Files (>500MB)</span>
                     </div>
-                    <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                       <div v-for="file in cleanupData.largeFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-xl border border-base-content/5 group hover:bg-base-200 transition-all">
+                    <div class="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                       <div v-for="file in cleanupData.largeFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
                           <div class="min-w-0 flex-1">
-                             <p class="text-xs font-bold truncate">{{ file.name }}</p>
-                             <p class="text-[9px] font-medium text-base-content/40 uppercase truncate">{{ file.fullPath }}</p>
+                             <p class="text-[11px] font-bold truncate text-base-content">{{ file.name }}</p>
+                             <p class="text-[9px] font-bold text-base-content/30 uppercase truncate">{{ file.fullPath }}</p>
                           </div>
                           <div class="flex items-center gap-4 shrink-0">
-                             <span class="text-xs font-black text-error/80">{{ formatSize(file.size) }}</span>
+                             <span class="text-[11px] font-bold text-error/80">{{ formatSize(file.size) }}</span>
                              <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
                                <Icon name="mdi:delete-outline" class="w-4 h-4" />
                              </button>
                           </div>
                        </div>
-                       <div v-if="cleanupData.largeFiles.length === 0" class="text-center py-8 text-[10px] font-bold text-base-content/30 uppercase tracking-widest italic">No large files identified</div>
+                       <div v-if="cleanupData.largeFiles.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No large files identified</div>
                     </div>
                   </div>
 
                   <!-- Old Files Section -->
                   <div>
                     <div class="flex items-center gap-2 mb-4 px-2">
-                       <Icon name="mdi:history" class="w-4 h-4 text-warning/60" />
-                       <span class="text-[10px] font-black uppercase tracking-widest text-base-content/40">Forgotten Files (>6 months)</span>
+                       <Icon name="mdi:history" class="w-3.5 h-3.5 text-warning/60" />
+                       <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/40">Forgotten Files (>6 months)</span>
                     </div>
-                    <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                       <div v-for="file in cleanupData.oldFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-xl border border-base-content/5 group hover:bg-base-200 transition-all">
+                    <div class="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                       <div v-for="file in cleanupData.oldFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
                           <div class="min-w-0 flex-1">
-                             <p class="text-xs font-bold truncate">{{ file.name }}</p>
-                             <p class="text-[9px] font-medium text-base-content/40 uppercase truncate">{{ file.fullPath }}</p>
+                             <p class="text-[11px] font-bold truncate text-base-content">{{ file.name }}</p>
+                             <p class="text-[9px] font-bold text-base-content/30 uppercase truncate">{{ file.fullPath }}</p>
                           </div>
                           <div class="flex items-center gap-4 shrink-0">
-                             <span class="text-xs font-bold text-base-content/40">{{ formatRelativeDate(file.lastModified) }}</span>
+                             <span class="text-[11px] font-bold text-base-content/40">{{ formatRelativeDate(file.lastModified) }}</span>
                              <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
                                <Icon name="mdi:delete-outline" class="w-4 h-4" />
                              </button>
                           </div>
                        </div>
-                       <div v-if="cleanupData.oldFiles.length === 0" class="text-center py-8 text-[10px] font-bold text-base-content/30 uppercase tracking-widest italic">No old files identified</div>
+                       <div v-if="cleanupData.oldFiles.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No old files identified</div>
                     </div>
                   </div>
                </div>
              </div>
           </section>
 
-          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
                <div class="flex items-center justify-between mb-8">
                  <div>
-                   <h3 class="text-lg font-black tracking-tight">Bulk Preview Generation</h3>
-                   <p class="text-xs font-medium text-base-content/40">Generate previews for all videos at once</p>
+                   <h3 class="text-base font-bold tracking-tight text-base-content">Bulk Preview Generation</h3>
+                   <p class="text-[11px] font-bold text-base-content/40">Generate previews for all videos at once</p>
                  </div>
                </div>
 
                <div class="space-y-6">
-                 <p class="text-xs font-medium text-base-content/50 leading-relaxed">
+                 <p class="text-[11px] font-bold text-base-content/50 leading-relaxed">
                    Scan your entire storage and generate animated GIF previews for all video files. This ensures previews are ready without having to hover over each video manually.
                  </p>
 
-                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-2xl border border-base-content/5">
+                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-content/5">
                     <div>
-                      <p class="text-xs font-bold uppercase tracking-widest">Mobile Auto-Preview</p>
-                      <p class="text-[10px] font-medium text-base-content/40">Automatically play previews when scrolling on mobile</p>
+                      <p class="text-xs font-bold uppercase tracking-widest text-base-content">Mobile Auto-Preview</p>
+                      <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-wider">Automatically play previews when scrolling on mobile</p>
                     </div>
                     <input 
                       type="checkbox" 
-                      class="toggle toggle-primary" 
+                      class="toggle toggle-primary toggle-sm rounded-sm" 
                       v-model="mobileAutoPreview" 
                       @change="saveUserSettings"
                     />
                  </div>
 
-                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-2xl border border-base-content/5">
+                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-content/5">
                     <div>
-                      <p class="text-xs font-bold uppercase tracking-widest">Experimental Mode</p>
-                      <p class="text-[10px] font-medium text-base-content/40">Unlock advanced and potentially unstable settings</p>
+                      <p class="text-xs font-bold uppercase tracking-widest text-base-content">Experimental Mode</p>
+                      <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-wider">Unlock advanced and potentially unstable settings</p>
                     </div>
                     <input 
                       type="checkbox" 
-                      class="toggle toggle-secondary" 
+                      class="toggle toggle-secondary toggle-sm rounded-sm" 
                       v-model="experimentalMode" 
                       @change="saveUserSettings"
                     />
                  </div>
 
-                 <div class="space-y-3 p-4 bg-base-200/50 rounded-2xl border border-base-content/5">
+                 <div class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5">
                     <div class="flex items-center justify-between">
                       <div>
-                        <p class="text-xs font-bold uppercase tracking-widest">Max Concurrent Processes</p>
-                        <p class="text-[10px] font-medium text-base-content/40">Speed up generation with more parallel workers</p>
+                        <p class="text-xs font-bold uppercase tracking-widest text-base-content">Max Concurrent Processes</p>
+                        <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-wider">Speed up generation with more parallel workers</p>
                       </div>
-                      <span class="badge badge-primary font-bold">{{ maxConcurrentPreviews }}</span>
+                      <span class="badge badge-primary font-bold text-[10px]">{{ maxConcurrentPreviews }}</span>
                     </div>
                     <input 
                       type="range" 
@@ -880,96 +880,92 @@ async function logout() {
                     </div>
                  </div>
 
-                 <div v-if="generationResults && (generationResults.total > 0 || generationResults.isProcessing)" class="space-y-4 animate-in fade-in slide-in-from-top-2">
+                 <div v-if="generationResults && (generationResults.total > 0 || generationResults.isProcessing)" class="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                    <div v-if="generationResults.isProcessing" class="space-y-2">
                       <div class="flex justify-between items-end">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-primary">Processing Library...</span>
-                        <span class="text-xs font-bold">{{ Math.round((generationResults.processed / generationResults.total) * 100) }}%</span>
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-primary">Processing Library...</span>
+                        <span class="text-xs font-bold text-base-content">{{ Math.round((generationResults.processed / generationResults.total) * 100) }}%</span>
                       </div>
-                      <progress class="progress progress-primary w-full h-3 rounded-full bg-base-200" :value="generationResults.processed" :max="generationResults.total"></progress>
+                      <progress class="progress progress-primary w-full h-2 rounded-full bg-base-200" :value="generationResults.processed" :max="generationResults.total"></progress>
                       <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest text-center">
                         {{ generationResults.processed }} of {{ generationResults.total }} videos analyzed
                       </p>
                    </div>
 
-                   <div class="bg-base-200/50 p-6 rounded-2xl border border-base-content/5 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                   <div class="bg-base-200/30 p-4 rounded-lg border border-base-content/5 grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div class="flex flex-col">
-                      <span class="text-[9px] font-black uppercase tracking-widest text-base-content/30">Total</span>
-                      <span class="text-lg font-black">{{ generationResults.total }}</span>
+                      <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Total</span>
+                      <span class="text-sm font-bold text-base-content">{{ generationResults.total }}</span>
                     </div>
                     <div class="flex flex-col">
-                      <span class="text-[9px] font-black uppercase tracking-widest text-success/60">Generated</span>
-                      <span class="text-lg font-black text-success">{{ generationResults.generated }}</span>
+                      <span class="text-[8px] font-bold uppercase tracking-widest text-success/60">Generated</span>
+                      <span class="text-sm font-bold text-success">{{ generationResults.generated }}</span>
                     </div>
                     <div class="flex flex-col">
-                      <span class="text-[9px] font-black uppercase tracking-widest text-base-content/30">Skipped</span>
-                      <span class="text-lg font-black">{{ generationResults.skipped }}</span>
+                      <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
+                      <span class="text-sm font-bold text-base-content">{{ generationResults.skipped }}</span>
                     </div>
                     <div class="flex flex-col">
-                      <span class="text-[9px] font-black uppercase tracking-widest text-error/60">Errors</span>
-                      <span class="text-lg font-black text-error">{{ generationResults.errors }}</span>
+                      <span class="text-[8px] font-bold uppercase tracking-widest text-error/60">Errors</span>
+                      <span class="text-sm font-bold text-error">{{ generationResults.errors }}</span>
                     </div>
                    </div>
                  </div>
 
                  <div class="flex flex-col sm:flex-row gap-3">
                    <button 
-                     class="btn btn-primary flex-1 h-14 rounded-2xl shadow-lg gap-3" 
+                     class="btn btn-primary flex-1 h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
                      @click="generateAllPreviews" 
                      :disabled="isGeneratingPreviews || isClearingPreviews"
                    >
-                     <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-5 h-5" />
+                     <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-4 h-4" />
                      <span v-else class="loading loading-spinner loading-xs"></span>
-                     <span class="font-black tracking-tight uppercase text-xs">
-                       {{ isGeneratingPreviews ? 'Generating...' : 'Generate All' }}
-                     </span>
+                     {{ isGeneratingPreviews ? 'Generating...' : 'Generate All' }}
                    </button>
 
                    <button 
-                     class="btn btn-ghost border-2 border-error/20 text-error flex-1 h-14 rounded-2xl gap-3 hover:bg-error/10 hover:border-error" 
+                     class="btn btn-ghost border border-error/20 text-error flex-1 h-12 rounded-lg gap-2 hover:bg-error/10 hover:border-error font-bold text-[10px] uppercase tracking-widest" 
                      @click="clearAllPreviews" 
                      :disabled="isGeneratingPreviews || isClearingPreviews"
                    >
-                     <Icon v-if="!isClearingPreviews" name="mdi:delete-sweep-outline" class="w-5 h-5" />
+                     <Icon v-if="!isClearingPreviews" name="mdi:delete-sweep-outline" class="w-4 h-4" />
                      <span v-else class="loading loading-spinner loading-xs"></span>
-                     <span class="font-black tracking-tight uppercase text-xs">
-                       {{ isClearingPreviews ? 'Clearing...' : 'Clear All Previews' }}
-                     </span>
+                     Clear All Previews
                    </button>
                  </div>
                </div>
              </div>
           </section>
 
-          <section class="bg-base-100 rounded-[2.5rem] shadow-xl shadow-base-content/5 border border-base-content/5 overflow-hidden">
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
                <div class="flex items-center justify-between mb-8">
                  <div>
-                   <h3 class="text-lg font-black tracking-tight">Predefined Tags</h3>
-                   <p class="text-xs font-medium text-base-content/40">Standard labels for your library</p>
+                   <h3 class="text-base font-bold tracking-tight text-base-content">Predefined Tags</h3>
+                   <p class="text-[11px] font-bold text-base-content/40">Standard labels for your library</p>
                  </div>
-                 <div class="bg-base-200/50 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-base-content/40 border border-base-content/5">
+                 <div class="bg-base-200/50 px-3 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest text-base-content/40 border border-base-content/5">
                    {{ tags.length }} Active
                  </div>
                </div>
                
-               <div class="flex flex-wrap gap-2.5 mb-10 p-6 bg-base-200/50 rounded-[1.5rem] border border-base-content/5 min-h-[100px] items-start content-start">
+               <div class="flex flex-wrap gap-2 mb-10 p-5 bg-base-200/30 rounded-lg border border-base-content/5 min-h-[80px] items-start content-start">
                  <transition-group name="list">
                    <div 
                      v-for="(tag, index) in tags" 
                      :key="tag.name" 
-                     class="flex items-center gap-2 pl-3.5 pr-1.5 py-1.5 rounded-full text-white font-black text-[10px] uppercase tracking-wider shadow-sm ring-1 ring-white/10"
+                     class="flex items-center gap-2 pl-3 pr-1 py-1 rounded-md text-white font-bold text-[9px] uppercase tracking-wider shadow-sm ring-1 ring-white/10"
                      :style="{ backgroundColor: tag.color }"
                    >
                      {{ tag.name }}
-                     <button @click="removeTag(index)" class="w-5 h-5 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors">
+                     <button @click="removeTag(index)" class="w-4 h-4 rounded-sm bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors">
                        <Icon name="mdi:close" class="w-3 h-3" />
                      </button>
                    </div>
                  </transition-group>
                  <div v-if="tags.length === 0" class="w-full h-full flex flex-col items-center justify-center py-4 gap-2 opacity-30">
                     <Icon name="mdi:tag-off-outline" class="w-8 h-8" />
-                    <p class="text-[10px] font-black uppercase tracking-widest text-center">No standard tags established</p>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-center">No standard tags established</p>
                  </div>
                </div>
 
@@ -978,36 +974,36 @@ async function logout() {
                    <div class="w-full border-t border-base-content/5"></div>
                  </div>
                  <div class="relative flex justify-center">
-                   <span class="bg-base-100 px-4 text-[9px] font-black uppercase tracking-[0.3em] text-base-content/20">Establish New Identity</span>
+                   <span class="bg-base-100 px-4 text-[8px] font-bold uppercase tracking-[0.3em] text-base-content/20">Establish New Identity</span>
                  </div>
                </div>
 
                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  <div class="form-control">
                    <label class="label py-1">
-                     <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Identity Label</span>
+                     <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Identity Label</span>
                    </label>
                    <input 
                      v-model="newTagName" 
                      type="text" 
                      placeholder="e.g. Archives" 
-                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl border-base-content/10" 
+                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
                    />
                  </div>
                  <div class="form-control">
                    <label class="label py-1">
-                     <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Visual Chroma</span>
+                     <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Visual Chroma</span>
                    </label>
-                   <div class="flex gap-3">
+                   <div class="flex gap-2">
                      <input 
                        v-model="newTagColor" 
                        type="color" 
-                       class="w-12 h-12 rounded-xl cursor-pointer border-none bg-base-200/50" 
+                       class="w-11 h-11 rounded-lg cursor-pointer border-none bg-base-200/50" 
                      />
                      <input 
                        v-model="newTagColor" 
                        type="text" 
-                       class="input input-bordered flex-1 bg-base-200/50 focus:bg-base-100 transition-all font-mono text-[11px] font-bold h-12 rounded-xl border-base-content/10" 
+                       class="input input-bordered flex-1 bg-base-200/50 focus:bg-base-100 transition-all font-mono text-[10px] font-bold h-11 rounded-lg border-base-content/10" 
                      />
                    </div>
                  </div>
@@ -1015,12 +1011,12 @@ async function logout() {
                
                <div class="mt-8">
                  <button 
-                   class="btn btn-secondary btn-block h-14 rounded-2xl shadow-lg gap-2 text-white" 
+                   class="btn btn-secondary btn-block h-12 rounded-lg shadow-sm gap-2 text-white font-bold text-[10px] uppercase tracking-widest" 
                    @click="addTag" 
                    :disabled="isSavingTags"
                  >
-                   <Icon name="mdi:tag-plus" class="w-5 h-5" />
-                   <span class="font-black tracking-tight uppercase text-xs">Establish Tag</span>
+                   <Icon name="mdi:tag-plus" class="w-4 h-4" />
+                   Establish Tag
                  </button>
                </div>
              </div>
@@ -1030,8 +1026,8 @@ async function logout() {
       
       <!-- System Info -->
       <footer class="pt-8 opacity-20 flex flex-col items-center gap-2">
-         <div class="w-12 h-px bg-base-content"></div>
-         <p class="text-[9px] font-black uppercase tracking-[0.4em]">ClyoCloud v{{ useRuntimeConfig().public.version }} • Core Terminal</p>
+         <div class="w-10 h-px bg-base-content"></div>
+         <p class="text-[8px] font-bold uppercase tracking-[0.4em]">ClyoCloud v{{ useRuntimeConfig().public.version }} • Core Terminal</p>
       </footer>
     </main>
   </div>

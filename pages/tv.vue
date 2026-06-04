@@ -245,7 +245,7 @@ function formatProgress(start: number, stop: number) {
 <template>
   <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
     <!-- Edge-to-Edge Sticky Header -->
-    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5">
+    <header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
       <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
@@ -253,11 +253,11 @@ function formatProgress(start: number, stop: number) {
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div>
-              <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
-                <Icon name="mdi:television-classic" class="text-primary w-6 h-6" />
+              <h1 class="text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+                <Icon name="mdi:television-classic" class="text-primary w-5 h-5" />
                 Live TV
               </h1>
-              <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">
+              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest pl-1">
                 {{ channels.length }} channels available
               </p>
             </div>
@@ -265,13 +265,13 @@ function formatProgress(start: number, stop: number) {
 
           <div class="relative w-full sm:max-w-xs lg:max-w-md">
             <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <Icon name="mdi:magnify" class="w-5 h-5 text-base-content/40" />
+              <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
             </div>
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search channels..."
-              class="input input-bordered w-full pl-10 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10"
+              class="input input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs rounded-lg"
             />
           </div>
         </div>
@@ -280,91 +280,90 @@ function formatProgress(start: number, stop: number) {
 
     <main class="flex-1 w-full max-w-[1800px] mx-auto p-4 sm:p-6 lg:p-8">
       <div v-if="isLoading && channels.length === 0" class="flex flex-col items-center justify-center py-24">
-        <span class="loading loading-ring loading-lg text-primary"></span>
-        <p class="mt-4 font-bold text-base-content/40 uppercase tracking-widest text-xs">Connecting to Tvheadend...</p>
+        <span class="loading loading-spinner loading-lg text-primary"></span>
+        <p class="mt-4 font-bold text-base-content/40 uppercase tracking-widest text-[10px]">Connecting to backend...</p>
       </div>
 
       <div v-else-if="error" class="flex flex-col items-center justify-center py-24 text-center">
-        <div class="bg-error/10 p-6 rounded-full mb-4">
-          <Icon name="mdi:television-off" class="w-16 h-16 text-error/40" />
+        <div class="bg-error/10 p-6 rounded-xl mb-4">
+          <Icon name="mdi:television-off" class="w-12 h-12 text-error/40" />
         </div>
-        <h3 class="text-xl font-bold">Connection Failed</h3>
-        <p class="text-base-content/60 max-w-xs mt-2">{{ error }}</p>
-        <NuxtLink to="/settings" class="btn btn-primary mt-6 rounded-xl">Check Settings</NuxtLink>
+        <h3 class="text-lg font-bold text-base-content">Connection Failed</h3>
+        <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest max-w-xs mt-2">{{ error }}</p>
+        <NuxtLink to="/settings" class="btn btn-primary btn-sm mt-6 rounded-lg font-bold text-[10px] uppercase tracking-widest">Check Settings</NuxtLink>
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
         <!-- Sidebar -->
-        <aside class="lg:col-span-3 xl:col-span-3 bg-base-100 rounded-[2rem] border border-base-content/5 overflow-hidden flex flex-col shadow-xl shadow-base-content/5">
+        <aside class="lg:col-span-3 xl:col-span-3 bg-base-100 rounded-xl border border-base-content/10 overflow-hidden flex flex-col shadow-sm">
           <div class="p-2 border-b border-base-content/5 bg-base-200/30 flex gap-1">
             <button 
               @click="activeTab = 'guide'"
-              :class="`flex-1 py-3 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'guide' ? 'bg-primary text-primary-content shadow-lg' : 'hover:bg-base-100/50 text-base-content/40'}`"
+              :class="`flex-1 py-2.5 px-3 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${activeTab === 'guide' ? 'bg-primary text-primary-content shadow-sm' : 'hover:bg-base-100/50 text-base-content/40'}`"
             >
               <Icon name="mdi:format-list-bulleted" class="w-4 h-4 mr-1" /> Guide
             </button>
             <button 
               @click="activeTab = 'recordings'"
-              :class="`flex-1 py-3 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'recordings' ? 'bg-primary text-primary-content shadow-lg' : 'hover:bg-base-100/50 text-base-content/40'}`"
+              :class="`flex-1 py-2.5 px-3 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${activeTab === 'recordings' ? 'bg-primary text-primary-content shadow-sm' : 'hover:bg-base-100/50 text-base-content/40'}`"
             >
               <Icon name="mdi:record-rec" class="w-4 h-4 mr-1" /> Records
             </button>
           </div>
 
           <!-- Channel Guide Tab -->
-          <div v-if="activeTab === 'guide'" class="flex-1 overflow-y-auto custom-scrollbar p-2">
+          <div v-if="activeTab === 'guide'" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
             <div 
               v-for="channel in filteredChannels" 
               :key="channel.uuid"
               @click="selectChannel(channel)"
-              :class="`group flex items-center gap-4 p-3 rounded-2xl cursor-pointer transition-all duration-200 ${selectedChannel?.uuid === channel.uuid ? 'bg-primary text-primary-content shadow-lg shadow-primary/20' : 'hover:bg-base-200'}`"
+              :class="`group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all duration-200 ${selectedChannel?.uuid === channel.uuid ? 'bg-primary text-primary-content shadow-sm' : 'hover:bg-base-200'}`"
             >
-              <div class="w-12 h-12 rounded-xl bg-base-200 flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
-                <img v-if="channel.icon_public_url" :src="getIconUrl(channel.icon_public_url)!" class="w-10 h-10 object-contain" alt="" />
-                <Icon v-else name="mdi:television" class="w-6 h-6 opacity-20" />
+              <div class="w-10 h-10 rounded-lg bg-base-200 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform border border-base-content/5">
+                <img v-if="channel.icon_public_url" :src="getIconUrl(channel.icon_public_url)!" class="w-8 h-8 object-contain" alt="" />
+                <Icon v-else name="mdi:television" class="w-5 h-5 opacity-20" />
               </div>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
-                  <span :class="`text-[10px] font-black px-1.5 py-0.5 rounded ${selectedChannel?.uuid === channel.uuid ? 'bg-white/20' : 'bg-base-200 text-base-content/40'}`">
+                  <span :class="`text-[9px] font-bold px-1 py-0.5 rounded ${selectedChannel?.uuid === channel.uuid ? 'bg-white/20' : 'bg-base-200 text-base-content/40'}`">
                     {{ channel.number }}
                   </span>
-                  <h4 class="font-bold text-sm truncate">{{ channel.name }}</h4>
+                  <h4 class="font-bold text-xs truncate">{{ channel.name }}</h4>
                 </div>
                 <div class="flex items-center gap-1.5 mt-0.5">
-                  <p v-if="getChannelEvent(channel.uuid)" :class="`text-[10px] font-medium truncate ${selectedChannel?.uuid === channel.uuid ? 'text-white/70' : 'text-base-content/40'}`">
+                  <p v-if="getChannelEvent(channel.uuid)" :class="`text-[9px] font-bold uppercase tracking-wide truncate ${selectedChannel?.uuid === channel.uuid ? 'text-white/70' : 'text-base-content/30'}`">
                     {{ getChannelEvent(channel.uuid)?.title }}
                   </p>
-                  <Icon v-if="isEventRecording(channel.uuid)" name="mdi:circle" class="w-2 h-2 text-error animate-pulse flex-shrink-0" />
+                  <Icon v-if="isEventRecording(channel.uuid)" name="mdi:circle" class="w-1.5 h-1.5 text-error animate-pulse shrink-0" />
                 </div>
               </div>
             </div>
             
             <div v-if="filteredChannels.length === 0" class="flex flex-col items-center justify-center py-12 opacity-30">
-              <Icon name="mdi:magnify-close" class="w-12 h-12 mb-2" />
-              <p class="text-[10px] font-black uppercase tracking-widest">No channels found</p>
+              <Icon name="mdi:magnify-close" class="w-10 h-10 mb-2" />
+              <p class="text-[9px] font-bold uppercase tracking-widest">No channels found</p>
             </div>
           </div>
 
           <!-- Recordings Tab -->
-          <div v-else class="flex-1 overflow-y-auto custom-scrollbar p-2">
+          <div v-else class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
             <div 
               v-for="record in recordings" 
               :key="record.uuid"
-              class="group flex flex-col gap-2 p-4 rounded-2xl bg-base-200/50 mb-2 border border-base-content/5"
+              class="group flex flex-col gap-2 p-3 rounded-lg bg-base-200/50 border border-base-content/10"
             >
               <div class="flex justify-between items-start">
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2 mb-1">
-                    <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest bg-error text-error-content animate-pulse">
+                    <span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest bg-error text-white animate-pulse">
                       RECORDING
                     </span>
-                    <span class="text-[10px] font-bold text-base-content/40">ClyoCloud</span>
                   </div>
-                  <h4 class="font-bold text-sm line-clamp-1">{{ record.title }}</h4>
+                  <h4 class="font-bold text-xs line-clamp-1 text-base-content">{{ record.title }}</h4>
                 </div>
                 <button 
                   @click="stopRecording(record.uuid)"
-                  class="btn btn-ghost btn-circle btn-xs text-error/40 hover:text-error"
+                  class="btn btn-ghost btn-circle btn-xs text-error/40 hover:text-error hover:bg-error/10"
                 >
                   <Icon name="mdi:stop-circle-outline" class="w-4 h-4" />
                 </button>
@@ -372,66 +371,59 @@ function formatProgress(start: number, stop: number) {
             </div>
 
             <div v-if="recordings.length === 0" class="flex flex-col items-center justify-center py-12 opacity-30 text-center px-4">
-              <Icon name="mdi:video-off-outline" class="w-12 h-12 mb-2" />
-              <p class="text-[10px] font-black uppercase tracking-widest">No active recordings</p>
+              <Icon name="mdi:video-off-outline" class="w-10 h-10 mb-2" />
+              <p class="text-[9px] font-bold uppercase tracking-widest">No active recordings</p>
             </div>
           </div>
         </aside>
 
         <!-- Main Player Area -->
         <div class="lg:col-span-9 xl:col-span-9 space-y-6">
-          <div v-if="selectedChannel" class="space-y-6 animate-in fade-in duration-500">
+          <div v-if="selectedChannel" class="space-y-6 animate-in fade-in duration-300">
             <!-- Player Wrapper -->
-            <div class="relative group aspect-video bg-black rounded-[2.5rem] shadow-2xl ring-1 ring-white/5">
+            <div class="relative group aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-white/5">
               <video
                 ref="tvPlayer"
                 controls
                 preload="auto"
-                class="w-full h-full rounded-[2.5rem]"
+                class="w-full h-full"
               >
-                Your browser does not support the video tag.
+                Your browser does not support video.
               </video>
 
               <!-- Buffering Overlay -->
               <div v-if="isBuffering" class="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-10 animate-in fade-in duration-300 pointer-events-none">
-                <div class="relative">
-                  <span class="loading loading-spinner loading-lg text-primary"></span>
-                  <div class="absolute inset-0 animate-ping opacity-20 bg-primary rounded-full"></div>
-                </div>
-                <p class="mt-6 font-black text-[10px] uppercase tracking-[0.3em] text-white/70">
+                <span class="loading loading-spinner loading-lg text-primary"></span>
+                <p class="mt-6 font-bold text-[10px] uppercase tracking-[0.3em] text-white/70">
                   Stabilizing Stream...
-                </p>
-                <p class="mt-2 text-[8px] font-bold text-white/30 uppercase tracking-widest">
-                  Pre-loading buffer for stutter-free playback
                 </p>
               </div>
             </div>
 
             <!-- Current Program Info -->
-            <div class="bg-base-100 rounded-[2.5rem] p-8 shadow-xl shadow-base-content/5 border border-base-content/5">
+            <div class="bg-base-100 rounded-xl p-6 sm:p-8 shadow-sm border border-base-content/10">
               <div v-if="getChannelEvent(selectedChannel.uuid)" class="space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                   <div>
-                    <h2 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+                    <h2 class="text-2xl font-bold tracking-tight text-base-content leading-tight">
                       {{ getChannelEvent(selectedChannel.uuid)?.title }}
                     </h2>
-                    <p class="text-primary font-bold text-sm mt-1">
-                      {{ getChannelEvent(selectedChannel.uuid)?.subtitle }}
+                    <p class="text-primary font-bold text-xs uppercase tracking-wider mt-1">
+                      {{ getChannelEvent(selectedChannel.uuid)?.subtitle || 'Live Broadcast' }}
                     </p>
                   </div>
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-4">
                     <button 
-                      v-if="selectedChannel"
                       @click="isEventRecording(selectedChannel.uuid) ? stopRecording(selectedChannel.uuid) : startRecording(selectedChannel.uuid, getChannelEvent(selectedChannel.uuid)?.title || 'Live TV')"
-                      :class="`btn btn-sm gap-2 rounded-xl px-4 ${isEventRecording(selectedChannel.uuid) ? 'btn-error' : 'btn-outline'}`"
+                      :class="`btn btn-sm gap-2 rounded-lg px-6 font-bold text-[10px] uppercase tracking-widest ${isEventRecording(selectedChannel.uuid) ? 'btn-error' : 'btn-outline'}`"
                     >
                       <Icon :name="isEventRecording(selectedChannel.uuid) ? 'mdi:stop-circle' : 'mdi:record-rec'" class="w-4 h-4" />
-                      {{ isEventRecording(selectedChannel.uuid) ? 'Stop Cloud Record' : 'Record to Cloud' }}
+                      {{ isEventRecording(selectedChannel.uuid) ? 'Stop Recording' : 'Record to Cloud' }}
                     </button>
-                    <div class="text-right">
-                      <p class="text-[10px] font-black uppercase tracking-widest text-base-content/30">On Air</p>
-                      <p class="font-bold text-sm">
-                        {{ getChannelEvent(selectedChannel.uuid) ? formatTime(getChannelEvent(selectedChannel.uuid)!.start) + ' - ' + formatTime(getChannelEvent(selectedChannel.uuid)!.stop) : 'Live' }}
+                    <div class="text-right border-l border-base-content/10 pl-4">
+                      <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/30 mb-0.5">Duration</p>
+                      <p class="font-bold text-xs text-base-content">
+                        {{ formatTime(getChannelEvent(selectedChannel.uuid)!.start) }} - {{ formatTime(getChannelEvent(selectedChannel.uuid)!.stop) }}
                       </p>
                     </div>
                   </div>
@@ -439,7 +431,7 @@ function formatProgress(start: number, stop: number) {
 
                 <!-- Progress Bar -->
                 <div class="space-y-2">
-                  <div class="w-full bg-base-200 h-2 rounded-full overflow-hidden">
+                  <div class="w-full bg-base-200 h-1.5 rounded-full overflow-hidden">
                     <div 
                       class="bg-primary h-full transition-all duration-1000"
                       :style="{ width: `${formatProgress(getChannelEvent(selectedChannel.uuid)!.start, getChannelEvent(selectedChannel.uuid)!.stop)}%` }"
@@ -448,44 +440,44 @@ function formatProgress(start: number, stop: number) {
                 </div>
 
                 <div class="pt-4 border-t border-base-content/5">
-                  <p class="text-sm font-medium leading-relaxed text-base-content/70">
+                  <p class="text-xs font-bold leading-relaxed text-base-content/60">
                     {{ getChannelEvent(selectedChannel.uuid)?.description }}
                   </p>
                 </div>
               </div>
               
               <div v-else class="flex flex-col items-center justify-center py-8 opacity-40">
-                <Icon name="mdi:information-outline" class="w-12 h-12 mb-3" />
-                <h3 class="font-black uppercase tracking-widest text-xs">No EPG data available</h3>
-                <p class="text-[10px] font-bold mt-1">Currently playing: {{ selectedChannel.name }}</p>
+                <Icon name="mdi:information-outline" class="w-10 h-10 mb-3" />
+                <h3 class="font-bold uppercase tracking-widest text-[10px]">No Schedule Available</h3>
+                <p class="text-[9px] font-bold mt-1 uppercase">Channel: {{ selectedChannel.name }}</p>
               </div>
             </div>
 
             <!-- Coming Up / EPG for Channel -->
             <div class="space-y-4">
-              <h3 class="text-xs font-black uppercase tracking-[0.2em] text-base-content/30 pl-2">Coming Up Next</h3>
+              <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 pl-1">Coming Up Next</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 <div 
                   v-for="event in getSelectedChannelEpg.filter(e => e.start > Math.floor(Date.now() / 1000)).slice(0, 6)" 
                   :key="event.eventId"
-                  class="bg-base-100 p-5 rounded-3xl border border-base-content/5 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden"
+                  class="bg-base-100 p-4 rounded-xl border border-base-content/10 shadow-sm hover:border-primary/30 transition-all group relative overflow-hidden"
                 >
-                  <div class="flex justify-between items-start mb-2">
-                    <span class="text-[10px] font-black uppercase tracking-widest bg-base-200 px-2 py-1 rounded text-base-content/50">
+                  <div class="flex justify-between items-start mb-3">
+                    <span class="text-[9px] font-bold uppercase tracking-widest bg-base-200 px-2 py-1 rounded text-base-content/50 border border-base-content/5">
                       {{ formatTime(event.start) }}
                     </span>
                     <button 
                       @click="isEventRecording(event.channelUuid) ? stopRecording(event.channelUuid) : startRecording(event.channelUuid, event.title)"
-                      :class="`btn btn-circle btn-xs ${isEventRecording(event.channelUuid) ? 'btn-error' : 'btn-ghost bg-base-200'}`"
+                      :class="`btn btn-circle btn-xs ${isEventRecording(event.channelUuid) ? 'btn-error' : 'btn-ghost bg-base-200 hover:bg-primary/10 hover:text-primary'}`"
                     >
-                      <Icon :name="isEventRecording(event.channelUuid) ? 'mdi:stop-circle' : 'mdi:record-rec'" class="w-4 h-4" />
+                      <Icon :name="isEventRecording(event.channelUuid) ? 'mdi:stop-circle' : 'mdi:record-rec'" class="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <h4 class="font-black text-sm line-clamp-1 group-hover:text-primary transition-colors">{{ event.title }}</h4>
-                  <p class="text-[11px] font-medium text-base-content/40 mt-1 line-clamp-2">{{ event.description }}</p>
+                  <h4 class="font-bold text-xs line-clamp-1 group-hover:text-primary transition-colors text-base-content">{{ event.title }}</h4>
+                  <p class="text-[10px] font-bold text-base-content/30 mt-1 line-clamp-2 uppercase tracking-wide leading-tight">{{ event.description }}</p>
                   
                   <div v-if="isEventRecording(event.channelUuid)" class="absolute top-0 right-0 p-1">
-                    <Icon name="mdi:circle" class="w-2 h-2 text-error animate-pulse" />
+                    <Icon name="mdi:circle" class="w-1.5 h-1.5 text-error animate-pulse" />
                   </div>
                 </div>
               </div>
@@ -494,9 +486,9 @@ function formatProgress(start: number, stop: number) {
 
           <!-- Empty State -->
           <div v-else class="flex flex-col items-center justify-center h-[60vh] text-center opacity-30">
-            <Icon name="mdi:television-play" class="w-24 h-24 mb-6" />
-            <h2 class="text-2xl font-black uppercase tracking-widest">Select a channel to begin</h2>
-            <p class="font-bold text-sm mt-2">Enjoy your integrated TV experience</p>
+            <Icon name="mdi:television-play" class="w-20 h-20 mb-6" />
+            <h2 class="text-xl font-bold uppercase tracking-widest">Select a channel</h2>
+            <p class="font-bold text-[10px] uppercase tracking-widest mt-2">Enjoy your integrated media cluster</p>
           </div>
         </div>
       </div>
