@@ -26,7 +26,7 @@ async function scanMedia(directoryPath: string, userStoragePath: string): Promis
             const entries = await fs.readdir(currentPath, { withFileTypes: true });
             const imagesInThisDir: string[] = [];
 
-            await Promise.all(entries.map(async (entry) => {
+            for (const entry of entries) {
                 const fullPath = path.join(currentPath, entry.name);
                 const ext = path.extname(entry.name).toLowerCase();
 
@@ -56,14 +56,14 @@ async function scanMedia(directoryPath: string, userStoragePath: string): Promis
                         imagesInThisDir.push(path.relative(userStoragePath, fullPath).replace(/\\/g, '/'));
                     }
                 }
-            }));
+            }
 
             // If this directory has 4+ images, it's a slideshow candidate
             if (imagesInThisDir.length >= 4) {
                 const relativeDirPath = path.relative(userStoragePath, currentPath).replace(/\\/g, '/');
                 const dirName = path.basename(currentPath) || 'Root';
 
-                // Get folder meta if exists (consistent with file-meta.post.ts)
+                // Get folder meta if exists
                 const cloudInfoPath = `${currentPath}.cloudinfo`;
                 let meta: FileMeta = { tags: [] };
                 try {
@@ -81,7 +81,7 @@ async function scanMedia(directoryPath: string, userStoragePath: string): Promis
                     fullPath: relativeDirPath || '.',
                     images: shuffledImages.slice(0, count),
                     meta: meta || { tags: [] },
-                    lastModified: Date.now(), // Slideshows are virtual objects
+                    lastModified: Date.now(),
                 });
             }
         } catch (error) {
@@ -90,6 +90,7 @@ async function scanMedia(directoryPath: string, userStoragePath: string): Promis
     }
 
     await scanDir(directoryPath);
+    console.log(`Scan complete: Found ${items.filter(i => i.type === 'video').length} videos and ${items.filter(i => i.type === 'slideshow').length} slideshows.`);
     return items;
 }
 
@@ -135,13 +136,17 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
             const videos = items.filter(i => i.type === 'video');
             const slideshows = items.filter(i => i.type === 'slideshow');
 
-            // Limit slideshows to 20% of the feed or max 20 items
-            const slideshowLimit = Math.min(20, Math.floor(videos.length * 0.25));
+            // Aim for 1 slideshow per 4 videos (20% slideshows)
+            const targetSlideshowCount = Math.floor(videos.length / 4);
+            const slideshowLimit = Math.min(slideshows.length, targetSlideshowCount || 10); // At least 10 if available
+
             const selectedSlideshows = slideshows.sort(() => Math.random() - 0.5).slice(0, slideshowLimit);
 
+            // Mix and shuffle
             items = [...videos, ...selectedSlideshows].sort(() => Math.random() - 0.5);
-        }
 
+            console.log(`Feed generated: ${videos.length} videos, ${selectedSlideshows.length} slideshows (Total: ${items.length})`);
+        }
         const page = parseInt(query.page?.toString() || '0');
         const limit = parseInt(query.limit?.toString() || '0');
 
