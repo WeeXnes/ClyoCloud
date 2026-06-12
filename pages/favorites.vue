@@ -988,10 +988,19 @@ const updateSelection = () => {
   })
 }
 
-const handleMouseUp = () => {
+const handleMouseUp = (event: MouseEvent) => {
   isSelecting.value = false
   window.removeEventListener('mousemove', handleMouseMove)
   window.removeEventListener('mouseup', handleMouseUp)
+
+  // If it was a simple click on empty space (not a drag), clear selection
+  const deltaX = Math.abs(event.clientX - selectionStart.value.x)
+  const deltaY = Math.abs(event.clientY - selectionStart.value.y)
+  
+  if (deltaX < 5 && deltaY < 5 && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    selectedFiles.value.clear()
+    lastSelectedIndex.value = -1
+  }
 }
 
 const getPreviewUrl = (fullPath: string) => {
