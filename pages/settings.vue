@@ -13,6 +13,7 @@ const isChangingPassword = ref(false)
 const downloadPath = ref('')
 const mobileAutoPreview = ref(true)
 const maxConcurrentPreviews = ref(3)
+const slideshowFrequency = ref(5)
 const experimentalMode = ref(false)
 const theme = useState<string>('currentTheme')
 const tvheadendHost = ref('')
@@ -231,6 +232,7 @@ async function fetchUserSettings() {
       downloadPath.value = data.downloadPath || ''
       mobileAutoPreview.value = data.mobileAutoPreview ?? true
       maxConcurrentPreviews.value = data.maxConcurrentPreviews || 3
+      slideshowFrequency.value = data.slideshowFrequency || 5
       experimentalMode.value = data.experimentalMode || false
       theme.value = data.theme || 'onedev'
       tvheadendHost.value = data.tvheadendHost || ''
@@ -264,6 +266,7 @@ async function saveUserSettings() {
         downloadPath: downloadPath.value,
         mobileAutoPreview: mobileAutoPreview.value,
         maxConcurrentPreviews: maxConcurrentPreviews.value,
+        slideshowFrequency: slideshowFrequency.value,
         experimentalMode: experimentalMode.value,
         theme: theme.value,
         tvheadendHost: tvheadendHost.value,
@@ -860,6 +863,24 @@ async function logout() {
                       type="checkbox" 
                       class="toggle toggle-primary toggle-sm rounded-sm" 
                       v-model="mobileAutoPreview" 
+                      @change="saveUserSettings"
+                    />
+                 </div>
+
+                 <div class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-xs font-bold uppercase tracking-widest text-base-content">Slideshow Frequency</p>
+                        <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">1 slideshow every {{ slideshowFrequency }} items</p>
+                      </div>
+                      <span class="badge badge-primary font-bold text-[10px]">{{ slideshowFrequency }}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="2" 
+                      max="50" 
+                      v-model.number="slideshowFrequency" 
+                      class="range range-primary range-xs" 
                       @change="saveUserSettings"
                     />
                  </div>
