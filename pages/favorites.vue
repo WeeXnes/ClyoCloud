@@ -4,6 +4,7 @@ import { getIconForExtension } from '~/core/fileIcons'
 import type { File, Tag } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
+import { ProgressManager, startOperation, updateOperation, completeOperation, failOperation } from '~/core/progressManager'
 import { copyToClipboard } from '~/core/clipboard'
 
 const files = ref<File[]>([])
@@ -117,18 +118,25 @@ const bulkDelete = async () => {
   const count = selectedFiles.value.size
   if (!confirm(`Are you sure you want to delete ${count} file(s)?`)) return
 
+  const op = startOperation('fav-bulk-delete', 'Deleting Favorites', count)
+
   try {
+    let current = 0
     for (const filePath of selectedFiles.value) {
         await fetch('/api/files', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path: filePath }),
         })
+        current++
+        updateOperation('fav-bulk-delete', current)
     }
     createNotification(`${count} file(s) deleted successfully`, NotificationType.SUCCESS)
+    completeOperation('fav-bulk-delete')
   } catch (err) {
     console.error('Error in bulk delete:', err)
     createNotification('Failed to delete some files', NotificationType.ERROR)
+    failOperation('fav-bulk-delete')
   }
   selectedFiles.value.clear()
   await fetchFavorites()

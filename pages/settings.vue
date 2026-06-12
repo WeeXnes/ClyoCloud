@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
+import { startOperation, updateOperation, completeOperation, failOperation } from '~/core/progressManager'
 import type { Tag } from '~/types/File'
 import { useState } from 'nuxt/app'
 
@@ -112,9 +113,18 @@ const fetchGenerationStatus = async () => {
       generationResults.value = status
       isGeneratingPreviews.value = status.isProcessing
 
-      if (!status.isProcessing && statusPollingInterval) {
+      if (status.isProcessing) {
+        const existingOp = ProgressManager.operations.find(o => o.id === 'preview-gen')
+        if (!existingOp) {
+          startOperation('preview-gen', 'Generating Previews', status.total)
+        } else if (existingOp.total !== status.total) {
+            existingOp.total = status.total
+        }
+        updateOperation('preview-gen', status.processed)
+      } else if (statusPollingInterval) {
         clearInterval(statusPollingInterval)
         statusPollingInterval = null
+        completeOperation('preview-gen')
         if (status.processed > 0) {
           createNotification(`Bulk generation complete! Processed: ${status.processed}`, NotificationType.SUCCESS)
         }
@@ -122,6 +132,7 @@ const fetchGenerationStatus = async () => {
     }
   } catch (err) {
     console.error('Error fetching generation status:', err)
+    failOperation('preview-gen')
   }
 }
 

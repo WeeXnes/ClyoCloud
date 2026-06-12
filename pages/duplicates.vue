@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
+import { startOperation, updateOperation, completeOperation, failOperation } from '~/core/progressManager'
 
 interface DuplicateFile {
   name: string
@@ -47,20 +48,26 @@ async function fetchDuplicates() {
 
 function startPolling() {
   if (pollInterval) clearInterval(pollInterval)
+  const op = startOperation('duplicate-scan', 'Scanning Duplicates', 100)
+  
   pollInterval = setInterval(async () => {
     try {
       const data: any = await $fetch('/api/storage-duplicates-status')
       scanStatus.value = data
       
-      if (!data.isScanning) {
+      if (data.isScanning) {
+        updateOperation('duplicate-scan', data.progress || 0)
+      } else {
         clearInterval(pollInterval)
         pollInterval = null
+        completeOperation('duplicate-scan')
         handleResults(data.results)
       }
     } catch (err) {
       console.error('Polling error:', err)
       clearInterval(pollInterval)
       pollInterval = null
+      failOperation('duplicate-scan')
       isLoading.value = false
     }
   }, 1000)
@@ -189,8 +196,10 @@ async function cleanSelected() {
 
   isDeleting.value = true
   let successCount = 0
+  const op = startOperation('duplicate-clean', 'Cleaning Duplicates', filesToDelete.length)
   
   try {
+    let current = 0
     for (const file of filesToDelete) {
       try {
         await $fetch('/api/files', {
@@ -201,12 +210,16 @@ async function cleanSelected() {
       } catch (err) {
         console.error(`Failed to delete ${file.fullPath}:`, err)
       }
+      current++
+      updateOperation('duplicate-clean', current)
     }
     
     createNotification(`Successfully deleted ${successCount} files.`, NotificationType.SUCCESS)
+    completeOperation('duplicate-clean')
     await fetchDuplicates()
   } catch (err) {
     createNotification('An error occurred during cleanup', NotificationType.ERROR)
+    failOperation('duplicate-clean')
   } finally {
     isDeleting.value = false
   }

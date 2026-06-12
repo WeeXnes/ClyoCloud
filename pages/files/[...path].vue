@@ -4,6 +4,7 @@ import { getIconForExtension } from '~/core/fileIcons'
 import type { File, Tag } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
+import { ProgressManager, startOperation, updateOperation, completeOperation, failOperation } from '~/core/progressManager'
 import { copyToClipboard } from '~/core/clipboard'
 
 const files = ref<File[]>([])
@@ -173,7 +174,10 @@ const bulkDelete = async () => {
   const count = selectedFiles.value.size
   if (!confirm(`Are you sure you want to delete ${count} file(s)?`)) return
 
+  const op = startOperation('bulk-delete', 'Deleting Files', count)
+
   try {
+    let current = 0
     for (const name of selectedFiles.value) {
       const file = files.value.find(f => f.name === name)
       if (file) {
@@ -188,11 +192,15 @@ const bulkDelete = async () => {
           body: JSON.stringify({ path: filePath }),
         })
       }
+      current++
+      updateOperation('bulk-delete', current)
     }
     createNotification(`${count} file(s) deleted successfully`, NotificationType.SUCCESS)
+    completeOperation('bulk-delete')
   } catch (err) {
     console.error('Error in bulk delete:', err)
     createNotification('Failed to delete some files', NotificationType.ERROR)
+    failOperation('bulk-delete')
   }
   selectedFiles.value.clear()
   await fetchFiles()
@@ -208,11 +216,13 @@ const bulkDownload = () => {
 
 const showBulkRenameModal = ref(false)
 const bulkRenameBaseName = ref('')
+const bulkRenameExtension = ref('')
 const bulkRenameStartNumber = ref(1)
 const isBulkRenaming = ref(false)
 
 const openBulkRenameModal = () => {
   bulkRenameBaseName.value = ''
+  bulkRenameExtension.value = ''
   bulkRenameStartNumber.value = 1
   showBulkRenameModal.value = true
 }
@@ -224,20 +234,29 @@ const executeBulkRename = async () => {
   }
 
   isBulkRenaming.value = true
+  const sortedFileNames = Array.from(selectedFiles.value).sort()
+  const op = startOperation('bulk-rename', 'Bulk Renaming', sortedFileNames.length)
+
   try {
     const route = useRoute()
     const pathParam = route.params.path
     const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
     
-    const sortedFileNames = Array.from(selectedFiles.value).sort()
     let count = bulkRenameStartNumber.value
 
     for (const oldName of sortedFileNames) {
       const file = files.value.find(f => f.name === oldName)
-      if (!file) continue
+      if (!file) {
+        updateOperation('bulk-rename', op.current + 1)
+        continue
+      }
 
-      const ext = oldName.includes('.') ? `.${oldName.split('.').pop()}` : ''
-      const newName = `${bulkRenameBaseName.value}_${count}${ext}`
+      const originalExt = oldName.includes('.') ? `.${oldName.split('.').pop()}` : ''
+      const newExt = bulkRenameExtension.value.trim() 
+        ? (bulkRenameExtension.value.startsWith('.') ? bulkRenameExtension.value : `.${bulkRenameExtension.value}`)
+        : originalExt
+      
+      const newName = `${bulkRenameBaseName.value}_${count}${newExt}`
       
       const oldPath = folderPath ? `${folderPath}/${oldName}` : oldName
 
@@ -248,16 +267,20 @@ const executeBulkRename = async () => {
       })
 
       if (!response.ok) throw new Error(`Failed to rename ${oldName}`)
+      
       count++
+      updateOperation('bulk-rename', op.current + 1)
     }
 
     createNotification('Bulk rename successful', NotificationType.SUCCESS)
+    completeOperation('bulk-rename')
     selectedFiles.value.clear()
     await fetchFiles()
     showBulkRenameModal.value = false
   } catch (err) {
     console.error(err)
     createNotification('Bulk rename failed', NotificationType.ERROR)
+    failOperation('bulk-rename')
   } finally {
     isBulkRenaming.value = false
   }
@@ -422,8 +445,6 @@ const fetchPredefinedTags = async () => {
   }
 }
 
-const taggingProgress = ref<{ current: number, total: number } | null>(null)
-
 const bulkAddTags = async () => {
   let tagsToAdd: Tag[] = []
   if (showNewTagForm.value) {
@@ -441,27 +462,19 @@ const bulkAddTags = async () => {
     return
   }
 
+  const op = startOperation('bulk-tags', 'Applying Tags', targetFileNames.length)
+
   try {
     const route = useRoute()
     const pathParam = route.params.path
     const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
 
-    // Determine target files: either currently selected in bulk, or the single file from modal
-    const targetFileNames = selectedFiles.value.size > 0 
-      ? Array.from(selectedFiles.value) 
-      : (selectedFile.value ? [selectedFile.value.name] : [])
-
-    if (targetFileNames.length === 0) {
-      createNotification('No file selected', NotificationType.ERROR)
-      return
-    }
-
-    taggingProgress.value = { current: 0, total: targetFileNames.length }
-
+    let current = 0
     for (const name of targetFileNames) {
       const file = files.value.find(f => f.name === name)
       if (!file) {
-        taggingProgress.value.current++
+        current++
+        updateOperation('bulk-tags', current)
         continue
       }
       
@@ -474,7 +487,8 @@ const bulkAddTags = async () => {
                       currentTags.every(ct => tagsToAdd.some(ta => ta.name === ct.name))
         
         if (isSame) {
-          taggingProgress.value.current++
+          current++
+          updateOperation('bulk-tags', current)
           continue
         }
         updatedTags = tagsToAdd
@@ -485,7 +499,8 @@ const bulkAddTags = async () => {
         )
 
         if (tagsToActuallyAdd.length === 0) {
-          taggingProgress.value.current++
+          current++
+          updateOperation('bulk-tags', current)
           continue
         }
 
@@ -508,10 +523,12 @@ const bulkAddTags = async () => {
       if (selectedFile.value && name === selectedFile.value.name) {
         selectedFile.value.meta.tags = updatedTags
       }
-      taggingProgress.value.current++
+      current++
+      updateOperation('bulk-tags', current)
     }
 
     createNotification('Tags added successfully', NotificationType.SUCCESS)
+    completeOperation('bulk-tags')
 
     // Automatically add new tag to predefined tags
     if (showNewTagForm.value) {
@@ -537,10 +554,11 @@ const bulkAddTags = async () => {
   } catch (err) {
     console.error('Error adding tags:', err)
     createNotification('Failed to add tags', NotificationType.ERROR)
+    failOperation('bulk-tags')
   } finally {
-    taggingProgress.value = null
+    await fetchFiles()
   }
-}
+  }
 
 const toggleSelectAll = () => {
   if (selectedFiles.value.size === sortedFiles.value.length) {
@@ -2182,6 +2200,17 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           </div>
           <div class="form-control">
             <label class="label mb-1">
+              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Extension (Optional)</span>
+            </label>
+            <input
+                v-model="bulkRenameExtension"
+                type="text"
+                placeholder=".jpg"
+                class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+            />
+          </div>
+          <div class="form-control">
+            <label class="label mb-1">
               <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Start Index</span>
             </label>
             <input
@@ -2195,7 +2224,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           <div class="bg-base-200/50 p-4 rounded-2xl border border-dashed border-base-content/10">
             <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-2">Preview Example</span>
             <p class="text-sm font-bold text-primary truncate">
-              {{ bulkRenameBaseName || 'Name' }}_{{ bulkRenameStartNumber || 1 }}.jpg
+              {{ bulkRenameBaseName || 'Name' }}_{{ bulkRenameStartNumber || 1 }}{{ bulkRenameExtension || '.ext' }}
             </p>
           </div>
 
@@ -2227,13 +2256,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           </div>
         </div>
 
-        <div v-if="taggingProgress" class="text-center py-10">
-          <div class="loading loading-spinner loading-lg text-primary mb-4"></div>
-          <p class="font-bold text-[10px] uppercase tracking-widest text-base-content/60">
-            Applying tags... {{ taggingProgress.current }} / {{ taggingProgress.total }}
-          </p>
-        </div>
-        <div v-else-if="showNewTagForm" class="space-y-5">
+        <div v-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
               <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Tag Name</span>

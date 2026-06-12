@@ -120,6 +120,7 @@
 import { ref, watch, nextTick, computed, onMounted, onUnmounted } from 'vue'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
+import { startOperation, updateOperation, completeOperation, failOperation, ProgressManager } from '~/core/progressManager'
 
 const downloadUrl = ref('')
 const isDownloading = ref(false)
@@ -192,17 +193,32 @@ async function checkStatus() {
     if (!response.ok) return
 
     const data = await response.json()
+    const opId = 'downloader-job'
+
     if (data.status === 'idle') {
       isDownloading.value = false
+      const op = ProgressManager.operations.find(o => o.id === opId)
+      if (op && op.status === 'processing') {
+         completeOperation(opId)
+      }
       return
     }
 
     const wasRunning = isDownloading.value
     isDownloading.value = data.status === 'running'
     
-    if (data.status === 'completed') lastDownloadStatus.value = 'success'
-    else if (data.status === 'error') lastDownloadStatus.value = 'error'
-    else if (data.status === 'cancelled') lastDownloadStatus.value = 'cancelled'
+    if (data.status === 'completed') {
+      lastDownloadStatus.value = 'success'
+      completeOperation(opId)
+    }
+    else if (data.status === 'error') {
+      lastDownloadStatus.value = 'error'
+      failOperation(opId)
+    }
+    else if (data.status === 'cancelled') {
+      lastDownloadStatus.value = 'cancelled'
+      failOperation(opId)
+    }
     else lastDownloadStatus.value = null
 
     // Only update logs if length changed to prevent flickering/re-scrolling
@@ -217,6 +233,18 @@ async function checkStatus() {
       }
       if (data.progress.filename) {
         detectedFilename.value = data.progress.filename
+      }
+
+      const percentValue = parseFloat(progressData.value.percent.replace('%', '')) || 0
+      const existingOp = ProgressManager.operations.find(o => o.id === opId)
+      
+      if (!existingOp && isDownloading.value) {
+        startOperation(opId, 'Downloader: ' + (detectedFilename.value || 'Retrieving...'), 100)
+      } else if (existingOp) {
+        if (detectedFilename.value && existingOp.title !== 'Downloader: ' + detectedFilename.value) {
+          existingOp.title = 'Downloader: ' + detectedFilename.value
+        }
+        updateOperation(opId, percentValue)
       }
     }
 
