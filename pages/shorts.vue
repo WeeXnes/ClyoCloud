@@ -23,6 +23,23 @@ const videoRefs = ref<Map<string, HTMLVideoElement>>(new Map())
 const feedContainerRef = ref<HTMLElement | null>(null)
 const currentIndex = ref(0)
 const isAutoscrollEnabled = ref(false)
+const isFullscreen = ref(false)
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch((err) => {
+      console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+    });
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+}
+
+const handleFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement
+}
 
 const handleScroll = (event: Event) => {
   const container = event.target as HTMLElement
@@ -276,6 +293,7 @@ const isMediaVisible = (index: number) => {
 
 onMounted(async () => {
   await fetchShorts()
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
 
   observer.value = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -317,6 +335,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
   if (observer.value) {
     observer.value.disconnect()
   }
@@ -354,6 +373,13 @@ const refresh = () => {
         title="Toggle Autoscroll"
       >
         <Icon :name="isAutoscrollEnabled ? 'mdi:play-pause' : 'mdi:play-box-multiple-outline'" class="w-6 h-6" />
+      </button>
+      <button 
+        @click="toggleFullscreen" 
+        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        title="Toggle Fullscreen"
+      >
+        <Icon :name="isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'" class="w-6 h-6" />
       </button>
       <button 
         @click="toggleMute" 
