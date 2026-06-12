@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
-import type { Video, Tag } from '~/types/File'
+import type { Video, Tag, ShortMedia, SlideshowMedia } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
 
-const videos = ref<Video[]>([])
-const currentVisibleVideo = ref<Video | null>(null)
+const mediaItems = ref<ShortMedia[]>([])
+const currentVisibleMedia = ref<ShortMedia | null>(null)
 const isLoading = ref(true)
 const isMuted = ref(true)
 const isPaused = ref(false)
@@ -24,8 +24,6 @@ const feedContainerRef = ref<HTMLElement | null>(null)
 const currentIndex = ref(0)
 const isAutoscrollEnabled = ref(false)
 
-const supportedExtensions = ['.mp4', '.webm', '.mov', '.mkv']
-
 const handleScroll = (event: Event) => {
   const container = event.target as HTMLElement
   const index = Math.round(container.scrollTop / container.clientHeight)
@@ -34,11 +32,11 @@ const handleScroll = (event: Event) => {
   }
 }
 
-const scrollToNextVideo = () => {
+const scrollToNextMedia = () => {
   if (!isAutoscrollEnabled.value || !feedContainerRef.value) return
   
   const nextIndex = currentIndex.value + 1
-  if (nextIndex < videos.value.length) {
+  if (nextIndex < mediaItems.value.length) {
     feedContainerRef.value.scrollTo({
       top: nextIndex * feedContainerRef.value.clientHeight,
       behavior: 'smooth'
@@ -51,21 +49,18 @@ const toggleAutoscroll = () => {
   createNotification(`Autoscroll ${isAutoscrollEnabled.value ? 'enabled' : 'disabled'}`, NotificationType.INFO)
 }
 
-const fetchVideos = async () => {
+const fetchShorts = async () => {
   try {
     isLoading.value = true
     containerRefs.value.clear()
     videoRefs.value.clear()
-    // Fetch only 200 random videos for the shorts feed
+    // Fetch random media for the shorts feed
     const response = await fetch('/api/videos?shuffle=true&limit=200&page=1', { credentials: 'include' })
-    if (!response.ok) throw new Error('Failed to fetch videos')
+    if (!response.ok) throw new Error('Failed to fetch media')
     const data = await response.json()
-    const allVideos: Video[] = data.items || data
-    
-    // Filter for supported videos
-    videos.value = allVideos.filter(v => supportedExtensions.some(ext => v.name.toLowerCase().endsWith(ext)))
+    mediaItems.value = data.items || data
   } catch (err) {
-    console.error('Error fetching videos for shorts:', err)
+    console.error('Error fetching media for shorts:', err)
   } finally {
     isLoading.value = false
   }
@@ -96,8 +91,8 @@ const toggleMute = () => {
 }
 
 const togglePlayPause = () => {
-  if (!currentVisibleVideo.value) return
-  const activeVideo = videoRefs.value.get(currentVisibleVideo.value.fullPath)
+  if (!currentVisibleMedia.value || currentVisibleMedia.value.type === 'slideshow') return
+  const activeVideo = videoRefs.value.get(currentVisibleMedia.value.fullPath)
   if (!activeVideo) return
 
   if (activeVideo.paused) {
@@ -109,22 +104,22 @@ const togglePlayPause = () => {
   }
 }
 
-const toggleFavourite = async (video: Video) => {
-  const isFavourite = !video.meta.isFavourite
+const toggleFavourite = async (media: ShortMedia) => {
+  const isFavourite = !media.meta.isFavourite
   try {
     const response = await fetch('/api/file-meta', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        fullPath: video.fullPath,
+        fullPath: media.fullPath,
         isFavourite,
       }),
     })
 
     if (!response.ok) throw new Error('Failed to update favorite status')
 
-    video.meta.isFavourite = isFavourite
-    createNotification(`Video ${isFavourite ? 'added to' : 'removed from'} favorites`, NotificationType.INFO)
+    media.meta.isFavourite = isFavourite
+    createNotification(`${media.type === 'video' ? 'Video' : 'Slideshow'} ${isFavourite ? 'added to' : 'removed from'} favorites`, NotificationType.INFO)
   } catch (err) {
     console.error(err)
     createNotification('Failed to update favorite status', NotificationType.ERROR)
@@ -132,8 +127,8 @@ const toggleFavourite = async (video: Video) => {
 }
 
 const openTagModal = async () => {
-  if (!currentVisibleVideo.value) return
-  selectedTags.value = currentVisibleVideo.value.meta.tags ? [...currentVisibleVideo.value.meta.tags] : []
+  if (!currentVisibleMedia.value) return
+  selectedTags.value = currentVisibleMedia.value.meta.tags ? [...currentVisibleMedia.value.meta.tags] : []
   showNewTagForm.value = false
   newTagName.value = ''
   newTagColor.value = '#4B5EAA'
@@ -169,7 +164,7 @@ const isTagSelected = (tag: Tag) => {
 }
 
 const addTags = async () => {
-  if (!currentVisibleVideo.value) return
+  if (!currentVisibleMedia.value) return
   let tagsToAdd: Tag[] = []
   if (showNewTagForm.value) {
     if (!newTagName.value.trim()) {
@@ -187,11 +182,11 @@ const addTags = async () => {
   }
 
   try {
-    const currentTags = currentVisibleVideo.value.meta.tags || []
+    const currentTags = currentVisibleMedia.value.meta.tags || []
     let updatedTags = []
 
     if (!showNewTagForm.value) {
-      // For single video, sync tags exactly (allows removal)
+      // For single item, sync tags exactly (allows removal)
       const isSame = currentTags.length === tagsToAdd.length && 
                     currentTags.every(ct => tagsToAdd.some(ta => ta.name === ct.name))
 
@@ -219,14 +214,14 @@ const addTags = async () => {
     const response = await fetch('/api/file-meta', {      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        fullPath: currentVisibleVideo.value.fullPath,
+        fullPath: currentVisibleMedia.value.fullPath,
         tags: updatedTags,
       }),
     })
 
     if (!response.ok) throw new Error('Failed to add tags')
 
-    currentVisibleVideo.value.meta.tags = updatedTags
+    currentVisibleMedia.value.meta.tags = updatedTags
 
     // Automatically add new tag to predefined tags
     if (showNewTagForm.value) {
@@ -255,46 +250,47 @@ const addTags = async () => {
   }
 }
 
-const setVideoRef = (el: any, video: Video) => {
+const setVideoRef = (el: any, media: Video) => {
   if (el) {
-    videoRefs.value.set(video.fullPath, el)
+    videoRefs.value.set(media.fullPath, el)
   } else {
-    videoRefs.value.delete(video.fullPath)
+    videoRefs.value.delete(media.fullPath)
   }
 }
 
-const setContainerRef = (el: any, video: Video) => {
+const setContainerRef = (el: any, media: ShortMedia) => {
   if (el) {
-    el._videoData = video
-    containerRefs.value.set(video.fullPath, el)
+    el._mediaData = media
+    containerRefs.value.set(media.fullPath, el)
     if (observer.value) {
       observer.value.observe(el)
     }
   } else {
-    containerRefs.value.delete(video.fullPath)
+    containerRefs.value.delete(media.fullPath)
   }
 }
 
-const isVideoVisible = (index: number) => {
+const isMediaVisible = (index: number) => {
   return Math.abs(index - currentIndex.value) <= 1
 }
 
 onMounted(async () => {
-  await fetchVideos()
+  await fetchShorts()
 
   observer.value = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const container = entry.target as any
+      const media = container._mediaData as ShortMedia
       const video = container.querySelector('video')
+      
       if (entry.isIntersecting) {
-        currentVisibleVideo.value = container._videoData
+        currentVisibleMedia.value = media
         isPaused.value = false
         if (video) {
           if (video.paused) {
             const playPromise = video.play()
             if (playPromise !== undefined) {
               playPromise.catch((e: any) => {
-                // Ignore AbortError which is common when scrolling fast
                 if (e.name === 'AbortError') return
                 console.warn('Playback prevented:', e)
               })
@@ -308,10 +304,9 @@ onMounted(async () => {
       }
     })
   }, {
-    threshold: 0.3 // Much lower threshold for faster video switching on iOS
+    threshold: 0.3
   })
 
-  // Watch for container elements being added to DOM
   nextTick(() => {
     containerRefs.value.forEach(container => {
       if (container && observer.value) {
@@ -327,7 +322,6 @@ onUnmounted(() => {
   }
 })
 
-// Refresh/Shuffle
 const refresh = () => {
   window.location.reload()
 }
@@ -346,12 +340,12 @@ const refresh = () => {
     <!-- Controls -->
     <div class="absolute top-6 right-6 z-50 flex flex-col gap-4">
       <button 
-        v-if="currentVisibleVideo"
-        @click="toggleFavourite(currentVisibleVideo)" 
+        v-if="currentVisibleMedia"
+        @click="toggleFavourite(currentVisibleMedia)" 
         class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
-        :class="{ 'text-orange-500': currentVisibleVideo.meta.isFavourite }"
+        :class="{ 'text-orange-500': currentVisibleMedia.meta.isFavourite }"
       >
-        <Icon :name="currentVisibleVideo.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-6 h-6" />
+        <Icon :name="currentVisibleMedia.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-6 h-6" />
       </button>
       <button 
         @click="toggleAutoscroll" 
@@ -381,32 +375,43 @@ const refresh = () => {
       <p class="font-bold uppercase tracking-[0.2em] text-[10px] opacity-50">Syncing Media Cluster...</p>
     </div>
 
-    <!-- Video Feed -->
+    <!-- Media Feed -->
     <div 
-      v-else-if="videos.length" 
+      v-else-if="mediaItems.length" 
       ref="feedContainerRef"
       class="h-full w-full overflow-y-scroll overflow-x-hidden snap-y snap-mandatory no-scrollbar"
       @scroll.passive="handleScroll"
     >
       <div 
-        v-for="(video, index) in videos" 
-        :key="video.fullPath" 
-        :ref="el => setContainerRef(el, video)"
+        v-for="(media, index) in mediaItems" 
+        :key="media.fullPath" 
+        :ref="el => setContainerRef(el, media)"
         class="h-[100dvh] w-full max-w-[100vw] snap-center relative flex items-center justify-center bg-black cursor-pointer overflow-hidden"
-        @click="togglePlayPause"
+        @click="media.type === 'video' ? togglePlayPause() : null"
       >
-        <template v-if="isVideoVisible(index)">
+        <template v-if="isMediaVisible(index)">
+          <!-- Video Type -->
           <video
-            :ref="el => setVideoRef(el, video)"
+            v-if="media.type === 'video'"
+            :ref="el => setVideoRef(el, media)"
             class="h-full w-full object-contain"
             :loop="!isAutoscrollEnabled"
             playsinline
             :muted="isMuted"
-            :poster="getThumbnailUrl(video.fullPath)"
-            @ended="scrollToNextVideo"
+            :poster="getThumbnailUrl(media.fullPath)"
+            @ended="scrollToNextMedia"
           >
-            <source :src="getStreamUrl(video.fullPath)" :type="getSourceType(video.name)" />
+            <source :src="getStreamUrl(media.fullPath)" :type="getSourceType(media.name)" />
           </video>
+
+          <!-- Slideshow Type -->
+          <SlideshowMedia
+            v-else-if="media.type === 'slideshow'"
+            :media="media"
+            :isActive="currentVisibleMedia?.fullPath === media.fullPath"
+            :isAutoscrollEnabled="isAutoscrollEnabled"
+            @completed="scrollToNextMedia"
+          />
         </template>
         
         <!-- Placeholder -->
@@ -414,32 +419,32 @@ const refresh = () => {
           <span class="loading loading-spinner loading-md text-white/10"></span>
         </div>
 
-        <!-- Pause Overlay -->
+        <!-- Pause Overlay (Videos Only) -->
         <transition name="fade">
-          <div v-if="isPaused && currentVisibleVideo?.fullPath === video.fullPath" class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+          <div v-if="media.type === 'video' && isPaused && currentVisibleMedia?.fullPath === media.fullPath" class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
             <div class="bg-black/40 p-5 rounded-full backdrop-blur-md border border-white/10">
               <Icon name="mdi:play" class="w-12 h-12 text-white opacity-80" />
             </div>
           </div>
         </transition>
 
-        <!-- Video Info Overlay -->
-        <div class="absolute bottom-0 left-0 right-0 p-8 pt-24 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none">
+        <!-- Media Info Overlay -->
+        <div class="absolute bottom-0 left-0 right-0 p-8 pt-24 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none z-20">
           <div class="max-w-md pointer-events-auto">
             <h2 class="text-white font-bold text-lg tracking-tight mb-4 drop-shadow-md">
-              {{ video.name }}
+              {{ media.name }}
             </h2>
             <div class="flex flex-wrap items-center gap-2">
               <span 
-                v-for="tag in video.meta.tags.slice(0, 3)" 
+                v-for="tag in media.meta.tags.slice(0, 3)" 
                 :key="tag.name"
                 class="badge badge-sm border-none text-white font-bold py-2.5 px-3 rounded shadow-sm"
                 :style="{ backgroundColor: tag.color }"
               >
                 {{ tag.name }}
               </span>
-              <span v-if="video.meta.tags.length > 3" class="text-[9px] text-white/50 font-bold self-center uppercase tracking-widest">
-                +{{ video.meta.tags.length - 3 }} more
+              <span v-if="media.meta.tags.length > 3" class="text-[9px] text-white/50 font-bold self-center uppercase tracking-widest">
+                +{{ media.meta.tags.length - 3 }} more
               </span>
               <button
                 class="btn btn-ghost btn-xs bg-white/10 hover:bg-white/20 border border-white/10 rounded-md px-3 h-7 text-white transition-all ml-1 font-bold text-[9px] uppercase tracking-widest"

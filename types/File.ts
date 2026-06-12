@@ -29,7 +29,19 @@ export interface Video {
     size: number;
     lastModified: number;
     fullPath: string;
+    type?: 'video';
 }
+
+export interface SlideshowMedia {
+    type: 'slideshow';
+    name: string;
+    fullPath: string; // Folder path
+    images: string[]; // List of relative image paths
+    meta: FileMeta;
+    lastModified: number;
+}
+
+export type ShortMedia = Video | SlideshowMedia;
 
 /**
  * Recommends files based on shared tags with the input file
