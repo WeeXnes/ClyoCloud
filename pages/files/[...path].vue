@@ -214,6 +214,41 @@ const bulkDownload = () => {
   window.location.href = `/api/bulk-download?files=${encodeURIComponent(filesQuery)}&path=${encodeURIComponent(folderPath)}`
 }
 
+const bulkFavourite = async () => {
+  if (selectedFiles.value.size === 0) return
+  const count = selectedFiles.value.size
+  const op = startOperation('bulk-favourite', 'Adding to Favorites', count)
+
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+
+    let current = 0
+    for (const name of selectedFiles.value) {
+      const file = files.value.find(f => f.name === name)
+      if (file && !file.meta.isFavourite) {
+        const filePath = folderPath ? `${folderPath}/${name}` : name
+        await fetch('/api/file-meta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullPath: filePath, isFavourite: true }),
+        })
+        file.meta.isFavourite = true
+      }
+      current++
+      updateOperation('bulk-favourite', current)
+    }
+    createNotification(`${count} item(s) added to favorites`, NotificationType.SUCCESS)
+    completeOperation('bulk-favourite')
+  } catch (err) {
+    console.error('Error in bulk favorite:', err)
+    createNotification('Failed to update favorites for some items', NotificationType.ERROR)
+    failOperation('bulk-favourite')
+  }
+  selectedFiles.value.clear()
+}
+
 const showBulkRenameModal = ref(false)
 const bulkRenameBaseName = ref('')
 const bulkRenameExtension = ref('')
@@ -446,6 +481,7 @@ const fetchPredefinedTags = async () => {
 }
 
 const bulkAddTags = async () => {
+  const targetFileNames = selectedFiles.value.size > 0 ? Array.from(selectedFiles.value) : (selectedFile.value ? [selectedFile.value.name] : [])
   let tagsToAdd: Tag[] = []
   if (showNewTagForm.value) {
     if (!newTagName.value.trim()) {
@@ -623,14 +659,14 @@ const handleMainScroll = () => {
   const relativeScroll = Math.max(0, scrollTop - offsetTop)
 
   if (!isGridView.value) {
-    const itemHeight = 76 // 64px row + 12px gap
+    const itemHeight = 66 // 56px row + 10px gap (gap-2.5)
     scrollIndex.value = Math.floor(relativeScroll / itemHeight)
   } else {
     const containerWidth = gridElement.clientWidth
     const gaps = itemsPerRow.value - 1
     const totalGapWidth = gaps * 24 // gap-6 is 24px
     const itemWidth = (containerWidth - totalGapWidth) / itemsPerRow.value
-    const itemHeight = itemWidth + 8 + 48 + 24 // item + gap-2 + metadata + gap-6
+    const itemHeight = itemWidth + 8 + 40 + 24 // thumbnail + gap-2 + metadata (h-40) + gap-6
     const rowsScrolled = Math.floor(relativeScroll / itemHeight)
     scrollIndex.value = rowsScrolled * itemsPerRow.value
   }
@@ -1538,6 +1574,9 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           <div class="flex items-center gap-2 shrink-0">
             <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="bulkDownload">
               <Icon name="mdi:download" class="w-3.5 h-3.5" /> Download
+            </button>
+            <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="bulkFavourite">
+              <Icon name="mdi:star" class="w-3.5 h-3.5" /> Favorite
             </button>
             <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="openBulkRenameModal">
               <Icon name="mdi:pencil" class="w-3.5 h-3.5" /> Rename

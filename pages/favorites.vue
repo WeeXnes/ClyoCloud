@@ -473,14 +473,14 @@ const handleMainScroll = () => {
   const relativeScroll = Math.max(0, scrollTop - offsetTop)
 
   if (!isGridView.value) {
-    const itemHeight = 76
+    const itemHeight = 66 // 56px row + 10px gap
     scrollIndex.value = Math.floor(relativeScroll / itemHeight)
   } else {
     const containerWidth = gridElement.clientWidth
     const gaps = itemsPerRow.value - 1
     const totalGapWidth = gaps * 24
     const itemWidth = (containerWidth - totalGapWidth) / itemsPerRow.value
-    const itemHeight = itemWidth + 8 + 48 + 24
+    const itemHeight = itemWidth + 8 + 40 + 24 // thumbnail + gap-2 + metadata (h-40) + gap-6
     const rowsScrolled = Math.floor(relativeScroll / itemHeight)
     scrollIndex.value = rowsScrolled * itemsPerRow.value
   }
