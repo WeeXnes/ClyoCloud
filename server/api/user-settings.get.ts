@@ -35,7 +35,8 @@ export default defineEventHandler(async (event) => {
             mobileAutoPreview: userData.mobileAutoPreview ?? true,
             maxConcurrentPreviews: userData.maxConcurrentPreviews || 3,
             experimentalMode: userData.experimentalMode || false,
-            theme: userData.theme || 'onedev'
+            theme: userData.theme || 'onedev',
+            slideshowFrequency: userData.slideshowFrequency || 5
         }
     } catch (error) {
         console.error('Get settings error:', error)

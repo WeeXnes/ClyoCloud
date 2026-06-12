@@ -135,17 +135,37 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
         if (query.shuffle === 'true') {
             const videos = items.filter(i => i.type === 'video');
             const slideshows = items.filter(i => i.type === 'slideshow');
+            
+            // Fetch user settings for frequency
+            const config = useRuntimeConfig();
+            const usersData = await fs.readFile(config.usersFilePath, 'utf-8');
+            const users = JSON.parse(usersData);
+            const userData = users.find((u: any) => u.name === username);
+            const frequency = userData?.slideshowFrequency || 5;
 
-            // Aim for 1 slideshow per 4 videos (20% slideshows)
-            const targetSlideshowCount = Math.floor(videos.length / 4);
-            const slideshowLimit = Math.min(slideshows.length, targetSlideshowCount || 10); // At least 10 if available
+            const shuffledVideos = videos.sort(() => Math.random() - 0.5);
+            const shuffledSlideshows = slideshows.sort(() => Math.random() - 0.5);
+            
+            const result: ShortMedia[] = [];
+            let videoIdx = 0;
+            let slideshowIdx = 0;
 
-            const selectedSlideshows = slideshows.sort(() => Math.random() - 0.5).slice(0, slideshowLimit);
+            // Interleave slideshows every Nth position
+            for (let i = 0; i < shuffledVideos.length + (shuffledVideos.length / (frequency - 1)); i++) {
+                if ((i + 1) % frequency === 0 && slideshowIdx < shuffledSlideshows.length) {
+                    result.push(shuffledSlideshows[slideshowIdx++]);
+                } else if (videoIdx < shuffledVideos.length) {
+                    result.push(shuffledVideos[videoIdx++]);
+                }
+            }
 
-            // Mix and shuffle
-            items = [...videos, ...selectedSlideshows].sort(() => Math.random() - 0.5);
+            // Append remaining slideshows if any (unlikely with this ratio)
+            if (slideshowIdx < shuffledSlideshows.length && result.length < 200) {
+                result.push(...shuffledSlideshows.slice(slideshowIdx, slideshowIdx + (200 - result.length)));
+            }
 
-            console.log(`Feed generated: ${videos.length} videos, ${selectedSlideshows.length} slideshows (Total: ${items.length})`);
+            items = result;
+            console.log(`Feed generated (Frequency: ${frequency}): ${videoIdx} videos, ${slideshowIdx} slideshows (Total: ${items.length})`);
         }
         const page = parseInt(query.page?.toString() || '0');
         const limit = parseInt(query.limit?.toString() || '0');

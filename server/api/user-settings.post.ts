@@ -4,7 +4,7 @@ import { logActivity } from '../utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { downloadPath, tvheadendHost, tvheadendPort, tvheadendUser, tvheadendPassword, mobileAutoPreview, maxConcurrentPreviews, experimentalMode, theme } = body
+    const { downloadPath, tvheadendHost, tvheadendPort, tvheadendUser, tvheadendPassword, mobileAutoPreview, maxConcurrentPreviews, experimentalMode, theme, slideshowFrequency } = body
     const config = useRuntimeConfig()
     const user = event.context.user
 
@@ -46,6 +46,10 @@ export default defineEventHandler(async (event) => {
 
         if (theme) {
             users[userIndex].theme = theme
+        }
+
+        if (typeof slideshowFrequency === 'number') {
+            users[userIndex].slideshowFrequency = Math.max(2, Math.min(50, slideshowFrequency))
         }
 
         await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')

@@ -66,7 +66,35 @@ const resetTimer = () => {
   }
 }
 
+const touchStartX = ref(0)
+const touchEndX = ref(0)
+
+const handleTouchStart = (event: TouchEvent) => {
+  touchStartX.value = event.touches[0].clientX
+}
+
+const handleTouchEnd = (event: TouchEvent) => {
+  touchEndX.value = event.changedTouches[0].clientX
+  handleSwipe()
+}
+
+const handleSwipe = () => {
+  const swipeThreshold = 50
+  const diff = touchEndX.value - touchStartX.value
+  
+  if (Math.abs(diff) > swipeThreshold) {
+    if (diff > 0) {
+      prevImage()
+    } else {
+      nextImage()
+    }
+  }
+}
+
 const handleInteraction = (event: MouseEvent) => {
+  // Ignore clicks if on mobile where we use touch
+  if (window.innerWidth < 768) return
+
   const width = (event.currentTarget as HTMLElement).clientWidth
   const x = event.offsetX
   if (x < width / 3) {
@@ -97,7 +125,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="h-full w-full relative overflow-hidden flex items-center justify-center bg-black group" @click="handleInteraction">
+  <div 
+    class="h-full w-full relative overflow-hidden flex items-center justify-center bg-black group" 
+    @click="handleInteraction"
+    @touchstart="handleTouchStart"
+    @touchend="handleTouchEnd"
+  >
     <!-- Images -->
     <div class="relative w-full h-full flex items-center justify-center">
       <transition :name="transitionName" mode="out-in">
