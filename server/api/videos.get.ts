@@ -123,6 +123,17 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
             mediaCache.set(username, { items, timestamp: Date.now() });
         }
 
+        // Apply path exclusions
+        const config = useRuntimeConfig();
+        const usersData = await fs.readFile(config.usersFilePath, 'utf-8');
+        const users = JSON.parse(usersData);
+        const userData = users.find((u: any) => u.name === username);
+        const excludedPaths = userData?.excludedShortsPaths || [];
+
+        if (excludedPaths.length > 0) {
+            items = items.filter(item => !excludedPaths.some((excluded: string) => item.fullPath.startsWith(excluded)));
+        }
+
         const query = getQuery(event);
         const search = query.search ? query.search.toString().toLowerCase() : '';
         if (search) {

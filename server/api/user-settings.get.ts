@@ -36,7 +36,8 @@ export default defineEventHandler(async (event) => {
             maxConcurrentPreviews: userData.maxConcurrentPreviews || 3,
             experimentalMode: userData.experimentalMode || false,
             theme: userData.theme || 'onedev',
-            slideshowFrequency: userData.slideshowFrequency || 5
+            slideshowFrequency: userData.slideshowFrequency || 5,
+            excludedShortsPaths: userData.excludedShortsPaths || []
         }
     } catch (error) {
         console.error('Get settings error:', error)

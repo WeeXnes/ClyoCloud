@@ -143,6 +143,41 @@ const toggleFavourite = async (media: ShortMedia) => {
   }
 }
 
+const excludeFolder = async (media: ShortMedia) => {
+  const pathParts = media.fullPath.split('/')
+  pathParts.pop() // Remove filename
+  const folderPath = pathParts.join('/')
+  
+  if (!confirm(`Exclude folder "${folderPath || 'Root'}" from Shorts?`)) return
+
+  try {
+    // Fetch current settings first
+    const settingsResponse = await fetch('/api/user-settings')
+    if (!settingsResponse.ok) throw new Error('Failed to fetch current settings')
+    const settings = await settingsResponse.json()
+    
+    const excludedPaths = settings.excludedShortsPaths || []
+    if (!excludedPaths.includes(folderPath)) {
+      excludedPaths.push(folderPath)
+    }
+
+    const response = await fetch('/api/user-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...settings, excludedShortsPaths: excludedPaths }),
+    })
+
+    if (!response.ok) throw new Error('Failed to update settings')
+
+    createNotification(`Folder excluded: ${folderPath || 'Root'}`, NotificationType.SUCCESS)
+    // Refresh the feed
+    refresh()
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to exclude folder', NotificationType.ERROR)
+  }
+}
+
 const openTagModal = async () => {
   if (!currentVisibleMedia.value) return
   selectedTags.value = currentVisibleMedia.value.meta.tags ? [...currentVisibleMedia.value.meta.tags] : []
@@ -365,6 +400,14 @@ const refresh = () => {
         :class="{ 'text-orange-500': currentVisibleMedia.meta.isFavourite }"
       >
         <Icon :name="currentVisibleMedia.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-6 h-6" />
+      </button>
+      <button 
+        v-if="currentVisibleMedia"
+        @click="excludeFolder(currentVisibleMedia)" 
+        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        title="Exclude Folder from Shorts"
+      >
+        <Icon name="mdi:eye-off-outline" class="w-6 h-6" />
       </button>
       <button 
         @click="toggleAutoscroll" 

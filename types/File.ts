@@ -41,6 +41,14 @@ export interface SlideshowMedia {
     lastModified: number;
 }
 
+export interface SlideshowItem {
+    type: 'image' | 'video';
+    name: string;
+    fullPath: string;
+    meta: FileMeta;
+    lastModified: number;
+}
+
 export type ShortMedia = Video | SlideshowMedia;
 
 /**

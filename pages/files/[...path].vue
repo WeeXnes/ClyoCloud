@@ -214,6 +214,28 @@ const bulkDownload = () => {
   window.location.href = `/api/bulk-download?files=${encodeURIComponent(filesQuery)}&path=${encodeURIComponent(folderPath)}`
 }
 
+const startSlideshow = (folder?: File) => {
+  const route = useRoute()
+  const pathParam = route.params.path
+  const currentPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+  
+  let paths: string[] = []
+  if (folder) {
+    paths = [currentPath ? `${currentPath}/${folder.name}` : folder.name]
+  } else if (selectedFiles.value.size > 0) {
+    paths = Array.from(selectedFiles.value)
+      .filter(name => files.value.find(f => f.name === name)?.isFolder)
+      .map(name => currentPath ? `${currentPath}/${name}` : name)
+  }
+
+  if (paths.length === 0) {
+    createNotification('Please select at least one folder', NotificationType.WARNING)
+    return
+  }
+
+  navigateTo(`/slideshow?paths=${encodeURIComponent(paths.join(','))}`)
+}
+
 const bulkFavourite = async () => {
   if (selectedFiles.value.size === 0) return
   const count = selectedFiles.value.size
@@ -922,6 +944,9 @@ const handleContextAction = (action: string) => {
     case 'open':
       onFileClick(new MouseEvent('click'), file)
       break
+    case 'slideshow':
+      startSlideshow(file)
+      break
     case 'media':
       const route = useRoute()
       const pathParam = route.params.path
@@ -1584,6 +1609,9 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
             <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="bulkDownload">
               <Icon name="mdi:download" class="w-3.5 h-3.5" /> Download
             </button>
+            <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="startSlideshow()">
+              <Icon name="mdi:image-multiple-outline" class="w-3.5 h-3.5" /> Slideshow
+            </button>
             <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="bulkFavourite">
               <Icon name="mdi:star" class="w-3.5 h-3.5" /> Favorite
             </button>
@@ -1840,6 +1868,11 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
            @click.stop>
         <ul class="menu menu-compact p-0 font-bold text-[10px] uppercase tracking-wider">
           <li><a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('open')"><Icon name="mdi:open-in-new" class="w-4 h-4" /> Open</a></li>
+          <li v-if="contextMenuFile?.isFolder">
+            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('slideshow')">
+              <Icon name="mdi:image-multiple-outline" class="w-4 h-4" /> Slideshow
+            </a>
+          </li>
           <li v-if="contextMenuFile && isVideoFile(contextMenuFile.name)">
             <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('media')">
               <Icon name="mdi:play-box-multiple-outline" class="w-4 h-4" /> Media Tab
