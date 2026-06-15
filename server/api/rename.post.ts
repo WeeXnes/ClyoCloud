@@ -57,6 +57,9 @@ export default defineEventHandler(async (event) => {
             // No cloudinfo to rename
         }
 
+        // Update tag cache
+        moveFileInCache(event.context.user.name, oldPath, relativeNewPath.replace(/\\/g, '/'))
+
         // Update favorites index if needed
         await renameInFavorites(event.context.user.name, oldPath, path.relative(userStoragePath, newFullPath).replace(/\\/g, '/'))
 

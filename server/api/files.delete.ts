@@ -40,6 +40,9 @@ export default defineEventHandler(async (event) => {
 
     await logActivity(event.context.user.name, 'DELETE', safeSubPath, undefined, event)
 
+    // Update tag cache
+    removeFileFromCache(event.context.user.name, safeSubPath)
+
     // Update favorites index
     await removeFromFavorites(event.context.user.name, safeSubPath)
 

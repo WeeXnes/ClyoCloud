@@ -25,6 +25,9 @@ export default defineNitroPlugin(async (nitroApp) => {
     checkUserFile(config.usersFilePath)
     console.info("Tags JSON Path: " + config.tagsFilePath)
     checkTagsFile(config.tagsFilePath)
+
+    // Build the tag cache in the background
+    rebuildTagCache();
 });
 
 

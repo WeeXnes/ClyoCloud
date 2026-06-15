@@ -400,6 +400,25 @@ async function clearAllPreviews() {
   }
 }
 
+async function refreshTagCache() {
+  isRebuildingCache.value = true
+  try {
+    const response = await fetch('/api/tags/rebuild-cache', {
+      method: 'POST',
+      credentials: 'include'
+    })
+
+    if (!response.ok) throw new Error('Failed to rebuild tag cache')
+    
+    createNotification('Tag cache rebuild started', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to rebuild tag cache', NotificationType.ERROR)
+  } finally {
+    isRebuildingCache.value = false
+  }
+}
+
 async function logout() {
   try {
     await fetch('/api/logout', { method: 'POST' })

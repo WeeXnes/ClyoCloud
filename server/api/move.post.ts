@@ -93,6 +93,9 @@ export default defineEventHandler(async (event) => {
                     // No cloudinfo to move
                 }
                 
+                // Update tag cache
+                moveFileInCache(event.context.user.name, itemPath, relativeNewPath.replace(/\\/g, '/'))
+
                 results.push({ path: itemPath, success: true })
             } catch (err: any) {
                 console.error(`Error moving ${itemPath}:`, err)

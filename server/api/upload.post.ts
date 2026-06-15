@@ -71,7 +71,11 @@ export default defineEventHandler(async (event) => {
                 readStream.on('error', reject)
             })
 
-            const relativePath = path.relative(userStoragePath, resolvedPath)
+            const relativePath = path.relative(userStoragePath, resolvedPath).replace(/\\/g, '/')
+            
+            // Initial cache update for the uploaded file
+            await updateFileInCache(event.context.user.name, relativePath, { tags: [] })
+
             await logActivity(event.context.user.name, 'UPLOAD', relativePath, undefined, event)
         }
 

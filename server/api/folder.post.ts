@@ -30,7 +30,11 @@ export default defineEventHandler(async (event) => {
 
     await fs.mkdir(fullPath, { recursive: true })
 
-    const relativePath = path.relative(userStoragePath, fullPath)
+    const relativePath = path.relative(userStoragePath, fullPath).replace(/\\/g, '/')
+    
+    // Update tag cache for the new folder
+    await updateFileInCache(event.context.user.name, relativePath, { tags: [] })
+
     await logActivity(event.context.user.name, 'MKDIR', relativePath, undefined, event)
 
     return { success: true }

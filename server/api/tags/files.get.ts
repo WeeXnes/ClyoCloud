@@ -1,6 +1,5 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
-import path from 'path'
-import { scanFilesByTag } from '~/server/utils/fileUtils'
+import { getFilesByTagFromCache } from '~/server/utils/tagCache'
 import type { File } from '~/types/File'
 
 export default defineEventHandler(async (event): Promise<File[]> => {
@@ -17,12 +16,7 @@ export default defineEventHandler(async (event): Promise<File[]> => {
             throw createError({ statusCode: 400, statusMessage: 'Tag parameter is required' });
         }
 
-        const config = useRuntimeConfig();
-        const userStoragePath = path.join(config.storagePath, username);
-
-        const files = await scanFilesByTag(userStoragePath, userStoragePath, tag);
-
-        return files;
+        return getFilesByTagFromCache(username, tag);
     } catch (error: any) {
         console.error('Error fetching files by tag:', error);
         throw createError({

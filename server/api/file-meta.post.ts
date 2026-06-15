@@ -68,6 +68,9 @@ export default defineEventHandler(async (event) => {
 
         await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')
 
+        // Update tag cache
+        await updateFileInCache(event.context.user.name, fullPath, meta)
+
         return { success: true, meta }
     } catch (error: any) {
         console.error('Error updating meta:', error)
