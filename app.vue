@@ -33,49 +33,49 @@
               <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-3">Library</h3>
               <ul class="space-y-1">
                 <li>
-                  <NuxtLink to="/" class="nav-link" active-class="active">
+                  <NuxtLink to="/" :class="['nav-link', { active: isLinkActive('/') }]">
                     <Icon name="mdi:home-variant" class="w-5 h-5" />
                     <span>Dashboard</span>
                   </NuxtLink>
                 </li>
                 <li>
-                  <NuxtLink to="/files" class="nav-link" active-class="active">
+                  <NuxtLink to="/files" :class="['nav-link', { active: isLinkActive('/files') }]">
                     <Icon name="mdi:folder-multiple" class="w-5 h-5" />
                     <span>My Files</span>
                   </NuxtLink>
                 </li>
                 <li>
-                  <NuxtLink to="/shared" class="nav-link" active-class="active">
+                  <NuxtLink to="/shared" :class="['nav-link', { active: isLinkActive('/shared') }]">
                     <Icon name="mdi:share-variant" class="w-5 h-5" />
                     <span>Shared</span>
                   </NuxtLink>
                 </li>
                 <li>
-                  <NuxtLink to="/favorites" class="nav-link" active-class="active">
+                  <NuxtLink to="/favorites" :class="['nav-link', { active: isLinkActive('/favorites') }]">
                     <Icon name="mdi:star" class="w-5 h-5" />
                     <span>Favorites</span>
                   </NuxtLink>
                 </li>
                 <li>
-                  <NuxtLink to="/media" class="nav-link" active-class="active">
+                  <NuxtLink to="/media" :class="['nav-link', { active: isLinkActive('/media') }]">
                     <Icon name="mdi:play-box-multiple-outline" class="w-5 h-5" />
                     <span>Media</span>
                   </NuxtLink>
                 </li>
                 <li>
-                  <NuxtLink to="/collections" class="nav-link" active-class="active">
+                  <NuxtLink to="/collections" :class="['nav-link', { active: isLinkActive('/collections') }]">
                     <Icon name="mdi:tag-multiple" class="w-5 h-5" />
                     <span>Collections</span>
                   </NuxtLink>
                 </li>
                 <li v-if="isTvEnabled">
-                  <NuxtLink to="/tv" class="nav-link" active-class="active">
+                  <NuxtLink to="/tv" :class="['nav-link', { active: isLinkActive('/tv') }]">
                     <Icon name="mdi:television-classic" class="w-5 h-5" />
                     <span>TV</span>
                   </NuxtLink>
                 </li>
                 <li>
-                  <NuxtLink to="/shorts" class="nav-link" active-class="active">
+                  <NuxtLink to="/shorts" :class="['nav-link', { active: isLinkActive('/shorts') }]">
                     <Icon name="mdi:play-box-outline" class="w-5 h-5" />
                     <span>Shorts</span>
                   </NuxtLink>
@@ -87,7 +87,7 @@
               <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-3">Tools</h3>
               <ul class="space-y-1">
                 <li>
-                  <NuxtLink to="/downloader" class="nav-link" active-class="active">
+                  <NuxtLink to="/downloader" :class="['nav-link', { active: isLinkActive('/downloader') }]">
                     <Icon name="mdi:cloud-download" class="w-5 h-5" />
                     <span>Downloader</span>
                   </NuxtLink>
@@ -99,7 +99,7 @@
               <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-3">Storage Management</h3>
               <ul class="space-y-1">
                 <li>
-                  <NuxtLink to="/duplicates" class="nav-link" active-class="active">
+                  <NuxtLink to="/duplicates" :class="['nav-link', { active: isLinkActive('/duplicates') }]">
                     <Icon name="mdi:content-copy" class="w-5 h-5" />
                     <span>Duplicates</span>
                   </NuxtLink>
@@ -111,13 +111,13 @@
               <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-3">Account</h3>
               <ul class="space-y-1">
                 <li>
-                  <NuxtLink to="/settings" class="nav-link" active-class="active">
+                  <NuxtLink to="/settings" :class="['nav-link', { active: isLinkActive('/settings') }]">
                     <Icon name="mdi:cog" class="w-5 h-5" />
                     <span>Settings</span>
                   </NuxtLink>
                 </li>
                 <li>
-                  <NuxtLink to="/logs" class="nav-link" active-class="active">
+                  <NuxtLink to="/logs" :class="['nav-link', { active: isLinkActive('/logs') }]">
                     <Icon name="mdi:history" class="w-5 h-5" />
                     <span>Logs</span>
                   </NuxtLink>
@@ -151,15 +151,21 @@
 </template>
 
 <script setup lang="ts">
-import { useState, useCookie } from 'nuxt/app'
-import { onMounted, watch } from 'vue'
+import { useState, useCookie, useRoute } from 'nuxt/app'
+import { onMounted, watch, computed } from 'vue'
 
+const route = useRoute()
 const user = useState<{ name: string } | null>('user')
 const themeCookie = useCookie('theme', { default: () => 'onedev' })
 const currentTheme = useState<string>('currentTheme', () => themeCookie.value)
 const userSettings = useState<any>('userSettings', () => null)
 
 const isTvEnabled = computed(() => !!userSettings.value?.tvheadendHost)
+
+const isLinkActive = (path: string) => {
+  if (path === '/') return route.path === '/'
+  return route.path.startsWith(path)
+}
 
 watch(currentTheme, (newTheme) => {
   themeCookie.value = newTheme
