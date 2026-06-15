@@ -984,6 +984,14 @@ async function logout() {
                    <Icon name="mdi:magnify-scan" class="w-4 h-4" :class="{ 'animate-pulse': isScanningStorage }" />
                    <span class="text-[9px] font-bold uppercase tracking-widest">{{ isScanningStorage ? 'Scanning...' : 'Scan Storage' }}</span>
                  </button>
+                 <button 
+                  class="btn btn-ghost btn-sm gap-2 border border-base-content/10 bg-base-100/50 rounded-lg h-9"
+                  @click="refreshTagCache"
+                  :disabled="isRebuildingCache"
+                 >
+                   <Icon name="mdi:cached" class="w-4 h-4" :class="{ 'animate-spin': isRebuildingCache }" />
+                   <span class="text-[9px] font-bold uppercase tracking-widest">{{ isRebuildingCache ? 'Rebuilding...' : 'Refresh Tag Cache' }}</span>
+                 </button>
                </div>
 
                <div v-if="isScanningStorage" class="py-10 flex flex-col items-center gap-4 animate-in fade-in duration-300">
