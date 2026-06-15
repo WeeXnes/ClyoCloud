@@ -40,3 +40,84 @@ export function clearSizeCache(dirPath: string) {
         clearSizeCache(parentPath)
     }
 }
+
+import type { File, FileMeta } from '~/types/File'
+
+/**
+ * Recursively scans a directory for files matching a specific tag
+ * @param directoryPath - The root directory to scan
+ * @param userStoragePath - The user's root directory to restrict access and compute relative paths
+ * @param tagName - The tag name to filter by
+ * @returns Promise<File[]> - Array of File objects
+ */
+export async function scanFilesByTag(directoryPath: string, userStoragePath: string, tagName: string): Promise<File[]> {
+    const items: File[] = [];
+
+    async function scanDir(currentPath: string): Promise<void> {
+        try {
+            if (!currentPath.startsWith(userStoragePath)) return;
+
+            const entries = await fs.readdir(currentPath, { withFileTypes: true });
+
+            for (const entry of entries) {
+                const fullPath = path.join(currentPath, entry.name);
+                
+                if (entry.isDirectory()) {
+                    // Check if the folder itself has the tag
+                    const cloudInfoPath = `${fullPath}.cloudinfo`;
+                    let meta: FileMeta = { tags: [] };
+                    try {
+                        const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8');
+                        meta = JSON.parse(cloudInfoContent) as FileMeta;
+                    } catch {}
+
+                    if (meta.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
+                        const stats = await fs.stat(fullPath);
+                        const relativePath = path.relative(userStoragePath, fullPath).replace(/\\/g, '/');
+                        items.push({
+                            name: relativePath,
+                            size: 0, // Folders don't have a simple size
+                            type: '',
+                            lastModified: stats.mtime.getTime(),
+                            isFolder: true,
+                            meta: meta,
+                        });
+                    }
+                    
+                    await scanDir(fullPath);
+                } else if (entry.isFile()) {
+                    if (entry.name.endsWith('.cloudinfo') || entry.name.startsWith('.')) continue;
+
+                    const cloudInfoFileName = `${entry.name.substring(0, 100)}.cloudinfo`;
+                    const cloudInfoPath = path.join(currentPath, cloudInfoFileName);
+                    
+                    let meta: FileMeta = { tags: [] };
+                    try {
+                        const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8');
+                        meta = JSON.parse(cloudInfoContent) as FileMeta;
+                    } catch {
+                        continue; // No cloudinfo, no tags
+                    }
+
+                    if (meta.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
+                        const stats = await fs.stat(fullPath);
+                        const relativePath = path.relative(userStoragePath, fullPath).replace(/\\/g, '/');
+                        items.push({
+                            name: relativePath,
+                            size: stats.size,
+                            type: path.extname(entry.name),
+                            lastModified: stats.mtime.getTime(),
+                            isFolder: false,
+                            meta: meta,
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            console.error(`Error scanning ${currentPath}:`, error);
+        }
+    }
+
+    await scanDir(directoryPath);
+    return items;
+}

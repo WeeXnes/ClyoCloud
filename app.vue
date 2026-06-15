@@ -62,6 +62,12 @@
                     <span>Media</span>
                   </NuxtLink>
                 </li>
+                <li>
+                  <NuxtLink to="/collections" class="nav-link" active-class="active">
+                    <Icon name="mdi:tag-multiple" class="w-5 h-5" />
+                    <span>Collections</span>
+                  </NuxtLink>
+                </li>
                 <li v-if="isTvEnabled">
                   <NuxtLink to="/tv" class="nav-link" active-class="active">
                     <Icon name="mdi:television-classic" class="w-5 h-5" />
