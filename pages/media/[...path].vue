@@ -601,17 +601,18 @@ watch(() => route.params.path, () => {
               <!-- Tags -->
               <div class="flex flex-wrap items-center gap-2">
                 <div v-if="currentVideo.meta.tags?.length" class="flex flex-wrap gap-2">
-                  <span
+                  <NuxtLink
                     v-for="tag in currentVideo.meta.tags"
                     :key="tag.name"
-                    class="badge badge-sm border-none text-white font-bold py-2.5 px-3 rounded-md shadow-sm group/tag"
+                    :to="`/collections/${encodeURIComponent(tag.name)}`"
+                    class="badge badge-sm border-none text-white font-bold py-2.5 px-3 rounded-md shadow-sm group/tag hover:scale-105 transition-transform cursor-pointer"
                     :style="{ backgroundColor: tag.color }"
                   >
                     {{ tag.name }}
                     <Icon name="mdi:close" 
                           class="w-3 h-3 ml-1.5 cursor-pointer opacity-50 hover:opacity-100" 
-                          @click.stop="removeTag(tag)" />
-                  </span>
+                          @click.stop.prevent="removeTag(tag)" />
+                  </NuxtLink>
                 </div>
                 <button
                   class="btn btn-ghost btn-xs bg-base-100/50 hover:bg-base-100 border border-base-content/10 rounded-md px-3 h-7 transition-all font-bold text-[9px] uppercase tracking-widest"

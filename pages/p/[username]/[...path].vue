@@ -142,12 +142,13 @@ onMounted(fetchFileInfo)
 
           <!-- Tags -->
           <div v-if="fileInfo.meta?.tags?.length" class="flex flex-wrap gap-1.5 mt-6">
-            <span v-for="tag in fileInfo.meta.tags" 
+            <NuxtLink v-for="tag in fileInfo.meta.tags" 
                   :key="tag.name" 
-                  class="badge badge-xs border-none text-white font-bold py-2.5 px-3" 
+                  :to="`/collections/${encodeURIComponent(tag.name)}`"
+                  class="badge badge-xs border-none text-white font-bold py-2.5 px-3 hover:scale-105 transition-transform cursor-pointer" 
                   :style="{ backgroundColor: tag.color }">
               {{ tag.name }}
-            </span>
+            </NuxtLink>
           </div>
 
           <!-- Description -->

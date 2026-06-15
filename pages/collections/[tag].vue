@@ -1421,15 +1421,16 @@ const getPreviewUrl = (fullPath: string) => {
               <div>
                 <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30 mb-3 block">Tags</span>
                 <div class="flex flex-wrap gap-2 items-center bg-base-200/30 p-3 rounded-lg border border-base-content/10">
-                    <span v-for="tag in (selectedFile.meta.tags || [])"
+                    <NuxtLink v-for="tag in (selectedFile.meta.tags || [])"
                           :key="tag.name"
-                          class="badge badge-sm border-none text-white font-bold py-2.5 px-3 shadow-sm rounded-md"
+                          :to="`/collections/${encodeURIComponent(tag.name)}`"
+                          class="badge badge-sm border-none text-white font-bold py-2.5 px-3 shadow-sm rounded-md hover:scale-105 transition-transform cursor-pointer"
                           :style="{ backgroundColor: tag.color }"> 
                       {{ tag.name }} 
                       <Icon name="mdi:close" 
                             class="w-3 h-3 ml-1.5 cursor-pointer opacity-50 hover:opacity-100" 
-                            @click.stop="removeTag(tag)" />
-                    </span>
+                            @click.stop.prevent="removeTag(tag)" />
+                    </NuxtLink>
                     
                     <button
                       class="btn btn-ghost btn-xs bg-base-100 hover:bg-base-200 border border-base-content/10 rounded-md px-3 h-7 transition-all font-bold text-[9px] uppercase tracking-wider"

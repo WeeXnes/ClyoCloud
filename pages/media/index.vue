@@ -395,14 +395,16 @@ function setPage(page: number | string) {
 
             <!-- Tags -->
             <div v-if="video.meta.tags?.length" class="flex flex-wrap gap-1 mt-1.5">
-              <span
+              <NuxtLink
                 v-for="tag in video.meta.tags.slice(0, 3)"
                 :key="tag.name"
-                class="badge badge-xs border-none text-[8px] font-bold py-2 rounded-sm text-white"
+                :to="`/collections/${encodeURIComponent(tag.name)}`"
+                class="badge badge-xs border-none text-[8px] font-bold py-2 rounded-sm text-white hover:scale-105 transition-transform cursor-pointer"
                 :style="{ backgroundColor: tag.color }"
+                @click.stop
               >
                 {{ tag.name }}
-              </span>
+              </NuxtLink>
               <span v-if="video.meta.tags.length > 3" class="text-[8px] text-base-content/30 font-bold self-center uppercase tracking-tighter">
                 +{{ video.meta.tags.length - 3 }}
               </span>
