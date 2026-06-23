@@ -2,6 +2,7 @@ import { defineEventHandler, getQuery, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 import type { Video, FileMeta, ShortMedia, SlideshowMedia } from '~/types/File'
+import { isPathWithin } from '~/server/utils/fileUtils'
 
 // Simple in-memory cache for media scans
 const mediaCache = new Map<string, { items: ShortMedia[]; timestamp: number }>();
@@ -21,7 +22,7 @@ async function scanMedia(directoryPath: string, userStoragePath: string): Promis
 
     async function scanDir(currentPath: string): Promise<void> {
         try {
-            if (!currentPath.startsWith(userStoragePath)) return;
+            if (!isPathWithin(userStoragePath, currentPath) && currentPath !== userStoragePath) return;
 
             const entries = await fs.readdir(currentPath, { withFileTypes: true });
             const imagesInThisDir: string[] = [];
@@ -115,7 +116,7 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
             const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '');
             const fullPath = path.join(userStoragePath, safeSubPath);
 
-            if (!fullPath.startsWith(userStoragePath)) {
+            if (!isPathWithin(userStoragePath, fullPath)) {
                 throw createError({ statusCode: 403, statusMessage: 'Access denied' });
             }
 

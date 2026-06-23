@@ -121,3 +121,15 @@ export async function scanFilesByTag(directoryPath: string, userStoragePath: str
     await scanDir(directoryPath);
     return items;
 }
+
+/**
+ * Verifies that a child path is strictly inside a parent directory.
+ * Resolves both paths fully to prevent symlink/relative breakouts.
+ */
+export function isPathWithin(parentPath: string, childPath: string): boolean {
+    const resolvedParent = path.resolve(parentPath)
+    const resolvedChild = path.resolve(childPath)
+    const relative = path.relative(resolvedParent, resolvedChild)
+    return !relative.startsWith('..') && !path.isAbsolute(relative)
+}
+

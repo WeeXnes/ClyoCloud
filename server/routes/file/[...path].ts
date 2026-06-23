@@ -5,6 +5,8 @@ import mime from 'mime-types'
 import path, { join, resolve } from 'path'
 import { logActivity } from '~/server/utils/activityLogger'
 
+import { isPathWithin } from '~/server/utils/fileUtils'
+
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const userStoragePath = path.join(config.storagePath, event.context.user.name)
@@ -22,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
     const resolvedPath = resolve(join(userStoragePath, decodedPath))
 
-    if (!resolvedPath.startsWith(resolve(userStoragePath))) {
+    if (!isPathWithin(userStoragePath, resolvedPath)) {
         console.error(`Access denied: Resolved path ${resolvedPath} is outside user directory ${userStoragePath}`)
         throw createError({
             statusCode: 403,

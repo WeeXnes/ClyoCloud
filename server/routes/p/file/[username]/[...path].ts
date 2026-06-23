@@ -7,6 +7,8 @@ import { isFilePublic } from '~/server/utils/publicCheck'
 import archiver from 'archiver'
 import { logActivity } from '~/server/utils/activityLogger'
 
+import { isPathWithin } from '~/server/utils/fileUtils'
+
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const username = getRouterParam(event, 'username')
@@ -23,7 +25,7 @@ export default defineEventHandler(async (event) => {
     const userStoragePath = path.join(config.storagePath, username)
     const resolvedPath = resolve(join(userStoragePath, decodedPath))
 
-    if (!resolvedPath.startsWith(resolve(userStoragePath))) {
+    if (!isPathWithin(userStoragePath, resolvedPath)) {
         throw createError({
             statusCode: 403,
             statusMessage: 'Access denied',

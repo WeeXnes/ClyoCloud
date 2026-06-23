@@ -15,6 +15,10 @@ interface User {
 export default defineNitroPlugin(async (nitroApp) => {
     const config = useRuntimeConfig()
     console.info("Running server init...")
+    if (config.jwtSecret === 'jei0ghjesi0ogj8ie0jg8093jg8390') {
+        console.warn(chalk.red('[SECURITY WARNING] Using default hardcoded JWT secret! Please set JWT_SECRET environment variable.'));
+    }
+
     console.info("Initializing media backend...")
     console.info("Environment: ")
     console.info("Data Storage Path: " + config.storagePath)

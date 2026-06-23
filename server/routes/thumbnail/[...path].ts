@@ -5,6 +5,8 @@ import mime from 'mime-types'
 import path, { join, resolve } from 'path'
 import { runFfmpeg, runFfprobe } from '~/server/utils/ffmpeg'
 
+import { isPathWithin } from '~/server/utils/fileUtils'
+
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const userStoragePath = path.join(config.storagePath, event.context.user.name)
@@ -22,7 +24,7 @@ export default defineEventHandler(async (event) => {
     const requestedThumbnail = resolve(join(userThumbnailPath, decodedPath + '.jpg'))
     const requestedFile = resolve(join(userStoragePath, decodedPath))
 
-    if (!requestedThumbnail.startsWith(resolve(userThumbnailPath)) || !requestedFile.startsWith(resolve(userStoragePath))) {
+    if (!isPathWithin(userThumbnailPath, requestedThumbnail) || !isPathWithin(userStoragePath, requestedFile)) {
         console.error(`Access denied: Path outside allowed directories`)
         throw createError({
             statusCode: 403,

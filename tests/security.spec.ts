@@ -41,15 +41,6 @@ const protectedEndpoints = [
   '/api/2fa/enable',
   '/api/2fa/setup',
 
-  // TV Features
-  '/api/tv/channels',
-  '/api/tv/epg',
-  '/api/tv/record',
-  '/api/tv/record-cancel',
-  '/api/tv/recordings',
-  '/tv/stream/channel/123',
-  '/tv/icon/test.png',
-
   // Content Delivery (Raw Routes)
   '/file/test.txt',
   '/files/test-folder', // Verifying plural route protection
@@ -66,7 +57,6 @@ const protectedEndpoints = [
   '/duplicates',
   '/downloader',
   '/shorts',
-  '/tv',
   '/media'
 ]
 

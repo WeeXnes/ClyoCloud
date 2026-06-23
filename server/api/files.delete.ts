@@ -3,6 +3,8 @@ import fs from 'fs/promises'
 import path from 'path'
 import { removeFromFavorites } from '~/server/utils/favorites'
 
+import { isPathWithin } from '~/server/utils/fileUtils'
+
 export default defineEventHandler(async (event) => {
   try {
     const config = useRuntimeConfig()
@@ -21,7 +23,7 @@ export default defineEventHandler(async (event) => {
     const fullPath = path.join(userStoragePath, safeSubPath)
 
     // Ensure path is within user's directory
-    if (!fullPath.startsWith(userStoragePath)) {
+    if (!isPathWithin(userStoragePath, fullPath)) {
       console.error(`Access denied: Resolved path ${fullPath} is outside user directory ${userStoragePath}`)
       throw createError({
         statusCode: 403,

@@ -5,6 +5,8 @@ import type { File, FileMeta } from '~/types/File'
 import { getFavoritesIndex, saveFavoritesIndex, type FavoriteEntry } from '~/server/utils/favorites'
 import { getDirSize } from '~/server/utils/fileUtils'
 
+import { isPathWithin } from '~/server/utils/fileUtils'
+
 export default defineEventHandler(async (event): Promise<File[]> => {
     try {
         if (!event.context.user) {
@@ -34,6 +36,8 @@ export default defineEventHandler(async (event): Promise<File[]> => {
         // Process favorites from index
         await Promise.all(favorites.map(async (entry) => {
             const fullPath = path.join(userStoragePath, entry.path)
+            if (!isPathWithin(userStoragePath, fullPath)) return
+
             const baseName = path.basename(fullPath)
             const dirName = path.dirname(fullPath)
             const cloudInfoFileName = `${baseName.substring(0, 100)}.cloudinfo`

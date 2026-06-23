@@ -17,11 +17,8 @@ const slideshowFrequency = ref(5)
 const experimentalMode = ref(false)
 const excludedShortsPaths = ref<string[]>([])
 const theme = useState<string>('currentTheme')
-const tvheadendHost = ref('')
-const tvheadendPort = ref('9981')
-const tvheadendUser = ref('')
-const tvheadendPassword = ref('')
 const isSavingSettings = ref(false)
+const isRebuildingCache = ref(false)
 
 const removeExcludedPath = async (index: number) => {
   excludedShortsPaths.value.splice(index, 1)
@@ -242,10 +239,7 @@ async function fetchUserSettings() {
       experimentalMode.value = data.experimentalMode || false
       excludedShortsPaths.value = data.excludedShortsPaths || []
       theme.value = data.theme || 'onedev'
-      tvheadendHost.value = data.tvheadendHost || ''
-      tvheadendPort.value = data.tvheadendPort || '9981'
-      tvheadendUser.value = data.tvheadendUser || ''
-      tvheadendPassword.value = data.tvheadendPassword || ''
+
     }
   } catch (err) {
     console.error('Error fetching user settings:', err)
@@ -277,10 +271,7 @@ async function saveUserSettings() {
         experimentalMode: experimentalMode.value,
         excludedShortsPaths: excludedShortsPaths.value,
         theme: theme.value,
-        tvheadendHost: tvheadendHost.value,
-        tvheadendPort: tvheadendPort.value,
-        tvheadendUser: tvheadendUser.value,
-        tvheadendPassword: tvheadendPassword.value
+
       }),
     })
 
@@ -624,82 +615,7 @@ async function logout() {
             </div>
           </section>
 
-          <!-- TV Integration -->
-          <div class="flex items-center gap-3 px-2 pt-2">
-             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-               <Icon name="mdi:television-classic" class="text-primary w-5 h-5" />
-             </div>
-             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">TV Connection</h2>
-          </div>
 
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">TVHeadend Endpoint</h3>
-               <div class="space-y-4">
-                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                   <div class="form-control">
-                     <label class="label py-1">
-                       <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Host / IP</span>
-                     </label>
-                     <input 
-                       v-model="tvheadendHost" 
-                       type="text" 
-                       placeholder="e.g. 192.168.1.10" 
-                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
-                     />
-                   </div>
-                   <div class="form-control">
-                     <label class="label py-1">
-                       <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Port</span>
-                     </label>
-                     <input 
-                       v-model="tvheadendPort" 
-                       type="text" 
-                       placeholder="9981" 
-                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
-                     />
-                   </div>
-                 </div>
-
-                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                   <div class="form-control">
-                     <label class="label py-1">
-                       <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Username</span>
-                     </label>
-                     <input 
-                       v-model="tvheadendUser" 
-                       type="text" 
-                       placeholder="tvheadend" 
-                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
-                     />
-                   </div>
-                   <div class="form-control">
-                     <label class="label py-1">
-                       <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Password</span>
-                     </label>
-                     <input 
-                       v-model="tvheadendPassword" 
-                       type="password" 
-                       placeholder="••••••••" 
-                       class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
-                     />
-                   </div>
-                 </div>
-
-                 <div class="pt-4">
-                   <button 
-                     class="btn btn-primary btn-block h-11 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
-                     @click="saveUserSettings" 
-                     :disabled="isSavingSettings"
-                   >
-                     <Icon v-if="!isSavingSettings" name="mdi:content-save-outline" class="w-4 h-4" />
-                     <span v-else class="loading loading-spinner loading-xs"></span>
-                     Save Connection
-                   </button>
-                 </div>
-               </div>
-             </div>
-          </section>
 
           <!-- Download Configuration -->
           <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">

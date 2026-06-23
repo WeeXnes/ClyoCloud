@@ -4,7 +4,7 @@ import { logActivity } from '../utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { downloadPath, tvheadendHost, tvheadendPort, tvheadendUser, tvheadendPassword, mobileAutoPreview, maxConcurrentPreviews, experimentalMode, theme, slideshowFrequency, excludedShortsPaths } = body
+    const { downloadPath, mobileAutoPreview, maxConcurrentPreviews, experimentalMode, theme, slideshowFrequency, excludedShortsPaths } = body
     const config = useRuntimeConfig()
     const user = event.context.user
 
@@ -29,10 +29,6 @@ export default defineEventHandler(async (event) => {
         }
 
         users[userIndex].downloadPath = downloadPath || ''
-        users[userIndex].tvheadendHost = tvheadendHost || ''
-        users[userIndex].tvheadendPort = tvheadendPort || '9981'
-        users[userIndex].tvheadendUser = tvheadendUser || ''
-        users[userIndex].tvheadendPassword = tvheadendPassword || ''
         if (typeof mobileAutoPreview === 'boolean') {
             users[userIndex].mobileAutoPreview = mobileAutoPreview
         }

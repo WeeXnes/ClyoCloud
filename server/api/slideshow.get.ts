@@ -2,6 +2,7 @@ import { defineEventHandler, getQuery, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 import type { SlideshowItem, FileMeta } from '~/types/File'
+import { isPathWithin } from '~/server/utils/fileUtils'
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -11,7 +12,7 @@ async function scanMediaForSlideshow(directoryPath: string, userStoragePath: str
 
     async function scanDir(currentPath: string): Promise<void> {
         try {
-            if (!currentPath.startsWith(userStoragePath)) return;
+            if (!isPathWithin(userStoragePath, currentPath) && currentPath !== userStoragePath) return;
 
             const entries = await fs.readdir(currentPath, { withFileTypes: true });
 
@@ -91,7 +92,7 @@ export default defineEventHandler(async (event): Promise<SlideshowItem[]> => {
             const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '');
             const fullPath = path.join(userStoragePath, safeSubPath);
 
-            if (!fullPath.startsWith(userStoragePath)) {
+            if (!isPathWithin(userStoragePath, fullPath)) {
                 continue; // Skip invalid paths
             }
 

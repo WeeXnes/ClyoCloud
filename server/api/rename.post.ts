@@ -3,6 +3,8 @@ import fs from 'fs/promises'
 import path from 'path'
 import { renameInFavorites } from '~/server/utils/favorites'
 
+import { isPathWithin } from '~/server/utils/fileUtils'
+
 export default defineEventHandler(async (event) => {
     try {
         if (!event.context.user || !event.context.user.name) {
@@ -29,7 +31,7 @@ export default defineEventHandler(async (event) => {
         const newFullPath = path.resolve(path.join(directory, newName))
 
         // Security check
-        if (!oldFullPath.startsWith(userStoragePath) || !newFullPath.startsWith(userStoragePath)) {
+        if (!isPathWithin(userStoragePath, oldFullPath) || !isPathWithin(userStoragePath, newFullPath)) {
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied',

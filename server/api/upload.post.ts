@@ -3,6 +3,7 @@ import { mkdir } from 'fs/promises'
 import { defineEventHandler, createError } from 'h3'
 import { IncomingForm, Fields, Files } from 'formidable'
 import path, { join, resolve } from 'path'
+import { isPathWithin } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -41,7 +42,7 @@ export default defineEventHandler(async (event) => {
         const resolvedDir = resolve(join(userStoragePath, decodedPath))
 
         // Security check
-        if (!resolvedDir.startsWith(resolve(userStoragePath))) {
+        if (!isPathWithin(userStoragePath, resolvedDir)) {
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied: Path outside user directory',
@@ -60,6 +61,10 @@ export default defineEventHandler(async (event) => {
             }
 
             const resolvedPath = resolve(join(resolvedDir, decodedFilename))
+            if (!isPathWithin(resolvedDir, resolvedPath)) {
+                console.warn(`[SECURITY] Blocked directory traversal upload: ${decodedFilename}`)
+                continue
+            }
 
             console.log(`Saving file to: ${resolvedPath}`)
             const writeStream = createWriteStream(resolvedPath)

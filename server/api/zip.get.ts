@@ -2,6 +2,7 @@ import archiver from 'archiver';
 import fs from 'fs';
 import path from 'path';
 import { logActivity } from '../utils/activityLogger';
+import { isPathWithin } from '../utils/fileUtils';
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
@@ -11,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const fullPath = path.resolve(userStoragePath, folderPath);
 
   // Security check to ensure the path is within the user's directory
-  if (!fullPath.startsWith(userStoragePath)) {
+  if (!isPathWithin(userStoragePath, fullPath)) {
     throw createError({ statusCode: 403, message: 'Access denied' });
   }
 

@@ -68,12 +68,7 @@
                     <span>Collections</span>
                   </NuxtLink>
                 </li>
-                <li v-if="isTvEnabled">
-                  <NuxtLink to="/tv" :class="['nav-link', { active: isLinkActive('/tv') }]">
-                    <Icon name="mdi:television-classic" class="w-5 h-5" />
-                    <span>TV</span>
-                  </NuxtLink>
-                </li>
+
                 <li>
                   <NuxtLink to="/shorts" :class="['nav-link', { active: isLinkActive('/shorts') }]">
                     <Icon name="mdi:play-box-outline" class="w-5 h-5" />
@@ -160,7 +155,7 @@ const themeCookie = useCookie('theme', { default: () => 'onedev' })
 const currentTheme = useState<string>('currentTheme', () => themeCookie.value)
 const userSettings = useState<any>('userSettings', () => null)
 
-const isTvEnabled = computed(() => !!userSettings.value?.tvheadendHost)
+
 
 const isLinkActive = (path: string) => {
   if (path === '/') return route.path === '/'

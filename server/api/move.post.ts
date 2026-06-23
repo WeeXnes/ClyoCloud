@@ -3,6 +3,8 @@ import fs from 'fs/promises'
 import path from 'path'
 import { moveInFavorites } from '~/server/utils/favorites'
 
+import { isPathWithin } from '~/server/utils/fileUtils'
+
 export default defineEventHandler(async (event) => {
     try {
         if (!event.context.user || !event.context.user.name) {
@@ -28,7 +30,7 @@ export default defineEventHandler(async (event) => {
         const destinationFullPath = path.resolve(path.join(userStoragePath, destinationPath))
 
         // Security check for destination
-        if (!destinationFullPath.startsWith(userStoragePath)) {
+        if (!isPathWithin(userStoragePath, destinationFullPath)) {
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied: Destination outside user directory',
@@ -56,7 +58,7 @@ export default defineEventHandler(async (event) => {
             const newFullPath = path.resolve(path.join(destinationFullPath, itemName))
 
             // Security check for each item
-            if (!oldFullPath.startsWith(userStoragePath) || !newFullPath.startsWith(userStoragePath)) {
+            if (!isPathWithin(userStoragePath, oldFullPath) || !isPathWithin(userStoragePath, newFullPath)) {
                 console.warn(`[SECURITY] Blocked move attempt: ${oldFullPath} -> ${newFullPath}`)
                 continue
             }

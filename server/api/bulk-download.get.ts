@@ -1,6 +1,7 @@
 import archiver from 'archiver';
 import fs from 'fs';
 import path from 'path';
+import { isPathWithin } from '~/server/utils/fileUtils';
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
@@ -15,7 +16,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Security check
-  if (!fullPath.startsWith(userStoragePath)) {
+  if (!isPathWithin(userStoragePath, fullPath)) {
     throw createError({ statusCode: 403, message: 'Access denied' });
   }
 
@@ -30,6 +31,10 @@ export default defineEventHandler(async (event) => {
   // and archive.file for files, and filter .cloudinfo and dotfiles.
   for (const name of fileNames) {
       const filePath = path.join(fullPath, name);
+      if (!isPathWithin(fullPath, filePath)) {
+          throw createError({ statusCode: 403, message: 'Access denied' });
+      }
+
       if (fs.existsSync(filePath)) {
           if (fs.lstatSync(filePath).isDirectory()) {
               archive.directory(filePath, name, {

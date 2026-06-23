@@ -6,6 +6,8 @@ import path, { join, resolve } from 'path'
 import { runFfmpeg, runFfprobe } from '~/server/utils/ffmpeg'
 import { isFilePublic } from '~/server/utils/publicCheck'
 
+import { isPathWithin } from '~/server/utils/fileUtils'
+
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const username = getRouterParam(event, 'username')
@@ -25,7 +27,7 @@ export default defineEventHandler(async (event) => {
     const requestedPreview = resolve(join(userPreviewPath, decodedPath + '.gif'))
     const requestedFile = resolve(join(userStoragePath, decodedPath))
 
-    if (!requestedPreview.startsWith(resolve(userPreviewPath)) || !requestedFile.startsWith(resolve(userStoragePath))) {
+    if (!isPathWithin(userPreviewPath, requestedPreview) || !isPathWithin(userStoragePath, requestedFile)) {
         throw createError({
             statusCode: 403,
             statusMessage: 'Access denied',

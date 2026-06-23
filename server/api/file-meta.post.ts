@@ -4,6 +4,8 @@ import path from 'path'
 import type { FileMeta } from '~/types/File'
 import { addToFavorites, removeFromFavorites } from '~/server/utils/favorites'
 
+import { isPathWithin } from '~/server/utils/fileUtils'
+
 export default defineEventHandler(async (event) => {
     try {
         if (!event.context.user || !event.context.user.name) {
@@ -26,7 +28,7 @@ export default defineEventHandler(async (event) => {
         }
 
         const filePath = path.resolve(path.join(userStoragePath, fullPath))
-        if (!filePath.startsWith(userStoragePath)) {
+        if (!isPathWithin(userStoragePath, filePath)) {
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied',

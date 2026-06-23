@@ -28,10 +28,6 @@ export default defineEventHandler(async (event) => {
         return {
             downloadPath: userData.downloadPath || '',
             twoFactorEnabled: userData.twoFactorEnabled || false,
-            tvheadendHost: userData.tvheadendHost || '',
-            tvheadendPort: userData.tvheadendPort || '9981',
-            tvheadendUser: userData.tvheadendUser || '',
-            tvheadendPassword: userData.tvheadendPassword || '',
             mobileAutoPreview: userData.mobileAutoPreview ?? true,
             maxConcurrentPreviews: userData.maxConcurrentPreviews || 3,
             experimentalMode: userData.experimentalMode || false,
