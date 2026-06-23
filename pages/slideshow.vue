@@ -14,6 +14,7 @@ const slideshowInterval = ref(5) // seconds
 const isFullscreen = ref(false)
 const timer = ref<any>(null)
 const isMuted = ref(false)
+const videoPlayer = ref<HTMLVideoElement | null>(null)
 
 // Folder Picker State
 const showPicker = ref(false)
@@ -105,12 +106,10 @@ const togglePlayPause = () => {
   isPaused.value = !isPaused.value
   if (isPaused.value) {
     stopTimer()
-    const video = document.querySelector('video')
-    if (video) video.pause()
+    if (videoPlayer.value) videoPlayer.value.pause()
   } else {
     startTimer()
-    const video = document.querySelector('video')
-    if (video) video.play()
+    if (videoPlayer.value) videoPlayer.value.play()
   }
 }
 
@@ -227,10 +226,7 @@ watch(currentMedia, () => {
       >
         <Icon :name="isMuted ? 'mdi:volume-off' : 'mdi:volume-high'" class="w-6 h-6" />
       </button>
-      <div class="bg-black/20 backdrop-blur-md border border-white/10 rounded-full p-2 flex flex-col items-center gap-2">
-         <span class="text-[9px] font-bold text-white/50 uppercase">{{ slideshowInterval }}s</span>
-         <input type="range" min="2" max="30" v-model.number="slideshowInterval" class="range range-xs range-primary w-24 h-1 rotate-90 my-10" />
-      </div>
+
     </div>
 
     <!-- Media Content -->
@@ -249,9 +245,10 @@ watch(currentMedia, () => {
           />
           <video 
             v-else-if="currentMedia.type === 'video'" 
+            ref="videoPlayer"
             :src="getStreamUrl(currentMedia.fullPath)" 
             class="max-w-full max-h-full object-contain"
-            autoplay
+            :autoplay="!isPaused"
             :muted="isMuted"
             @ended="nextMedia"
             playsinline
@@ -270,17 +267,36 @@ watch(currentMedia, () => {
     </div>
 
     <!-- Bottom Navigation Bar -->
-    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-6 px-8 py-4 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-[50]">
-      <button @click="prevMedia" class="btn btn-ghost btn-circle text-white hover:bg-white/10">
-        <Icon name="mdi:skip-previous" class="w-8 h-8" />
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-6 px-8 py-3.5 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-[50]">
+      <button @click="prevMedia" class="btn btn-ghost btn-circle text-white hover:bg-white/10 btn-sm md:btn-md">
+        <Icon name="mdi:skip-previous" class="w-6 h-6 md:w-8 md:h-8" />
       </button>
-      <button @click="togglePlayPause" class="btn btn-circle btn-primary shadow-lg shadow-primary/20">
-        <Icon :name="isPaused ? 'mdi:play' : 'mdi:pause'" class="w-8 h-8" />
+      <button @click="togglePlayPause" class="btn btn-circle btn-primary shadow-lg shadow-primary/20 btn-sm md:btn-md">
+        <Icon :name="isPaused ? 'mdi:play' : 'mdi:pause'" class="w-6 h-6 md:w-8 md:h-8" />
       </button>
-      <button @click="nextMedia" class="btn btn-ghost btn-circle text-white hover:bg-white/10">
-        <Icon name="mdi:skip-next" class="w-8 h-8" />
+      <button @click="nextMedia" class="btn btn-ghost btn-circle text-white hover:bg-white/10 btn-sm md:btn-md">
+        <Icon name="mdi:skip-next" class="w-6 h-6 md:w-8 md:h-8" />
       </button>
+      
       <div class="h-8 w-px bg-white/10"></div>
+      
+      <!-- Slide Duration Slider -->
+      <div class="flex items-center gap-3">
+         <Icon name="mdi:timer-outline" class="w-5 h-5 text-white/50" title="Slide Duration" />
+         <input 
+           type="range" 
+           min="2" 
+           max="30" 
+           v-model.number="slideshowInterval" 
+           class="w-20 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer focus:outline-none" 
+           style="accent-color: var(--p);"
+           @input="resetTimer"
+         />
+         <span class="text-[9px] font-bold text-white/50 w-6 uppercase tracking-widest">{{ slideshowInterval }}s</span>
+      </div>
+
+      <div class="h-8 w-px bg-white/10"></div>
+      
       <div class="text-white text-[10px] font-bold uppercase tracking-widest tabular-nums">
         {{ currentIndex + 1 }} / {{ mediaItems.length }}
       </div>
