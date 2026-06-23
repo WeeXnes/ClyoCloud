@@ -178,6 +178,8 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
 
             items = result;
             console.log(`Feed generated (Frequency: ${frequency}): ${videoIdx} videos, ${slideshowIdx} slideshows (Total: ${items.length})`);
+        } else {
+            items = items.filter(i => i.type === 'video');
         }
         const page = parseInt(query.page?.toString() || '0');
         const limit = parseInt(query.limit?.toString() || '0');

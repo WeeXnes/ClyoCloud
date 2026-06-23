@@ -260,6 +260,7 @@ async function fetchPredefinedTags() {
 }
 
 function formatFileSize(size: number): string {
+  if (size === undefined || size === null || isNaN(size)) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
   let value = size
   let unitIndex = 0

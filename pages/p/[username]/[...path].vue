@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { getIconForExtension } from '~/core/fileIcons'
 
 definePageMeta({
@@ -10,33 +10,8 @@ const route = useRoute()
 const username = route.params.username as string
 const pathParam = Array.isArray(route.params.path) ? route.params.path.join('/') : route.params.path
 
-const fileInfo = ref<any>(null)
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-
-const fetchFileInfo = async () => {
-  try {
-    const response = await fetch(`/api/public/file-info?username=${encodeURIComponent(username)}&path=${encodeURIComponent(pathParam)}`)
-    if (!response.ok) {
-      throw new Error('File not found or not public')
-    }
-    fileInfo.value = await response.json()
-  } catch (err: any) {
-    error.value = err.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const getPublicFileUrl = () => {
-  return `/p/file/${encodeURIComponent(username)}/${encodeURIComponent(pathParam)}`
-}
-
-const getPublicStreamUrl = () => {
-  return `/p/stream/${encodeURIComponent(username)}/${encodeURIComponent(pathParam)}`
-}
-
 const formatFileSize = (size: number): string => {
+  if (size === undefined || size === null || isNaN(size)) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
   let value = size
   let unitIndex = 0
@@ -45,6 +20,14 @@ const formatFileSize = (size: number): string => {
     unitIndex++
   }
   return `${value.toFixed(2)} ${units[unitIndex]}`
+}
+
+const getPublicFileUrl = () => {
+  return `/p/file/${encodeURIComponent(username)}/${encodeURIComponent(pathParam)}`
+}
+
+const getPublicStreamUrl = () => {
+  return `/p/stream/${encodeURIComponent(username)}/${encodeURIComponent(pathParam)}`
 }
 
 const isVideoFile = (filename: string) => {
@@ -57,7 +40,65 @@ const isImageFile = (filename: string) => {
   return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)
 }
 
-onMounted(fetchFileInfo)
+// Fetch file info via SSR-friendly useFetch
+const { data: fileInfo, error: fetchError } = await useFetch(`/api/public/file-info`, {
+  query: {
+    username,
+    path: pathParam
+  }
+})
+
+const error = ref<string | null>(null)
+if (fetchError.value) {
+  error.value = fetchError.value.data?.statusMessage || fetchError.value.statusMessage || 'File not found or not public'
+}
+
+const isLoading = ref(false)
+
+// Dynamic OpenGraph / Discord Embed Metadata
+if (fileInfo.value) {
+  const requestUrl = useRequestURL()
+  const baseUrl = requestUrl.origin
+
+  const isFolder = fileInfo.value.isFolder
+  const name = fileInfo.value.name
+  const sizeStr = formatFileSize(fileInfo.value.size)
+  const description = fileInfo.value.meta?.description || ''
+
+  const title = isFolder ? `Shared folder: ${name}` : `Shared file: ${name}`
+  const ogDescription = [
+    `Size: ${sizeStr}`,
+    description ? `Note: ${description}` : ''
+  ].filter(Boolean).join(' | ')
+
+  const ext = name.split('.').pop()?.toLowerCase() || ''
+  const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)
+  const isVid = ['mp4', 'webm'].includes(ext)
+
+  const publicFileUrl = `${baseUrl}/p/file/${encodeURIComponent(username)}/${encodeURIComponent(pathParam)}`
+  const publicStreamUrl = `${baseUrl}/p/stream/${encodeURIComponent(username)}/${encodeURIComponent(pathParam)}`
+  const publicThumbnailUrl = `${baseUrl}/p/thumbnail/${encodeURIComponent(username)}/${encodeURIComponent(pathParam)}`
+
+  useSeoMeta({
+    title,
+    ogTitle: title,
+    description: ogDescription,
+    ogDescription: ogDescription,
+    ogType: isVid ? 'video.other' : 'website',
+    ogUrl: requestUrl.href,
+    twitterCard: isVid || isImg ? 'summary_large_image' : 'summary',
+    ...(isImg ? {
+      ogImage: publicFileUrl,
+      twitterImage: publicFileUrl,
+    } : {}),
+    ...(isVid ? {
+      ogImage: publicThumbnailUrl,
+      ogVideo: publicStreamUrl,
+      twitterImage: publicThumbnailUrl,
+      twitterPlayer: publicStreamUrl,
+    } : {})
+  })
+}
 </script>
 
 <template>

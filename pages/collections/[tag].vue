@@ -28,6 +28,7 @@ const editableDescription = ref('')
 const searchQuery = ref('')
 
 const formatSize = (bytes: number) => {
+  if (bytes === undefined || bytes === null || isNaN(bytes)) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let value = bytes
   let unitIndex = 0
