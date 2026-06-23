@@ -5,6 +5,15 @@ import pkg from './package.json'
 export default defineNuxtConfig({
     compatibilityDate: '2024-11-01',
     devtools: { enabled: true },
+    app: {
+        head: {
+            title: 'ClyoCloud',
+            titleTemplate: '%s - ClyoCloud',
+            link: [
+                { rel: 'icon', type: 'image/png', href: '/clyo.png' }
+            ]
+        }
+    },
     modules: ['@nuxtjs/tailwindcss', '@nuxt/icon', '@nuxtjs/sitemap'],
     site: {
       url: 'https://weexnes.dev',

@@ -326,6 +326,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 
+useHead({
+  title: 'Dashboard'
+})
+
 interface Stats {
   used: number
   total: number

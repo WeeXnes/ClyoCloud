@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+
+useHead({
+  title: 'Shared'
+})
 import { getIconForExtension } from '~/core/fileIcons'
 import type { File } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'

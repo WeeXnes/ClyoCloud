@@ -7,6 +7,16 @@ import { NotificationType } from '~/types/Notification'
 import { ProgressManager, startOperation, updateOperation, completeOperation, failOperation } from '~/core/progressManager'
 import { copyToClipboard } from '~/core/clipboard'
 
+const route = useRoute()
+const currentFolder = computed(() => {
+  const pathParam = route.params.path
+  return Array.isArray(pathParam) ? pathParam.join('/') : (pathParam || '')
+})
+
+useHead({
+  title: computed(() => currentFolder.value ? `Files - /${currentFolder.value}` : 'My Files')
+})
+
 const files = ref<File[]>([])
 const selectedFile = ref<File | null>(null)
 const showFileInfoModal = ref(false)

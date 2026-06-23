@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue'
+
+useHead({
+  title: 'Duplicates'
+})
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
 import { startOperation, updateOperation, completeOperation, failOperation } from '~/core/progressManager'

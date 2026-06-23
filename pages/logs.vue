@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+
+useHead({
+  title: 'Logs'
+})
 import { useRouter } from 'vue-router'
 
 interface ActivityEntry {

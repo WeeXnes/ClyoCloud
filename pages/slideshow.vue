@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
+
+useHead({
+  title: 'Slideshow'
+})
 import type { SlideshowItem, File, Tag } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'

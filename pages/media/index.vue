@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
+
+useHead({
+  title: 'Media'
+})
 import type { Video, FileMeta, Tag } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'

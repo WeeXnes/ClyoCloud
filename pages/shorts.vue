@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
+
+useHead({
+  title: 'Shorts'
+})
 import type { Video, Tag, ShortMedia, SlideshowMedia } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'

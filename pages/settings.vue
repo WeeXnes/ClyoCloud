@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+
+useHead({
+  title: 'Settings'
+})
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
 import { startOperation, updateOperation, completeOperation, failOperation } from '~/core/progressManager'

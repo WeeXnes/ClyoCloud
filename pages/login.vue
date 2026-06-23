@@ -161,6 +161,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+
+useHead({
+  title: 'Login'
+})
 import { useRouter } from 'vue-router'
 import { createNotification } from "~/core/notificationManager";
 import { NotificationType } from "~/types/Notification";

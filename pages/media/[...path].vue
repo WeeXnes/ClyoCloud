@@ -8,6 +8,10 @@ import { copyToClipboard } from '~/core/clipboard'
 const route = useRoute()
 const videos = ref<Video[]>([])
 const currentVideo = ref<Video | null>(null)
+
+useHead({
+  title: computed(() => currentVideo.value ? `Media - ${currentVideo.value.name}` : 'Media Player')
+})
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const showTagModal = ref(false)

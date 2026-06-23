@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
+
+useHead({
+  title: 'Favorites'
+})
 import { getIconForExtension } from '~/core/fileIcons'
 import type { File, Tag } from '~/types/File'
 import { createNotification } from '~/core/notificationManager'

@@ -118,6 +118,10 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick, computed, onMounted, onUnmounted } from 'vue'
+
+useHead({
+  title: 'Downloader'
+})
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
 import { startOperation, updateOperation, completeOperation, failOperation, ProgressManager } from '~/core/progressManager'

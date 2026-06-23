@@ -10,6 +10,10 @@ import { copyToClipboard } from '~/core/clipboard'
 const route = useRoute()
 const tagName = computed(() => route.params.tag as string)
 
+useHead({
+  title: computed(() => `Collection: ${tagName.value}`)
+})
+
 const files = ref<File[]>([])
 const selectedFile = ref<File | null>(null)
 const showFileInfoModal = ref(false)

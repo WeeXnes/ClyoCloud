@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+
+useHead({
+  title: 'Collections'
+})
 import type { Tag } from '~/types/File'
 
 const tags = ref<Tag[]>([])
