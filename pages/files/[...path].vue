@@ -883,7 +883,16 @@ const executeMove = async () => {
 
     if (!response.ok) throw new Error('Failed to move items')
     
-    createNotification('Items moved successfully', NotificationType.SUCCESS)
+    const data = await response.json()
+    const movedCount = data.results?.filter((r: any) => r.success && !r.skipped).length || 0
+    const errors = data.results?.filter((r: any) => !r.success) || []
+
+    if (movedCount > 0) {
+      createNotification('Items moved successfully', NotificationType.SUCCESS)
+    } else if (errors.length > 0) {
+      createNotification(errors[0].error || 'Failed to move items', NotificationType.ERROR)
+    }
+    
     showMoveModal.value = false
     selectedFiles.value.clear()
     await fetchFiles()
@@ -1481,7 +1490,16 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
     if (!response.ok) throw new Error('Failed to move items')
     
-    createNotification('Items moved successfully', NotificationType.SUCCESS)
+    const data = await response.json()
+    const movedCount = data.results?.filter((r: any) => r.success && !r.skipped).length || 0
+    const errors = data.results?.filter((r: any) => !r.success) || []
+
+    if (movedCount > 0) {
+      createNotification('Items moved successfully', NotificationType.SUCCESS)
+    } else if (errors.length > 0) {
+      createNotification(errors[0].error || 'Failed to move items', NotificationType.ERROR)
+    }
+    
     selectedFiles.value.clear()
     await fetchFiles()
   } catch (err) {
@@ -1666,7 +1684,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           :key="file.name" 
           class="group relative file-item-container"
           :data-file-name="file.name"
-          :draggable="!isMobile"
+          :draggable="!isMobile && editingName !== file.name"
           @dragstart="handleDragStart($event, file)"
           @dragover="handleDragOver($event, file)"
           @dragleave="handleDragLeave"

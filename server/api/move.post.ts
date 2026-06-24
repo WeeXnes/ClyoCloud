@@ -70,6 +70,7 @@ export default defineEventHandler(async (event) => {
             }
 
             if (oldFullPath === newFullPath) {
+                results.push({ path: itemPath, success: true, skipped: true })
                 continue
             }
 
@@ -105,8 +106,8 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        if (results.some(r => r.success)) {
-            const successfulMoves = results.filter(r => r.success).map(r => r.path)
+        if (results.some(r => r.success && !r.skipped)) {
+            const successfulMoves = results.filter(r => r.success && !r.skipped).map(r => r.path)
             await moveInFavorites(event.context.user.name, successfulMoves, destinationPath)
         }
 

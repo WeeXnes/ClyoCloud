@@ -590,7 +590,16 @@ const executeMove = async () => {
 
     if (!response.ok) throw new Error('Failed to move items')
     
-    createNotification('Items moved successfully', NotificationType.SUCCESS)
+    const data = await response.json()
+    const movedCount = data.results?.filter((r: any) => r.success && !r.skipped).length || 0
+    const errors = data.results?.filter((r: any) => !r.success) || []
+
+    if (movedCount > 0) {
+      createNotification('Items moved successfully', NotificationType.SUCCESS)
+    } else if (errors.length > 0) {
+      createNotification(errors[0].error || 'Failed to move items', NotificationType.ERROR)
+    }
+    
     showMoveModal.value = false
     selectedFiles.value.clear()
     await fetchCollectionFiles()
