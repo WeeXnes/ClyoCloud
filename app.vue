@@ -63,6 +63,12 @@
                   </NuxtLink>
                 </li>
                 <li>
+                  <NuxtLink to="/theatre" :class="['nav-link', { active: isLinkActive('/theatre') }]">
+                    <Icon name="mdi:theater" class="w-5 h-5" />
+                    <span>Theatre</span>
+                  </NuxtLink>
+                </li>
+                <li>
                   <NuxtLink to="/collections" :class="['nav-link', { active: isLinkActive('/collections') }]">
                     <Icon name="mdi:tag-multiple" class="w-5 h-5" />
                     <span>Collections</span>

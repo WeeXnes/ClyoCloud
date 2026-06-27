@@ -26,6 +26,14 @@ export default defineNuxtConfig({
             process.env.STORAGE_PATH ||
             path.join(os.homedir(), '.clyo', 'data'),
 
+        moviesPath:
+            process.env.MOVIES_PATH ||
+            path.join(os.homedir(), '.clyo', 'movies'),
+
+        showsPath:
+            process.env.SHOWS_PATH ||
+            path.join(os.homedir(), '.clyo', 'shows'),
+
         thumbnailPath:
             process.env.THUMBNAIL_PATH ||
             path.join(os.homedir(), '.clyo', 'thumbs'),
