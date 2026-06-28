@@ -145,9 +145,11 @@ const fetchMedia = async () => {
 }
 
 const handleAutoPlayFromQuery = (videoPath: string) => {
+  const decodedTarget = decodeURIComponent(videoPath)
   const isCompat = route.query.compatibility === 'true'
+  
   // Try to find in movies
-  const movie = movies.value.find(m => m.videoPath === videoPath)
+  const movie = movies.value.find(m => decodeURIComponent(m.videoPath || '') === decodedTarget)
   if (movie) {
     playingMedia.value = { 
       title: movie.title, 
@@ -170,7 +172,7 @@ const handleAutoPlayFromQuery = (videoPath: string) => {
     if (!show.seasons) continue
     for (const season of show.seasons) {
       for (const episode of season.episodes) {
-        if (episode.videoPath === videoPath) {
+        if (decodeURIComponent(episode.videoPath) === decodedTarget) {
           playingMedia.value = {
             title: episode.title,
             subTitle: `${show.title} - ${season.name}`,
@@ -237,6 +239,28 @@ watch(
     }
   }
 )
+
+watch(videoRef, (newEl) => {
+  if (newEl) {
+    newEl.play().then(() => {
+      playerIsPlaying.value = true
+    }).catch(err => {
+      console.log('Autoplay blocked, waiting for user interaction:', err)
+      // Play on first interaction if autoplay fails
+      const resumeOnInteraction = () => {
+        if (newEl.paused) {
+          newEl.play().then(() => {
+            playerIsPlaying.value = true
+          }).catch(e => console.log('Interaction play blocked:', e))
+        }
+        window.removeEventListener('click', resumeOnInteraction)
+        window.removeEventListener('keydown', resumeOnInteraction)
+      }
+      window.addEventListener('click', resumeOnInteraction)
+      window.addEventListener('keydown', resumeOnInteraction)
+    })
+  }
+})
 
 // Detail modal handlers
 const openDetails = (media: MediaItem) => {

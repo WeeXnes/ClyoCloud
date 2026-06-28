@@ -136,7 +136,7 @@ export default defineEventHandler(async (event) => {
                 const lines = data.toString().split('\n')
                 for (const line of lines) {
                     if (line.trim()) {
-                        console.error(`[Theatre Stream FFmpeg] ${line}`)
+                        console.log(`[Theatre Stream FFmpeg] ${line}`)
                     }
                 }
             })
