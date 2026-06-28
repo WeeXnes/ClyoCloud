@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '')
-    const fullPath = path.join(userStoragePath, safeSubPath)
+    const fullPath = path.resolve(path.join(userStoragePath, safeSubPath))
 
     // Ensure path is within user's directory
     if (!isPathWithin(userStoragePath, fullPath)) {
@@ -28,6 +28,14 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 403,
         statusMessage: 'Access denied: Path outside user directory',
+      })
+    }
+
+    // Prevent deleting the root directory
+    if (fullPath === path.resolve(userStoragePath)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Cannot delete storage root directory',
       })
     }
 

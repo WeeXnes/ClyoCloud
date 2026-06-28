@@ -30,11 +30,15 @@ const protectedEndpoints = [
   '/api/storage-duplicates',
   '/api/storage-map',
   '/api/tags',
+  '/api/tags/files',
+  '/api/tags/rebuild-cache',
   '/api/upload',
   '/api/user-settings',
   '/api/verify',
   '/api/videos',
   '/api/zip',
+  '/api/storage-clean-status',
+  '/api/storage-duplicates-status',
   '/api/theatre/artwork',
   '/api/theatre/media',
   '/api/theatre/metadata',
@@ -53,6 +57,7 @@ const protectedEndpoints = [
   '/thumbnail/test.png',
   '/preview/test.mp4',
   '/media/test.mp4',
+  '/theatre/stream/movie/test.mp4',
 
   // System/Admin Pages
   '/settings',

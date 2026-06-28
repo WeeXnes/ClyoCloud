@@ -68,6 +68,51 @@ jobs:
     useTTY: true
     condition: ALWAYS
     optional: false
+  - type: CommandStep
+    name: get version
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
+        echo "Extracting version from package.json..."
+        grep -oP '"version":\s*"\K[^"]+' package.json > version.txt
+        echo "Version extracted: $(cat version.txt)"
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  - type: CommandStep
+    name: Update Cutting Edge AUR Package
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
+        repo_url="ssh://aur@@aur.archlinux.org/clyocloud-git.git"
+        repo_dir="clyocloud-git"
+
+        git clone "$repo_url"
+
+        ver=$(<version.txt)
+
+        commit_hash=@commit_hash@
+
+        sed -i "s/^_commit=.*/_commit=${commit_hash}/" "$repo_dir/PKGBUILD"
+
+        literal_substr='\${_commit:0:7}'
+
+        new_pkgver="${ver}.r${literal_substr}"
+
+        sed -i "s/^pkgver=.*/pkgver=${new_pkgver}/" "$repo_dir/PKGBUILD"
+
+        (
+          cd "$repo_dir" || exit 1
+          makepkg --printsrcinfo > .SRCINFO
+          git add PKGBUILD .SRCINFO
+          git commit -m "Automatically updated version to @commit_hash@"
+          git push
+        )
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: true
   jobExecutor: Builder
   triggers:
   - type: BranchUpdateTrigger
