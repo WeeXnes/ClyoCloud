@@ -121,3 +121,4 @@ Follow these steps to get your server up and running:
 *   **Path Validation**: All user operations are strictly checked to prevent Directory Traversal attacks.
 *   **Token Authentication**: API routes are guarded with signed JSON Web Tokens (JWT).
 *   **2FA (TOTP)**: Session generation requires a valid two-factor authentication token once configured, protecting your cloud storage from unauthorized logins.
+
