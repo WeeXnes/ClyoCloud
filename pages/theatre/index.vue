@@ -7,6 +7,9 @@ useHead({
   title: 'Theatre'
 })
 
+const route = useRoute()
+const router = useRouter()
+
 // Types
 interface Episode {
   name: string
@@ -136,15 +139,102 @@ const fetchMedia = async () => {
   }
 }
 
-onMounted(() => {
-  fetchMedia()
+const handleAutoPlayFromQuery = (videoPath: string) => {
+  const isCompat = route.query.compatibility === 'true'
+  // Try to find in movies
+  const movie = movies.value.find(m => m.videoPath === videoPath)
+  if (movie) {
+    playingMedia.value = { 
+      title: movie.title, 
+      subTitle: undefined, 
+      videoPath: movie.videoPath!, 
+      mediaId: movie.id, 
+      type: 'movie' 
+    }
+    playCompatibility.value = isCompat
+    showPlayer.value = true
+    playerCurrentTime.value = 0
+    playerDuration.value = 0
+    playerIsPlaying.value = false
+    resetControlsTimeout()
+    return
+  }
+
+  // Try to find in shows
+  for (const show of shows.value) {
+    if (!show.seasons) continue
+    for (const season of show.seasons) {
+      for (const episode of season.episodes) {
+        if (episode.videoPath === videoPath) {
+          playingMedia.value = {
+            title: episode.title,
+            subTitle: `${show.title} - ${season.name}`,
+            videoPath: episode.videoPath,
+            mediaId: show.id,
+            type: 'show'
+          }
+          playCompatibility.value = isCompat
+          showPlayer.value = true
+          playerCurrentTime.value = 0
+          playerDuration.value = 0
+          playerIsPlaying.value = false
+          resetControlsTimeout()
+          return
+        }
+      }
+    }
+  }
+}
+
+onMounted(async () => {
+  await fetchMedia()
   window.addEventListener('keydown', handleGlobalKeydown)
+
+  if (route.query.play) {
+    handleAutoPlayFromQuery(route.query.play as string)
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
   if (controlsTimer) clearTimeout(controlsTimer)
 })
+
+watch(
+  () => route.query.play,
+  (newPlay) => {
+    if (!newPlay) {
+      if (showPlayer.value) {
+        showPlayer.value = false
+        playingMedia.value = null
+        if (videoRef.value) {
+          videoRef.value.pause()
+        }
+      }
+    } else {
+      const path = newPlay as string
+      if (playingMedia.value?.videoPath !== path) {
+        handleAutoPlayFromQuery(path)
+      }
+    }
+  }
+)
+
+watch(
+  () => route.query.compatibility,
+  (newCompat) => {
+    const isCompat = newCompat === 'true'
+    if (playingMedia.value && playCompatibility.value !== isCompat) {
+      playCompatibility.value = isCompat
+      nextTick(() => {
+        if (videoRef.value) {
+          videoRef.value.load()
+          videoRef.value.play().catch(e => console.log('Playback state sync error:', e))
+        }
+      })
+    }
+  }
+)
 
 // Detail modal handlers
 const openDetails = (media: MediaItem) => {
@@ -235,12 +325,21 @@ const saveMetadata = async () => {
 // Media player handlers
 const startPlayback = (title: string, subTitle: string | undefined, videoPath: string, mediaId: string, type: 'movie' | 'show') => {
   playingMedia.value = { title, subTitle, videoPath, mediaId, type }
-  playCompatibility.value = false // Default to direct stream
+  playCompatibility.value = route.query.compatibility === 'true' // Load from URL query if present
   showPlayer.value = true
   playerCurrentTime.value = 0
   playerDuration.value = 0
   playerIsPlaying.value = false
   resetControlsTimeout()
+
+  const query = {
+    ...route.query,
+    play: videoPath
+  }
+  if (playCompatibility.value) {
+    query.compatibility = 'true'
+  }
+  router.push({ query })
 }
 
 const closePlayer = () => {
@@ -249,6 +348,11 @@ const closePlayer = () => {
   if (videoRef.value) {
     videoRef.value.pause()
   }
+
+  const query = { ...route.query }
+  delete query.play
+  delete query.compatibility
+  router.push({ query })
 }
 
 // Video Player computed url
@@ -266,6 +370,14 @@ const toggleCompatibility = () => {
     playCompatibility.value ? 'Compatibility Mode enabled (Audio transcoded to AAC)' : 'Direct Stream Mode enabled',
     NotificationType.INFO
   )
+
+  const query = { ...route.query }
+  if (playCompatibility.value) {
+    query.compatibility = 'true'
+  } else {
+    delete query.compatibility
+  }
+  router.push({ query })
 
   // Force video element reload
   nextTick(() => {
