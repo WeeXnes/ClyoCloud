@@ -113,11 +113,96 @@ jobs:
     useTTY: true
     condition: SUCCESSFUL
     optional: true
+  - type: CommandStep
+    name: check if tag exists
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
+        version=$(cat version.txt)
+        echo "Checking if tag '$version' exists on origin..."
+
+        if git ls-remote --tags origin | grep -q "refs/tags/${version}$"; then
+            echo "Tag '$version' already exists."
+
+            new_version="${version}-@commit_hash@"
+            echo "$new_version" > version.txt
+            echo "Updated version.txt to '$new_version' to avoid tag conflict."
+
+            exit 1
+        else
+            echo "Tag '$version' does not exist. Proceeding with original version."
+            exit 0
+        fi
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  - type: SetBuildVersionStep
+    name: set build version
+    buildVersion: '@file:version.txt@'
+    condition: ALWAYS
+    optional: false
+  - type: CreateTagStep
+    name: create tag
+    tagName: '@file:version.txt@'
+    tagMessage: Release Tag for @file:version.txt@
+    condition: SUCCESSFUL
+    optional: false
   jobExecutor: Builder
   triggers:
   - type: BranchUpdateTrigger
     userMatch: anyone
   - type: PullRequestUpdateTrigger
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 14400
+
+- name: Release Stable AUR
+  steps:
+  - type: CheckoutStep
+    name: checkout code
+    cloneCredential:
+      type: DefaultCredential
+    withLfs: false
+    withSubmodules: false
+    condition: SUCCESSFUL
+    optional: false
+  - type: SetBuildVersionStep
+    name: set build version
+    buildVersion: '@tag@'
+    condition: ALWAYS
+    optional: false
+  - type: CommandStep
+    name: Update Stable AUR Package
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
+        repo_url="ssh://aur@@aur.archlinux.org/clyocloud.git"
+        repo_dir="clyocloud"
+
+        git clone "$repo_url"
+
+        version=@tag@
+
+        sed -i "s/^pkgver=.*/pkgver=${version}/" "$repo_dir/PKGBUILD"
+
+        (
+          cd "$repo_dir" || exit 1
+          makepkg --printsrcinfo > .SRCINFO
+          git add PKGBUILD .SRCINFO
+          git commit -m "Automatically updated version to ${version}"
+          git push
+        )
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  jobExecutor: Builder
+  triggers:
+  - type: TagCreateTrigger
+    branches: master
+    projects: ClyoCloud
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
