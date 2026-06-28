@@ -41,3 +41,37 @@ export function resetPreviewTaskStatus(username: string) {
         startTime: null
     })
 }
+
+const thumbnailTasks = new Map<string, PreviewTaskStatus>()
+
+export function getThumbnailTaskStatus(username: string): PreviewTaskStatus {
+    if (!thumbnailTasks.has(username)) {
+        thumbnailTasks.set(username, {
+            isProcessing: false,
+            total: 0,
+            processed: 0,
+            generated: 0,
+            skipped: 0,
+            errors: 0,
+            startTime: null
+        })
+    }
+    return thumbnailTasks.get(username)!
+}
+
+export function updateThumbnailTaskStatus(username: string, updates: Partial<PreviewTaskStatus>) {
+    const status = getThumbnailTaskStatus(username)
+    Object.assign(status, updates)
+}
+
+export function resetThumbnailTaskStatus(username: string) {
+    thumbnailTasks.set(username, {
+        isProcessing: false,
+        total: 0,
+        processed: 0,
+        generated: 0,
+        skipped: 0,
+        errors: 0,
+        startTime: null
+    })
+}

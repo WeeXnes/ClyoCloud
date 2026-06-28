@@ -35,11 +35,11 @@ const protectedEndpoints = [
   '/api/verify',
   '/api/videos',
   '/api/zip',
-  '/api/bulk-rename',
-  '/api/bulk-meta',
   '/api/theatre/artwork',
   '/api/theatre/media',
   '/api/theatre/metadata',
+  '/api/thumbnails-generate',
+  '/api/thumbnails-status',
   
   // 2FA Management
   '/api/2fa/disable',

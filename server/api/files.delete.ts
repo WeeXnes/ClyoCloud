@@ -10,56 +10,50 @@ export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const userStoragePath = path.join(config.storagePath, event.context.user.name)
     const body = await readBody(event)
-    const pathsToDelete = body.paths && Array.isArray(body.paths)
-        ? body.paths
-        : body.path
-            ? [body.path.toString()]
-            : []
+    const subPath = body.path ? body.path.toString() : ''
 
-    if (pathsToDelete.length === 0) {
+    if (!subPath) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'File path(s) required',
+        statusMessage: 'File path is required',
       })
     }
 
-    for (const subPath of pathsToDelete) {
-        const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '')
-        const fullPath = path.join(userStoragePath, safeSubPath)
+    const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '')
+    const fullPath = path.join(userStoragePath, safeSubPath)
 
-        // Ensure path is within user's directory
-        if (!isPathWithin(userStoragePath, fullPath)) {
-          console.error(`Access denied: Resolved path ${fullPath} is outside user directory ${userStoragePath}`)
-          throw createError({
-            statusCode: 403,
-            statusMessage: 'Access denied: Path outside user directory',
-          })
-        }
+    // Ensure path is within user's directory
+    if (!isPathWithin(userStoragePath, fullPath)) {
+      console.error(`Access denied: Resolved path ${fullPath} is outside user directory ${userStoragePath}`)
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Access denied: Path outside user directory',
+      })
+    }
 
-        const cloudInfoPath = `${fullPath}.cloudinfo`
+    const cloudInfoPath = `${fullPath}.cloudinfo`
 
-        const stats = await fs.stat(fullPath)
-        if (stats.isDirectory()) {
-          await fs.rm(fullPath, { recursive: true, force: true })
-        } else {
-          await fs.unlink(fullPath)
-        }
+    const stats = await fs.stat(fullPath)
+    if (stats.isDirectory()) {
+      await fs.rm(fullPath, { recursive: true, force: true })
+    } else {
+      await fs.unlink(fullPath)
+    }
 
-        await logActivity(event.context.user.name, 'DELETE', safeSubPath, undefined, event)
+    await logActivity(event.context.user.name, 'DELETE', safeSubPath, undefined, event)
 
-        // Update tag cache
-        removeFileFromCache(event.context.user.name, safeSubPath)
+    // Update tag cache
+    removeFileFromCache(event.context.user.name, safeSubPath)
 
-        // Update favorites index
-        await removeFromFavorites(event.context.user.name, safeSubPath)
+    // Update favorites index
+    await removeFromFavorites(event.context.user.name, safeSubPath)
 
-        // Also delete .cloudinfo file if it exists
-        try {
-          await fs.access(cloudInfoPath)
-          await fs.unlink(cloudInfoPath)
-        } catch (e) {
-          // Ignore if .cloudinfo doesn't exist
-        }
+    // Also delete .cloudinfo file if it exists
+    try {
+      await fs.access(cloudInfoPath)
+      await fs.unlink(cloudInfoPath)
+    } catch (e) {
+      // Ignore if .cloudinfo doesn't exist
     }
 
     return { success: true }

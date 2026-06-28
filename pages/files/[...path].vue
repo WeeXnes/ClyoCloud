@@ -188,28 +188,24 @@ const bulkDelete = async () => {
   const op = startOperation('bulk-delete', 'Deleting Files', count)
 
   try {
-    const route = useRoute()
-    const pathParam = route.params.path
-    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
-    
-    const paths = []
+    let current = 0
     for (const name of selectedFiles.value) {
       const file = files.value.find(f => f.name === name)
       if (file) {
+        const route = useRoute()
+        const pathParam = route.params.path
+        const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
         const filePath = folderPath ? `${folderPath}/${file.name}` : file.name
-        paths.push(filePath)
+
+        await fetch('/api/files', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: filePath }),
+        })
       }
+      current++
+      updateOperation('bulk-delete', current)
     }
-
-    if (paths.length > 0) {
-      const response = await fetch('/api/files', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths }),
-      })
-      if (!response.ok) throw new Error('Failed to delete files')
-    }
-
     createNotification(`${count} file(s) deleted successfully`, NotificationType.SUCCESS)
     completeOperation('bulk-delete')
   } catch (err) {
@@ -261,28 +257,21 @@ const bulkFavourite = async () => {
     const pathParam = route.params.path
     const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
 
-    const updates = []
+    let current = 0
     for (const name of selectedFiles.value) {
       const file = files.value.find(f => f.name === name)
       if (file && !file.meta.isFavourite) {
         const filePath = folderPath ? `${folderPath}/${name}` : name
-        updates.push({
-          path: filePath,
-          isFavourite: true
+        await fetch('/api/file-meta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullPath: filePath, isFavourite: true }),
         })
         file.meta.isFavourite = true
       }
+      current++
+      updateOperation('bulk-favourite', current)
     }
-
-    if (updates.length > 0) {
-      const response = await fetch('/api/bulk-meta', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates }),
-      })
-      if (!response.ok) throw new Error('Failed to update favorites')
-    }
-
     createNotification(`${count} item(s) added to favorites`, NotificationType.SUCCESS)
     completeOperation('bulk-favourite')
   } catch (err) {
@@ -291,7 +280,6 @@ const bulkFavourite = async () => {
     failOperation('bulk-favourite')
   }
   selectedFiles.value.clear()
-  await fetchFiles()
 }
 
 const showBulkRenameModal = ref(false)
@@ -322,12 +310,14 @@ const executeBulkRename = async () => {
     const pathParam = route.params.path
     const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
     
-    const renames = []
     let count = bulkRenameStartNumber.value
 
     for (const oldName of sortedFileNames) {
       const file = files.value.find(f => f.name === oldName)
-      if (!file) continue
+      if (!file) {
+        updateOperation('bulk-rename', op.current + 1)
+        continue
+      }
 
       const originalExt = oldName.includes('.') ? `.${oldName.split('.').pop()}` : ''
       const newExt = bulkRenameExtension.value.trim() 
@@ -335,21 +325,22 @@ const executeBulkRename = async () => {
         : originalExt
       
       const newName = `${bulkRenameBaseName.value}_${count}${newExt}`
-      renames.push({ oldName, newName })
-      count++
-    }
+      
+      const oldPath = folderPath ? `${folderPath}/${oldName}` : oldName
 
-    if (renames.length > 0) {
-      const response = await fetch('/api/bulk-rename', {
+      const response = await fetch('/api/rename', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderPath, renames }),
+        body: JSON.stringify({ oldPath, newName }),
       })
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.message || 'Failed to rename files')
+        throw new Error(errData.message || `Failed to rename ${oldName}`)
       }
+      
+      count++
+      updateOperation('bulk-rename', op.current + 1)
     }
 
     createNotification('Bulk rename successful', NotificationType.SUCCESS)

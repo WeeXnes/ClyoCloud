@@ -6,7 +6,7 @@ useHead({
 })
 import { createNotification } from '~/core/notificationManager'
 import { NotificationType } from '~/types/Notification'
-import { startOperation, updateOperation, completeOperation, failOperation } from '~/core/progressManager'
+import { startOperation, updateOperation, completeOperation, failOperation, ProgressManager } from '~/core/progressManager'
 import type { Tag } from '~/types/File'
 import { useState } from 'nuxt/app'
 
@@ -256,10 +256,12 @@ onMounted(() => {
   fetchUserSettings()
   fetch2faStatus()
   fetchGenerationStatus() // Check if a task is already running
+  fetchThumbnailGenerationStatus() // Check if a task is already running
 })
 
 onUnmounted(() => {
   if (statusPollingInterval) clearInterval(statusPollingInterval)
+  if (thumbnailStatusPollingInterval) clearInterval(thumbnailStatusPollingInterval)
 })
 
 async function saveUserSettings() {
@@ -382,8 +384,64 @@ async function generateAllPreviews() {
   }
 }
 
+const isGeneratingThumbnails = ref(false)
+const thumbnailGenerationResults = ref<{ total: number, processed: number, generated: number, skipped: number, errors: number, isProcessing: boolean } | null>(null)
+let thumbnailStatusPollingInterval: any = null
+
+const fetchThumbnailGenerationStatus = async () => {
+  try {
+    const response = await fetch('/api/thumbnails-status', { credentials: 'include' })
+    if (response.ok) {
+      const status = await response.json()
+      thumbnailGenerationResults.value = status
+      isGeneratingThumbnails.value = status.isProcessing
+
+      if (status.isProcessing) {
+        const existingOp = ProgressManager.operations.find(o => o.id === 'thumb-gen')
+        if (!existingOp) {
+          startOperation('thumb-gen', 'Generating Image Thumbnails', status.total)
+        } else if (existingOp.total !== status.total) {
+            existingOp.total = status.total
+        }
+        updateOperation('thumb-gen', status.processed)
+      } else if (thumbnailStatusPollingInterval) {
+        clearInterval(thumbnailStatusPollingInterval)
+        thumbnailStatusPollingInterval = null
+        completeOperation('thumb-gen')
+        if (status.processed > 0) {
+          createNotification(`Bulk thumbnail generation complete! Processed: ${status.processed}`, NotificationType.SUCCESS)
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching thumbnail status:', err)
+    failOperation('thumb-gen')
+  }
+}
+
+async function generateAllThumbnails() {
+  isGeneratingThumbnails.value = true
+  try {
+    const response = await fetch('/api/thumbnails-generate', {
+      method: 'POST',
+      credentials: 'include'
+    })
+    if (!response.ok) throw new Error('Failed to start thumbnail generation')
+    
+    createNotification('Bulk thumbnail generation started in background.', NotificationType.INFO)
+    
+    if (thumbnailStatusPollingInterval) clearInterval(thumbnailStatusPollingInterval)
+    thumbnailStatusPollingInterval = setInterval(fetchThumbnailGenerationStatus, 1000)
+    fetchThumbnailGenerationStatus() // Immediate first fetch
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to start bulk thumbnail generation', NotificationType.ERROR)
+    isGeneratingThumbnails.value = false
+  }
+}
+
 async function clearAllPreviews() {
-  if (!confirm('Are you sure you want to delete ALL generated previews? This cannot be undone.')) return
+  if (!confirm('Are you sure you want to delete ALL generated previews and thumbnails? This cannot be undone.')) return
   
   isClearingPreviews.value = true
   try {
@@ -392,13 +450,14 @@ async function clearAllPreviews() {
       credentials: 'include'
     })
 
-    if (!response.ok) throw new Error('Failed to clear previews')
+    if (!response.ok) throw new Error('Failed to clear previews and thumbnails')
     
     generationResults.value = null
-    createNotification('All previews cleared successfully', NotificationType.SUCCESS)
+    thumbnailGenerationResults.value = null
+    createNotification('All previews and thumbnails cleared successfully', NotificationType.SUCCESS)
   } catch (err) {
     console.error(err)
-    createNotification('Failed to clear previews', NotificationType.ERROR)
+    createNotification('Failed to clear previews and thumbnails', NotificationType.ERROR)
   } finally {
     isClearingPreviews.value = false
   }
@@ -848,53 +907,105 @@ async function logout() {
                       class="range range-primary range-xs" 
                       @change="saveUserSettings"
                     />
-                 </div>
+                  </div>
 
-                 <div v-if="generationResults && (generationResults.isProcessing || generationResults.processed > 0)" class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5 animate-in fade-in duration-300">
-                   <div class="flex items-center justify-between">
-                     <div class="flex items-center gap-2">
-                       <span class="text-[9px] font-bold uppercase tracking-widest text-base-content">Generation Progress</span>
-                       <span v-if="generationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
-                     </div>
-                     <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ generationResults.processed }} / {{ generationResults.total }}</span>
-                   </div>
-                   
-                   <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
-                     <div 
-                       class="h-full bg-primary transition-all duration-500 ease-out" 
-                       :style="{ width: `${(generationResults.processed / generationResults.total) * 100}%` }"
-                     ></div>
-                   </div>
+                  <div v-if="generationResults && (generationResults.isProcessing || generationResults.processed > 0)" class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5 animate-in fade-in duration-300">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-base-content">Video Previews Progress</span>
+                        <span v-if="generationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
+                      </div>
+                      <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ generationResults.processed }} / {{ generationResults.total }}</span>
+                    </div>
+                    
+                    <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
+                      <div 
+                        class="h-full bg-primary transition-all duration-500 ease-out" 
+                        :style="{ width: `${(generationResults.processed / (generationResults.total || 1)) * 100}%` }"
+                      ></div>
+                    </div>
 
-                   <div class="grid grid-cols-3 gap-2 pt-1">
-                     <div class="flex flex-col">
-                       <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
-                       <span class="text-[10px] font-bold text-success">{{ generationResults.generated }}</span>
-                     </div>
-                     <div class="flex flex-col">
-                       <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
-                       <span class="text-[10px] font-bold text-base-content/60">{{ generationResults.skipped }}</span>
-                     </div>
-                     <div class="flex flex-col">
-                       <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
-                       <span class="text-[10px] font-bold text-error">{{ generationResults.errors }}</span>
-                     </div>
-                   </div>
-                 </div>
+                    <div class="grid grid-cols-3 gap-2 pt-1">
+                      <div class="flex flex-col">
+                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
+                        <span class="text-[10px] font-bold text-success">{{ generationResults.generated }}</span>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
+                        <span class="text-[10px] font-bold text-base-content/60">{{ generationResults.skipped }}</span>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
+                        <span class="text-[10px] font-bold text-error">{{ generationResults.errors }}</span>
+                      </div>
+                    </div>
+                  </div>
 
-                 <div class="flex flex-col sm:flex-row gap-3">
-                   <button 
-                     class="btn btn-primary flex-1 h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
-                     @click="generateAllPreviews" 
-                     :disabled="isGeneratingPreviews || isClearingPreviews"
-                   >
-                     <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-4 h-4" />
-                     <span v-else class="loading loading-spinner loading-xs"></span>
-                     Initialize All
-                   </button>
+                  <div v-if="thumbnailGenerationResults && (thumbnailGenerationResults.isProcessing || thumbnailGenerationResults.processed > 0)" class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5 animate-in fade-in duration-300">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-base-content">Image Thumbnails Progress</span>
+                        <span v-if="thumbnailGenerationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
+                      </div>
+                      <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ thumbnailGenerationResults.processed }} / {{ thumbnailGenerationResults.total }}</span>
+                    </div>
+                    
+                    <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
+                      <div 
+                        class="h-full bg-primary transition-all duration-500 ease-out" 
+                        :style="{ width: `${(thumbnailGenerationResults.processed / (thumbnailGenerationResults.total || 1)) * 100}%` }"
+                      ></div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 pt-1">
+                      <div class="flex flex-col">
+                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
+                        <span class="text-[10px] font-bold text-success">{{ thumbnailGenerationResults.generated }}</span>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
+                        <span class="text-[10px] font-bold text-base-content/60">{{ thumbnailGenerationResults.skipped }}</span>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
+                        <span class="text-[10px] font-bold text-error">{{ thumbnailGenerationResults.errors }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col gap-3">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                      <button 
+                        class="btn btn-primary flex-1 h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+                        @click="generateAllPreviews" 
+                        :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
+                      >
+                        <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-4 h-4" />
+                        <span v-else class="loading loading-spinner loading-xs"></span>
+                        Generate Video Previews
+                      </button>
+                      <button 
+                        class="btn btn-primary flex-1 h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+                        @click="generateAllThumbnails" 
+                        :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
+                      >
+                        <Icon v-if="!isGeneratingThumbnails" name="mdi:image-filter-hdr" class="w-4 h-4" />
+                        <span v-else class="loading loading-spinner loading-xs"></span>
+                        Generate Image Thumbnails
+                      </button>
+                    </div>
+                    <button 
+                      class="btn btn-error w-full h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest text-white" 
+                      @click="clearAllPreviews" 
+                      :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
+                    >
+                      <Icon v-if="!isClearingPreviews" name="mdi:trash-can-outline" class="w-4 h-4" />
+                      <span v-else class="loading loading-spinner loading-xs"></span>
+                      Clear Previews & Thumbnails
+                    </button>
+                  </div>
                  </div>
                </div>
-             </div>
           </section>
 
           <!-- Shorts Exclusion -->
