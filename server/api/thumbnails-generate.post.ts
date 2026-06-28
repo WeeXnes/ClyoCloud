@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     const userStoragePath = path.join(config.storagePath, user.name)
     const userThumbnailPath = path.join(config.thumbnailPath, user.name)
 
-    // Helper function to recursively find all image files
+    // Helper function to recursively find all image and video files
     async function findImages(dir: string): Promise<string[]> {
         let results: string[] = []
         try {
@@ -40,7 +40,9 @@ export default defineEventHandler(async (event) => {
                 } else {
                     const contentType = mime.lookup(res)
                     const supportedImageTypes = ['image/png', 'image/jpeg', 'image/gif']
-                    if (contentType && supportedImageTypes.includes(contentType)) {
+                    const supportedVideoTypes = ['video/mp4', 'application/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska']
+                    const supportedTypes = [...supportedImageTypes, ...supportedVideoTypes]
+                    if (contentType && supportedTypes.includes(contentType)) {
                         results.push(res)
                     }
                 }
@@ -91,30 +93,70 @@ export default defineEventHandler(async (event) => {
                     try {
                         await fs.mkdir(path.dirname(thumbnailFile), { recursive: true })
 
-                        // First check if it needs resize (same logic as thumbnail route)
-                        let needsResize = true
-                        try {
-                            const stdout = await runFfprobe(['-v', 'error', '-show_entries', 'stream=width,height', '-of', 'json', imageFile])
-                            const data = JSON.parse(stdout)
-                            const { width, height } = data.streams[0] || {}
-                            if (width && height && width <= 320 && height <= 180) {
-                                needsResize = false
-                            }
-                        } catch (ffprobeError) {
-                            // Dimension check failed, proceed with resize
-                        }
+                        const contentType = mime.lookup(imageFile) || ''
+                        const supportedImageTypes = ['image/png', 'image/jpeg', 'image/gif']
+                        const isImage = supportedImageTypes.includes(contentType)
 
-                        if (!needsResize) {
-                            await runFfmpeg([
-                                '-i', imageFile,
-                                '-y', thumbnailFile
-                            ])
+                        if (isImage) {
+                            // First check if it needs resize (same logic as thumbnail route)
+                            let needsResize = true
+                            try {
+                                const stdout = await runFfprobe(['-v', 'error', '-show_entries', 'stream=width,height', '-of', 'json', imageFile])
+                                const data = JSON.parse(stdout)
+                                const { width, height } = data.streams[0] || {}
+                                if (width && height && width <= 320 && height <= 180) {
+                                    needsResize = false
+                                }
+                            } catch (ffprobeError) {
+                                // Dimension check failed, proceed with resize
+                            }
+
+                            if (!needsResize) {
+                                await runFfmpeg([
+                                    '-i', imageFile,
+                                    '-y', thumbnailFile
+                                ])
+                            } else {
+                                await runFfmpeg([
+                                    '-i', imageFile,
+                                    '-filter_complex', '[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2',
+                                    '-y', thumbnailFile
+                                ])
+                            }
                         } else {
-                            await runFfmpeg([
-                                '-i', imageFile,
-                                '-filter_complex', '[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2',
-                                '-y', thumbnailFile
-                            ])
+                            // Video thumbnail generation (grab frame at 10% or 50% fallback)
+                            let duration
+                            try {
+                                const stdout = await runFfprobe(['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', imageFile])
+                                duration = parseFloat(stdout)
+                            } catch (ffprobeError) {}
+
+                            if (!duration || isNaN(duration)) {
+                                duration = 10
+                            }
+
+                            const seekTime = (duration * 0.1).toString()
+                            try {
+                                await runFfmpeg([
+                                    '-ss', seekTime,
+                                    '-i', imageFile,
+                                    '-vframes', '1',
+                                    '-filter_complex', '[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=15:1[bg];[0:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=-1:180[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2',
+                                    '-frames:v', '1',
+                                    '-q:v', '2',
+                                    '-y', thumbnailFile
+                                ])
+                            } catch (ffmpegError) {
+                                const secondSeekTime = (duration * 0.5).toString()
+                                await runFfmpeg([
+                                    '-ss', secondSeekTime,
+                                    '-i', imageFile,
+                                    '-vf', 'setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=320:180',
+                                    '-frames:v', '1',
+                                    '-pix_fmt', 'yuvj420p',
+                                    '-y', thumbnailFile
+                                ])
+                            }
                         }
                         
                         updateThumbnailTaskStatus(user!.name, {
