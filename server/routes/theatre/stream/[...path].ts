@@ -5,6 +5,23 @@ import { defineEventHandler, getRouterParam, setHeader, createError, getQuery } 
 import mime from 'mime-types'
 import path, { join, resolve } from 'path'
 import { isPathWithin } from '~/server/utils/fileUtils'
+import { runFfprobe } from '~/server/utils/ffmpeg'
+
+async function getVideoCodec(filePath: string): Promise<string> {
+    try {
+        const stdout = await runFfprobe([
+            '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=codec_name',
+            '-of', 'default=noprint_wrappers=1:nokey=1',
+            filePath
+        ])
+        return stdout.trim().toLowerCase()
+    } catch (err) {
+        console.error('[Theatre Stream] Failed to probe video codec:', err)
+        return ''
+    }
+}
 
 export default defineEventHandler(async (event) => {
     // Check authentication
@@ -64,9 +81,15 @@ export default defineEventHandler(async (event) => {
         const query = getQuery(event)
         const compatibilityMode = query.compatibility === 'true'
 
-        // 1. Compatibility Stream Mode (FFmpeg Remuxing + Audio Transcoding)
+        // 1. Compatibility Stream Mode (FFmpeg Remuxing + Audio Transcoding / Video Transcoding if needed)
         if (compatibilityMode) {
-            console.log(`[Theatre Stream] Starting compatibility remuxing for: ${resolvedPath}`)
+            console.log(`[Theatre Stream] Starting compatibility stream for: ${resolvedPath}`)
+
+            // Probe video codec
+            const videoCodec = await getVideoCodec(resolvedPath)
+            const isVideoCompatible = ['h264', 'vp9', 'av1', 'vp8'].includes(videoCodec)
+
+            console.log(`[Theatre Stream] Video codec is "${videoCodec}". Direct copy compatible: ${isVideoCompatible}`)
 
             // Set headers for chunked streaming MP4 video
             setHeader(event, 'Content-Type', 'video/mp4')
@@ -75,17 +98,34 @@ export default defineEventHandler(async (event) => {
             setHeader(event, 'Expires', '0')
             setHeader(event, 'Connection', 'keep-alive')
 
-            // Spawn FFmpeg to remux container (copy video, encode audio to AAC)
-            const ffmpegProcess = spawn('ffmpeg', [
+            const ffmpegArgs = [
                 '-i', resolvedPath,
-                '-c:v', 'copy',             // Copy video stream (super fast, low CPU)
-                '-c:a', 'aac',              // Transcode audio to AAC (universally supported)
+            ]
+
+            // Video codec selection
+            if (isVideoCompatible) {
+                ffmpegArgs.push('-c:v', 'copy') // Copy video stream (fast, low CPU)
+            } else {
+                ffmpegArgs.push(
+                    '-c:v', 'libx264',      // Transcode video to H.264 (universal support)
+                    '-preset', 'ultrafast', // Ultrafast preset for real-time low-latency transcoding
+                    '-tune', 'zerolatency', // Optimize for low-latency streaming
+                    '-crf', '23'            // Quality/size balance
+                )
+            }
+
+            // Audio codec selection
+            ffmpegArgs.push(
+                '-c:a', 'aac',              // Transcode audio to AAC (universal support)
                 '-b:a', '192k',             // Standard audio bitrate
                 '-ac', '2',                 // Stereo downmix
                 '-f', 'mp4',                // Output format MP4
                 '-movflags', 'frag_keyframe+empty_moov+omit_tfhd_offset+faststart', // Fragmented MP4 for live streaming
                 'pipe:1'
-            ])
+            )
+
+            // Spawn FFmpeg
+            const ffmpegProcess = spawn('ffmpeg', ffmpegArgs)
 
             // If the connection is closed by the browser, kill the FFmpeg process immediately
             event.node.res.on('close', () => {

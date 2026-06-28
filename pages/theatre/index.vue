@@ -43,6 +43,7 @@ const isLoading = ref(true)
 const error = ref<string | null>(null)
 const searchQuery = ref('')
 const activeFilter = ref<'all' | 'movies' | 'shows'>('all')
+const randomFeaturedIndex = ref<number>(-1)
 
 // Selected media detail modal
 const selectedMedia = ref<MediaItem | null>(null)
@@ -85,11 +86,10 @@ let controlsTimer: any = null
 const featuredMedia = computed(() => {
   const allMedia = [...movies.value, ...shows.value]
   if (allMedia.length === 0) return null
-  // Try to find one with description and artwork
-  const qualitative = allMedia.find(m => m.artworkUrl && m.description)
-  if (qualitative) return qualitative
-  // Fallback to first movie or show
-  return allMedia[0]
+  if (randomFeaturedIndex.value === -1 || randomFeaturedIndex.value >= allMedia.length) {
+    return allMedia[0]
+  }
+  return allMedia[randomFeaturedIndex.value]
 })
 
 // Filtered and searched lists
@@ -119,6 +119,15 @@ const fetchMedia = async () => {
     const res = await $fetch<{ movies: MediaItem[], shows: MediaItem[] }>('/api/theatre/media')
     movies.value = res.movies
     shows.value = res.shows
+
+    const totalMediaCount = res.movies.length + res.shows.length
+    if (totalMediaCount > 0) {
+      if (randomFeaturedIndex.value === -1 || randomFeaturedIndex.value >= totalMediaCount) {
+        randomFeaturedIndex.value = Math.floor(Math.random() * totalMediaCount)
+      }
+    } else {
+      randomFeaturedIndex.value = -1
+    }
   } catch (err: any) {
     console.error('Error fetching media:', err)
     error.value = 'Failed to load media files. Make sure the movies and shows directories are populated.'
@@ -657,14 +666,14 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
                   <button 
                     v-if="movie.videoPath"
                     @click.stop="startPlayback(movie.title, undefined, movie.videoPath, movie.id, 'movie')"
-                    class="p-3 bg-primary text-primary-content rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all hover:bg-primary/95"
+                    class="w-12 h-12 flex items-center justify-center bg-primary text-primary-content rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all hover:bg-primary/95"
                     title="Play Movie"
                   >
-                    <Icon name="mdi:play" class="w-5 h-5" />
+                    <Icon name="mdi:play" class="w-5 h-5 pl-0.5" />
                   </button>
                   <button 
                     @click.stop="openDetails(movie)"
-                    class="p-3 bg-neutral-800 text-white rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all hover:bg-neutral-700"
+                    class="w-12 h-12 flex items-center justify-center bg-neutral-800 text-white rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all hover:bg-neutral-700"
                     title="View Details"
                   >
                     <Icon name="mdi:information-variant" class="w-5 h-5" />
@@ -725,7 +734,7 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
                 <div class="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                   <button 
                     @click.stop="openDetails(show)"
-                    class="p-3.5 bg-primary text-primary-content rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all hover:bg-primary/95"
+                    class="w-12 h-12 flex items-center justify-center bg-primary text-primary-content rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all hover:bg-primary/95"
                     title="View Seasons"
                   >
                     <Icon name="mdi:folder-open" class="w-5 h-5" />
@@ -1055,8 +1064,8 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
               </button>
 
               <!-- Play / Pause -->
-              <button @click="togglePlay" class="p-2.5 bg-primary text-primary-content rounded-full shadow hover:bg-primary/95 focus:outline-none" title="Play / Pause">
-                <Icon :name="playerIsPlaying ? 'mdi:pause' : 'mdi:play'" class="w-6 h-6" />
+              <button @click="togglePlay" class="w-12 h-12 flex items-center justify-center bg-primary text-primary-content rounded-full shadow hover:bg-primary/95 focus:outline-none" title="Play / Pause">
+                <Icon :name="playerIsPlaying ? 'mdi:pause' : 'mdi:play'" class="w-6 h-6" :class="{ 'pl-0.5': !playerIsPlaying }" />
               </button>
 
               <!-- Skip 10s -->
