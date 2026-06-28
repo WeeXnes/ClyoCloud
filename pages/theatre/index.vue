@@ -131,6 +131,11 @@ const fetchMedia = async () => {
     } else {
       randomFeaturedIndex.value = -1
     }
+
+    // Trigger autoplay from query once media has loaded
+    if (route.query.play) {
+      handleAutoPlayFromQuery(route.query.play as string)
+    }
   } catch (err: any) {
     console.error('Error fetching media:', err)
     error.value = 'Failed to load media files. Make sure the movies and shows directories are populated.'
@@ -187,12 +192,9 @@ const handleAutoPlayFromQuery = (videoPath: string) => {
 }
 
 onMounted(async () => {
+  await router.isReady() // Wait for route query params to be populated
   await fetchMedia()
   window.addEventListener('keydown', handleGlobalKeydown)
-
-  if (route.query.play) {
-    handleAutoPlayFromQuery(route.query.play as string)
-  }
 })
 
 onUnmounted(() => {
