@@ -35,6 +35,11 @@ const protectedEndpoints = [
   '/api/verify',
   '/api/videos',
   '/api/zip',
+  '/api/bulk-rename',
+  '/api/bulk-meta',
+  '/api/theatre/artwork',
+  '/api/theatre/media',
+  '/api/theatre/metadata',
   
   // 2FA Management
   '/api/2fa/disable',
@@ -57,7 +62,8 @@ const protectedEndpoints = [
   '/duplicates',
   '/downloader',
   '/shorts',
-  '/media'
+  '/media',
+  '/theatre'
 ]
 
 // All endpoints that are EXPLICITLY PUBLIC

@@ -75,6 +75,23 @@ export default defineEventHandler(async (event) => {
             }
 
             try {
+                // Prevent overwriting files/directories
+                const oldStat = await fs.stat(oldFullPath)
+                try {
+                    const newStat = await fs.stat(newFullPath)
+                    if (oldStat.ino !== newStat.ino || oldStat.dev !== newStat.dev) {
+                        results.push({ path: itemPath, success: false, error: 'Destination already exists' })
+                        continue
+                    }
+                } catch {
+                    // destination doesn't exist, proceed
+                }
+            } catch (err: any) {
+                results.push({ path: itemPath, success: false, error: 'Source file does not exist' })
+                continue
+            }
+
+            try {
                 // Rename the file/folder
                 await fs.rename(oldFullPath, newFullPath)
 

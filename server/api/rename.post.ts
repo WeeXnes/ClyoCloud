@@ -38,6 +38,26 @@ export default defineEventHandler(async (event) => {
             })
         }
 
+        // Prevent overwriting files/directories
+        try {
+            const oldStat = await fs.stat(oldFullPath)
+            try {
+                const newStat = await fs.stat(newFullPath)
+                if (oldStat.ino !== newStat.ino || oldStat.dev !== newStat.dev) {
+                    throw createError({
+                        statusCode: 409,
+                        statusMessage: `Destination already exists: ${newName}`,
+                    })
+                }
+            } catch (err: any) {
+                if (err.statusCode === 409) throw err
+                // destination doesn't exist, proceed
+            }
+        } catch (err: any) {
+            if (err.statusCode === 409) throw err
+            // source doesn't exist? let fs.rename handle it or throw
+        }
+
         // Rename the file/folder
         await fs.rename(oldFullPath, newFullPath)
 
