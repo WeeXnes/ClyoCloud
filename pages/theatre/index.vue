@@ -239,7 +239,7 @@ const startPlayback = (title: string, subTitle: string | undefined, videoPath: s
   showPlayer.value = true
   playerCurrentTime.value = 0
   playerDuration.value = 0
-  playerIsPlaying = false
+  playerIsPlaying.value = false
   resetControlsTimeout()
 }
 

@@ -110,6 +110,7 @@ export default defineEventHandler(async (event) => {
                     '-c:v', 'libx264',      // Transcode video to H.264 (universal support)
                     '-preset', 'ultrafast', // Ultrafast preset for real-time low-latency transcoding
                     '-tune', 'zerolatency', // Optimize for low-latency streaming
+                    '-pix_fmt', 'yuv420p',  // Force standard browser-compatible pixel format
                     '-crf', '23'            // Quality/size balance
                 )
             }
@@ -120,12 +121,25 @@ export default defineEventHandler(async (event) => {
                 '-b:a', '192k',             // Standard audio bitrate
                 '-ac', '2',                 // Stereo downmix
                 '-f', 'mp4',                // Output format MP4
-                '-movflags', 'frag_keyframe+empty_moov+omit_tfhd_offset+faststart', // Fragmented MP4 for live streaming
+                '-movflags', 'frag_keyframe+empty_moov+default_base_moof', // Fragmented MP4 for live streaming
                 'pipe:1'
             )
 
             // Spawn FFmpeg
             const ffmpegProcess = spawn('ffmpeg', ffmpegArgs)
+
+            ffmpegProcess.on('error', (err) => {
+                console.error(`[Theatre Stream] FFmpeg process error for ${resolvedPath}:`, err)
+            })
+
+            ffmpegProcess.stderr.on('data', (data) => {
+                const lines = data.toString().split('\n')
+                for (const line of lines) {
+                    if (line.trim()) {
+                        console.error(`[Theatre Stream FFmpeg] ${line}`)
+                    }
+                }
+            })
 
             // If the connection is closed by the browser, kill the FFmpeg process immediately
             event.node.res.on('close', () => {
