@@ -240,27 +240,7 @@ watch(
   }
 )
 
-watch(videoRef, (newEl) => {
-  if (newEl) {
-    newEl.play().then(() => {
-      playerIsPlaying.value = true
-    }).catch(err => {
-      console.log('Autoplay blocked, waiting for user interaction:', err)
-      // Play on first interaction if autoplay fails
-      const resumeOnInteraction = () => {
-        if (newEl.paused) {
-          newEl.play().then(() => {
-            playerIsPlaying.value = true
-          }).catch(e => console.log('Interaction play blocked:', e))
-        }
-        window.removeEventListener('click', resumeOnInteraction)
-        window.removeEventListener('keydown', resumeOnInteraction)
-      }
-      window.addEventListener('click', resumeOnInteraction)
-      window.addEventListener('keydown', resumeOnInteraction)
-    })
-  }
-})
+
 
 // Detail modal handlers
 const openDetails = (media: MediaItem) => {
