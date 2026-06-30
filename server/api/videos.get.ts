@@ -4,8 +4,6 @@ import path from 'path'
 import type { Video, FileMeta, ShortMedia, SlideshowMedia } from '~/types/File'
 import { isPathWithin } from '~/server/utils/fileUtils'
 
-// Simple in-memory cache for media scans
-const mediaCache = new Map<string, { items: ShortMedia[]; timestamp: number }>();
 const CACHE_TTL = 30 * 1000; // 30 seconds cache
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv'];

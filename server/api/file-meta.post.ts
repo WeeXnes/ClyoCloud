@@ -70,8 +70,9 @@ export default defineEventHandler(async (event) => {
 
         await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')
 
-        // Update tag cache
+        // Update tag cache and clear media cache to force a fresh scan
         await updateFileInCache(event.context.user.name, fullPath, meta)
+        clearMediaCache(event.context.user.name)
 
         return { success: true, meta }
     } catch (error: any) {

@@ -369,8 +369,8 @@ function setPage(page: number | string) {
 
             <!-- Overlays -->
             <div class="absolute inset-0 z-20 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-               <div class="bg-primary/90 p-2.5 rounded-lg text-primary-content shadow-lg scale-90 group-hover/thumb:scale-100 transition-transform">
-                 <Icon name="mdi:play" class="w-6 h-6" />
+               <div class="bg-primary/90 w-11 h-11 flex items-center justify-center rounded-lg text-primary-content shadow-lg scale-90 group-hover/thumb:scale-100 transition-transform">
+                 <Icon name="mdi:play" class="w-6 h-6 ml-0.5" />
                </div>
             </div>
 
