@@ -61,10 +61,14 @@ export function checkUserFile(filePath: string) {
         if (!fs.existsSync(filePath)) {
             console.info(`Users file not found, copying example file...`);
             copyExampleFile("users.json", config.usersFilePath);
-            return checkUserFile(filePath);
         }
 
-        const data = fs.readFileSync(filePath, "utf-8");
+        if (!fs.existsSync(filePath)) {
+            console.error(`Fatal: Users file could not be initialized at ${filePath}`);
+            process.exit(1);
+        }
+
+        let data = fs.readFileSync(filePath, "utf-8");
         let users: { name: string; password: string }[];
 
         try {
@@ -72,13 +76,15 @@ export function checkUserFile(filePath: string) {
         } catch (err) {
             console.warn(`Users file is invalid. Resetting...`);
             copyExampleFile("users.json", config.usersFilePath);
-            return checkUserFile(filePath);
+            data = fs.readFileSync(filePath, "utf-8");
+            users = JSON.parse(data);
         }
 
         if (!Array.isArray(users)) {
             console.warn(`Users file is not an array. Resetting...`);
             copyExampleFile("users.json", config.usersFilePath);
-            return checkUserFile(filePath);
+            data = fs.readFileSync(filePath, "utf-8");
+            users = JSON.parse(data);
         }
 
         const invalidUsers = users.filter(u => {
@@ -88,13 +94,13 @@ export function checkUserFile(filePath: string) {
         if (invalidUsers.length > 0) {
             console.warn(`Found ${invalidUsers.length} user(s) with invalid password hashes. Resetting...`);
             copyExampleFile("users.json", config.usersFilePath);
-            return checkUserFile(filePath);
+            data = fs.readFileSync(filePath, "utf-8");
+            users = JSON.parse(data);
         }
 
         const usernames = users.map(u => u.name);
         console.info("Existing users:", usernames.join(", "));
         return usernames;
-
     } catch (err) {
         console.error(`Error checking users file:`, err);
         process.exit(1);
@@ -108,10 +114,14 @@ export function checkUserTagsFile(filePath: string, username: string) {
         if (!fs.existsSync(filePath)) {
             console.info(`Tags file not found for user "${username}" at ${filePath}, copying example file...`);
             copyExampleFile("tags.json", filePath);
-            return checkUserTagsFile(filePath, username); // call again after copying
         }
 
-        const data = fs.readFileSync(filePath, "utf-8");
+        if (!fs.existsSync(filePath)) {
+            console.error(`Error: Predefined tags file for user "${username}" could not be initialized at ${filePath}`);
+            return;
+        }
+
+        let data = fs.readFileSync(filePath, "utf-8");
         let tagsObj: { tags: Tag[] };
 
         try {
@@ -119,13 +129,15 @@ export function checkUserTagsFile(filePath: string, username: string) {
         } catch (err) {
             console.warn(`Tags file for user "${username}" at ${filePath} is invalid. Resetting...`);
             copyExampleFile("tags.json", filePath);
-            return checkUserTagsFile(filePath, username); // call again after copying
+            data = fs.readFileSync(filePath, "utf-8");
+            tagsObj = JSON.parse(data);
         }
 
         if (!tagsObj.tags || !Array.isArray(tagsObj.tags)) {
             console.warn(`Tags file for user "${username}" at ${filePath} does not contain a valid 'tags' array. Resetting...`);
             copyExampleFile("tags.json", filePath);
-            return checkUserTagsFile(filePath, username); // call again after copying
+            data = fs.readFileSync(filePath, "utf-8");
+            tagsObj = JSON.parse(data);
         }
 
         // File exists and is valid — print tags
@@ -140,7 +152,6 @@ export function checkUserTagsFile(filePath: string, username: string) {
 
     } catch (err) {
         console.error(`Error checking tags file for user "${username}" at ${filePath}:`, err);
-        process.exit(1);
     }
 }
 
