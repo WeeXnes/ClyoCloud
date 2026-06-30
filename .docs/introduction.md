@@ -1,4 +1,4 @@
-# 🌌 ClyoCloud Introduction
+# ClyoCloud Introduction
 
 Welcome to the **ClyoCloud** developer documentation. This guide helps you understand, extend, and deploy ClyoCloud.
 
@@ -20,13 +20,13 @@ graph TD
 
 ## Key Features
 
-*   **🔒 Personal Cloud Storage**: Secure hosting on local file systems without databases.
-*   **🔑 Secure Authentication & 2FA**: Cookie-based JWT authentication with TOTP 2FA options.
-*   **📂 Modern File Operations**: Drag-and-drop uploads, context-menu actions, folder creation, on-the-fly zipping, and bulk operations.
-*   **🎬 Range-Aware Video Streaming**: Built-in HTTP range-request server for seamless scrubbing and streaming.
-*   **🎨 Rich Media Management**: Async thumbnail/preview generation with FFmpeg/FFprobe, tag organization, and custom descriptions.
-*   **🔗 Public Sharing**: Generate temporary/permanent unauthenticated public download or preview links.
-*   **💾 Background Utilities**: YouTube/media downloading via `yt-dlp`, MD5-based duplicate file identification, and storage cleanup scanning.
+*   **Personal Cloud Storage**: Secure hosting on local file systems without databases.
+*   **Secure Authentication & 2FA**: Cookie-based JWT authentication with TOTP 2FA options.
+*   **Modern File Operations**: Drag-and-drop uploads, context-menu actions, folder creation, on-the-fly zipping, and bulk operations.
+*   **Range-Aware Video Streaming**: Built-in HTTP range-request server for seamless scrubbing and streaming.
+*   **Rich Media Management**: Async thumbnail/preview generation with FFmpeg/FFprobe, tag organization, and custom descriptions.
+*   **Public Sharing**: Generate temporary/permanent unauthenticated public download or preview links.
+*   **Background Utilities**: YouTube/media downloading via `yt-dlp`, MD5-based duplicate file identification, and storage cleanup scanning.
 
 ---
 

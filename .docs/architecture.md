@@ -1,4 +1,4 @@
-# 📐 Architecture & Design
+# Architecture & Design
 
 This document details the internal systems, modules, and processes that power ClyoCloud.
 

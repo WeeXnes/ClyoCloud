@@ -1,4 +1,4 @@
-# 🛡 Security & Testing
+# Security & Testing
 
 This document details the security model, vulnerability prevention strategies, and verification test suites used in ClyoCloud.
 

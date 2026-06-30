@@ -1,4 +1,4 @@
-# ⚙️ Setup & Configuration Guide
+# Setup & Configuration Guide
 
 This guide helps you set up a local development environment for ClyoCloud and configure it for production.
 
@@ -15,6 +15,8 @@ Ensure the following tools are installed on your host system:
 ---
 
 ## Installation
+
+### Manual Installation
 
 1.  **Clone the Repository**:
     ```bash
@@ -41,6 +43,22 @@ Ensure the following tools are installed on your host system:
     # Start the server (runs on the configured PORT or defaults to 3000)
     node .output/server/index.mjs
     ```
+
+### Arch Linux (AUR)
+
+ClyoCloud can be installed on Arch Linux directly from the Arch User Repository (AUR):
+*   **Stable builds**: Install the `clyocloud` package.
+*   **Cutting-edge/development builds**: Install the `clyocloud-git` package.
+
+Example using an AUR helper (such as `yay`):
+```bash
+# Stable version
+yay -S clyocloud
+
+# Cutting-edge (Git development branch) version
+yay -S clyocloud-git
+```
+
 
 ---
 
