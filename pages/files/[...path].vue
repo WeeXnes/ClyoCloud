@@ -369,6 +369,7 @@ const hoveredFile = ref<string | null>(null)
 const visibleFiles = ref<Set<string>>(new Set())
 const isMobile = ref(false)
 const mobileAutoPreview = ref(true)
+const selectedShortsPaths = ref<string[]>([])
 let touchTimer: any = null
 let observer: IntersectionObserver | null = null
 
@@ -378,9 +379,53 @@ const fetchUserSettings = async () => {
     if (response.ok) {
       const data = await response.json()
       mobileAutoPreview.value = data.mobileAutoPreview ?? true
+      selectedShortsPaths.value = data.selectedShortsPaths || []
     }
   } catch (err) {
     console.error('Error fetching user settings:', err)
+  }
+}
+
+const getFolderRelativePath = (file: File) => {
+  return currentFolder.value ? `${currentFolder.value}/${file.name}` : file.name
+}
+
+const isInShorts = (file: File) => {
+  const folderPath = getFolderRelativePath(file)
+  return selectedShortsPaths.value.includes(folderPath)
+}
+
+const toggleShorts = async (file: File) => {
+  const folderPath = getFolderRelativePath(file)
+  const isSelected = selectedShortsPaths.value.includes(folderPath)
+  let updatedPaths = [...selectedShortsPaths.value]
+  if (isSelected) {
+    updatedPaths = updatedPaths.filter(p => p !== folderPath)
+  } else {
+    updatedPaths.push(folderPath)
+  }
+
+  try {
+    const settingsResponse = await fetch('/api/user-settings')
+    if (!settingsResponse.ok) throw new Error('Failed to fetch settings')
+    const settings = await settingsResponse.json()
+
+    const response = await fetch('/api/user-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...settings, selectedShortsPaths: updatedPaths }),
+    })
+
+    if (!response.ok) throw new Error('Failed to update settings')
+
+    selectedShortsPaths.value = updatedPaths
+    createNotification(
+      isSelected ? `Removed folder from Shorts: ${file.name}` : `Added folder to Shorts: ${file.name}`,
+      NotificationType.SUCCESS
+    )
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update Shorts settings', NotificationType.ERROR)
   }
 }
 
@@ -984,6 +1029,9 @@ const handleContextAction = (action: string) => {
       break
     case 'move':
       openMoveModal(file)
+      break
+    case 'toggle-shorts':
+      toggleShorts(file)
       break
     case 'description':
       selectedFile.value = file
@@ -1903,6 +1951,12 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           <li v-if="contextMenuFile?.isFolder">
             <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('slideshow')">
               <Icon name="mdi:image-multiple-outline" class="w-4 h-4" /> Slideshow
+            </a>
+          </li>
+          <li v-if="contextMenuFile?.isFolder">
+            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('toggle-shorts')">
+              <Icon :name="isInShorts(contextMenuFile) ? 'mdi:folder-remove-outline' : 'mdi:folder-plus-outline'" class="w-4 h-4 text-primary" />
+              {{ isInShorts(contextMenuFile) ? 'Remove from Shorts' : 'Add to Shorts' }}
             </a>
           </li>
           <li v-if="contextMenuFile && isVideoFile(contextMenuFile.name)">

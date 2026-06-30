@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
             experimentalMode: userData.experimentalMode || false,
             theme: userData.theme || 'onedev',
             slideshowFrequency: userData.slideshowFrequency || 5,
-            excludedShortsPaths: userData.excludedShortsPaths || []
+            selectedShortsPaths: userData.selectedShortsPaths || []
         }
     } catch (error) {
         console.error('Get settings error:', error)

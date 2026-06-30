@@ -26,9 +26,14 @@ export default defineNitroPlugin(async (nitroApp) => {
     console.info("Thumbnail Storage Path: " + config.thumbnailPath)
     createDirIfNotExists(config.thumbnailPath)
     console.info("Users JSON Path: " + config.usersFilePath)
-    checkUserFile(config.usersFilePath)
-    console.info("Tags JSON Path: " + config.tagsFilePath)
-    checkTagsFile(config.tagsFilePath)
+    const usernames = checkUserFile(config.usersFilePath) || []
+    
+    const tagsDir = path.dirname(config.tagsFilePath)
+    console.info("Tags JSON Directory: " + tagsDir)
+    for (const username of usernames) {
+        const userTagsPath = path.join(tagsDir, `tags_${username}.json`)
+        checkUserTagsFile(userTagsPath, username)
+    }
 
     // Build the tag cache in the background
     rebuildTagCache();
@@ -88,6 +93,7 @@ export function checkUserFile(filePath: string) {
 
         const usernames = users.map(u => u.name);
         console.info("Existing users:", usernames.join(", "));
+        return usernames;
 
     } catch (err) {
         console.error(`Error checking users file:`, err);
@@ -95,14 +101,14 @@ export function checkUserFile(filePath: string) {
     }
 }
 
-export function checkTagsFile(filePath: string) {
+export function checkUserTagsFile(filePath: string, username: string) {
     const config = useRuntimeConfig();
 
     try {
         if (!fs.existsSync(filePath)) {
-            console.info(`Tags file not found at ${filePath}, copying example file...`);
-            copyExampleFile("tags.json", config.tagsFilePath);
-            return checkTagsFile(filePath); // call again after copying
+            console.info(`Tags file not found for user "${username}" at ${filePath}, copying example file...`);
+            copyExampleFile("tags.json", filePath);
+            return checkUserTagsFile(filePath, username); // call again after copying
         }
 
         const data = fs.readFileSync(filePath, "utf-8");
@@ -111,29 +117,29 @@ export function checkTagsFile(filePath: string) {
         try {
             tagsObj = JSON.parse(data);
         } catch (err) {
-            console.warn(`Tags file at ${filePath} is invalid. Resetting...`);
-            copyExampleFile("tags.json", config.tagsFilePath);
-            return checkTagsFile(filePath); // call again after copying
+            console.warn(`Tags file for user "${username}" at ${filePath} is invalid. Resetting...`);
+            copyExampleFile("tags.json", filePath);
+            return checkUserTagsFile(filePath, username); // call again after copying
         }
 
         if (!tagsObj.tags || !Array.isArray(tagsObj.tags)) {
-            console.warn(`Tags file at ${filePath} does not contain a valid 'tags' array. Resetting...`);
-            copyExampleFile("tags.json", config.tagsFilePath);
-            return checkTagsFile(filePath); // call again after copying
+            console.warn(`Tags file for user "${username}" at ${filePath} does not contain a valid 'tags' array. Resetting...`);
+            copyExampleFile("tags.json", filePath);
+            return checkUserTagsFile(filePath, username); // call again after copying
         }
 
         // File exists and is valid — print tags
         if (tagsObj.tags.length === 0) {
-            console.info("No tags found in the file.");
+            console.info(`No tags found in the file for user "${username}".`);
         } else {
-            console.info("Existing tags:");
+            console.info(`Existing tags for user "${username}":`);
             tagsObj.tags.forEach(tag => {
                 console.log(chalk.hex(tag.color)(tag.name));
             });
         }
 
     } catch (err) {
-        console.error(`Error checking tags file at ${filePath}:`, err);
+        console.error(`Error checking tags file for user "${username}" at ${filePath}:`, err);
         process.exit(1);
     }
 }

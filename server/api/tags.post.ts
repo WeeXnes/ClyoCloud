@@ -24,13 +24,12 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const tagsFilePath = config.tagsFilePath
+        const tagsDir = path.dirname(config.tagsFilePath);
+        const userTagsPath = path.join(tagsDir, `tags_${user.name}.json`);
         
-        // Ensure the directory exists if it's the first time
-        const dir = path.dirname(tagsFilePath);
-        await fs.mkdir(dir, { recursive: true });
+        await fs.mkdir(tagsDir, { recursive: true });
 
-        await fs.writeFile(tagsFilePath, JSON.stringify({ tags }, null, 2), 'utf-8')
+        await fs.writeFile(userTagsPath, JSON.stringify({ tags }, null, 2), 'utf-8')
 
         await logActivity(user.name, 'TAG_UPDATE', 'Settings', `Updated predefined tag library (${tags.length} tags)`, event)
 

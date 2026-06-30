@@ -124,15 +124,19 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
             mediaCache.set(username, { items, timestamp: Date.now() });
         }
 
-        // Apply path exclusions
+        // Apply path selections
         const config = useRuntimeConfig();
         const usersData = await fs.readFile(config.usersFilePath, 'utf-8');
         const users = JSON.parse(usersData);
         const userData = users.find((u: any) => u.name === username);
-        const excludedPaths = userData?.excludedShortsPaths || [];
+        const selectedPaths = userData?.selectedShortsPaths || [];
 
-        if (excludedPaths.length > 0) {
-            items = items.filter(item => !excludedPaths.some((excluded: string) => item.fullPath.startsWith(excluded)));
+        if (selectedPaths.length > 0) {
+            items = items.filter(item => selectedPaths.some((selected: string) => 
+                item.fullPath === selected || item.fullPath.startsWith(selected + '/')
+            ));
+        } else {
+            items = [];
         }
 
         const query = getQuery(event);

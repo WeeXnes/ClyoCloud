@@ -19,13 +19,13 @@ const mobileAutoPreview = ref(true)
 const maxConcurrentPreviews = ref(3)
 const slideshowFrequency = ref(5)
 const experimentalMode = ref(false)
-const excludedShortsPaths = ref<string[]>([])
+const selectedShortsPaths = ref<string[]>([])
 const theme = useState<string>('currentTheme')
 const isSavingSettings = ref(false)
 const isRebuildingCache = ref(false)
 
-const removeExcludedPath = async (index: number) => {
-  excludedShortsPaths.value.splice(index, 1)
+const removeSelectedPath = async (index: number) => {
+  selectedShortsPaths.value.splice(index, 1)
   await saveUserSettings()
 }
 
@@ -242,7 +242,7 @@ async function fetchUserSettings() {
       maxConcurrentPreviews.value = data.maxConcurrentPreviews || 3
       slideshowFrequency.value = data.slideshowFrequency || 5
       experimentalMode.value = data.experimentalMode || false
-      excludedShortsPaths.value = data.excludedShortsPaths || []
+      selectedShortsPaths.value = data.selectedShortsPaths || []
       theme.value = data.theme || 'onedev'
 
     }
@@ -276,7 +276,7 @@ async function saveUserSettings() {
         maxConcurrentPreviews: maxConcurrentPreviews.value,
         slideshowFrequency: slideshowFrequency.value,
         experimentalMode: experimentalMode.value,
-        excludedShortsPaths: excludedShortsPaths.value,
+        selectedShortsPaths: selectedShortsPaths.value,
         theme: theme.value,
 
       }),
@@ -1008,24 +1008,24 @@ async function logout() {
                </div>
           </section>
 
-          <!-- Shorts Exclusion -->
+          <!-- Shorts Selection -->
           <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
              <div class="p-8 sm:p-10">
-               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Shorts Exclusion</h3>
+               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Shorts Selection</h3>
                <p class="text-[11px] font-bold text-base-content/50 mb-6 leading-relaxed">
-                 Manage directories excluded from the Shorts feed.
+                 Manage directories included in the Shorts feed. Only videos/slideshows in these folders will be shown.
                </p>
 
                <div class="space-y-3">
-                 <div v-for="(path, index) in excludedShortsPaths" :key="path" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
+                 <div v-for="(path, index) in selectedShortsPaths" :key="path" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
                     <div class="min-w-0 flex-1">
                        <p class="text-[11px] font-bold truncate text-base-content">{{ path }}</p>
                     </div>
-                    <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="removeExcludedPath(index)">
+                    <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="removeSelectedPath(index)">
                       <Icon name="mdi:delete-outline" class="w-4 h-4" />
                     </button>
                  </div>
-                 <div v-if="excludedShortsPaths.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No paths excluded</div>
+                 <div v-if="selectedShortsPaths.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No paths selected</div>
                </div>
              </div>
           </section>

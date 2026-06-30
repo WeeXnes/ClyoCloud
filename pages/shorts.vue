@@ -147,12 +147,17 @@ const toggleFavourite = async (media: ShortMedia) => {
   }
 }
 
-const excludeFolder = async (media: ShortMedia) => {
-  const pathParts = media.fullPath.split('/')
-  pathParts.pop() // Remove filename
-  const folderPath = pathParts.join('/')
+const removeFolderFromShorts = async (media: ShortMedia) => {
+  let folderPath = ''
+  if (media.type === 'slideshow') {
+    folderPath = media.fullPath
+  } else {
+    const pathParts = media.fullPath.split('/')
+    pathParts.pop() // Remove filename
+    folderPath = pathParts.join('/')
+  }
   
-  if (!confirm(`Exclude folder "${folderPath || 'Root'}" from Shorts?`)) return
+  if (!confirm(`Remove folder "${folderPath || 'Root'}" from Shorts?`)) return
 
   try {
     // Fetch current settings first
@@ -160,25 +165,23 @@ const excludeFolder = async (media: ShortMedia) => {
     if (!settingsResponse.ok) throw new Error('Failed to fetch current settings')
     const settings = await settingsResponse.json()
     
-    const excludedPaths = settings.excludedShortsPaths || []
-    if (!excludedPaths.includes(folderPath)) {
-      excludedPaths.push(folderPath)
-    }
+    const selectedPaths = settings.selectedShortsPaths || []
+    const updatedPaths = selectedPaths.filter((p: string) => p !== folderPath)
 
     const response = await fetch('/api/user-settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...settings, excludedShortsPaths: excludedPaths }),
+      body: JSON.stringify({ ...settings, selectedShortsPaths: updatedPaths }),
     })
 
     if (!response.ok) throw new Error('Failed to update settings')
 
-    createNotification(`Folder excluded: ${folderPath || 'Root'}`, NotificationType.SUCCESS)
+    createNotification(`Folder removed from Shorts: ${folderPath || 'Root'}`, NotificationType.SUCCESS)
     // Refresh the feed
     refresh()
   } catch (err) {
     console.error(err)
-    createNotification('Failed to exclude folder', NotificationType.ERROR)
+    createNotification('Failed to remove folder', NotificationType.ERROR)
   }
 }
 
@@ -407,11 +410,11 @@ const refresh = () => {
       </button>
       <button 
         v-if="currentVisibleMedia"
-        @click="excludeFolder(currentVisibleMedia)" 
+        @click="removeFolderFromShorts(currentVisibleMedia)" 
         class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
-        title="Exclude Folder from Shorts"
+        title="Remove Folder from Shorts"
       >
-        <Icon name="mdi:eye-off-outline" class="w-6 h-6" />
+        <Icon name="mdi:folder-remove-outline" class="w-6 h-6" />
       </button>
       <button 
         @click="toggleAutoscroll" 
@@ -611,11 +614,11 @@ const refresh = () => {
 
     <div v-else class="h-full w-full flex flex-col items-center justify-center text-white p-8 text-center gap-6">
       <div class="bg-white/5 p-8 rounded-xl border border-white/10">
-        <Icon name="mdi:video-off-outline" class="w-16 h-16 opacity-20" />
+        <Icon name="mdi:folder-play-outline" class="w-16 h-16 opacity-20" />
       </div>
       <div>
-        <h3 class="text-lg font-bold uppercase tracking-widest mb-1">No videos found</h3>
-        <p class="text-white/40 text-[10px] font-bold uppercase tracking-widest max-w-xs">Upload some videos to your cloud to begin playback.</p>
+        <h3 class="text-lg font-bold uppercase tracking-widest mb-1">No folders selected</h3>
+        <p class="text-white/40 text-[10px] font-bold uppercase tracking-widest max-w-xs">Select folders from your Files to populate the Shorts feed, or upload media.</p>
       </div>
       <NuxtLink to="/files" class="btn btn-primary btn-sm rounded-lg px-8 shadow-sm font-bold uppercase tracking-widest text-[10px]">Go to Files</NuxtLink>
     </div>
