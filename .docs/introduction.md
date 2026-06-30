@@ -6,15 +6,14 @@ Welcome to the **ClyoCloud** developer documentation. This guide helps you under
 
 ClyoCloud is a personal, self-hosted cloud storage and media management application built for privacy, efficiency, and aesthetics. It provides a lightweight, database-free alternative to mainstream cloud storage providers, allowing users to host, search, stream, and share files directly from their own hardware.
 
-```mermaid
-graph TD
-    User([User Browser]) -->|HTTPS| FE[Nuxt 3 Frontend / Vue 3]
-    FE -->|API Requests| BE[Nitro Server / H3]
-    BE -->|Read/Write Files| LocalFS[(Local File System)]
-    BE -->|Read/Write Metadata| Sidecar[Sidecar .cloudinfo Files]
-    BE -->|Spawn Thumbnail Job| FFmpeg[ffmpeg / ffprobe]
-    BE -->|Spawn Downloader| YtDlp[yt-dlp]
-```
+### System Flow
+*   **User Browser**: Interacts with the **Nuxt 3 Frontend (Vue 3)**.
+*   **Frontend**: Communicates via HTTPS API requests with the **Nitro Server (H3 / Node.js)**.
+*   **Nitro Server**: 
+    *   Reads and writes assets to the **Local File System**.
+    *   Saves and retrieves metadata from **Sidecar `.cloudinfo` Files** directly adjacent to assets.
+    *   Spawns background jobs using **ffmpeg / ffprobe** for image and video thumbnail generation.
+    *   Spawns background downloader jobs utilizing **yt-dlp** to fetch remote videos.
 
 ---
 
