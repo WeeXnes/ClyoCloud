@@ -28,12 +28,15 @@ const mobileAutoPreview = ref(true)
 let touchTimer: any = null
 let observer: IntersectionObserver | null = null
 
+const excludedMediaPaths = ref<string[]>([])
+
 const fetchUserSettings = async () => {
   try {
     const response = await fetch('/api/user-settings', { credentials: 'include' })
     if (response.ok) {
       const data = await response.json()
       mobileAutoPreview.value = data.mobileAutoPreview ?? true
+      excludedMediaPaths.value = data.excludedMediaPaths || []
     }
   } catch (err) {
     console.error('Error fetching user settings:', err)
@@ -146,6 +149,41 @@ const downloadVideo = () => {
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
+}
+
+const excludeParentFolder = async () => {
+  if (!currentVideo.value) return
+
+  const pathParts = currentVideo.value.fullPath.split('/')
+  pathParts.pop() // Remove filename
+  const folderPath = pathParts.join('/')
+
+  if (!confirm(`Exclude all files in folder "${folderPath || 'Root'}" from the Media tab?`)) return
+
+  try {
+    const settingsResponse = await fetch('/api/user-settings')
+    if (!settingsResponse.ok) throw new Error('Failed to fetch settings')
+    const settings = await settingsResponse.json()
+
+    const currentExcluded = settings.excludedMediaPaths || []
+    if (!currentExcluded.includes(folderPath)) {
+      currentExcluded.push(folderPath)
+    }
+
+    const response = await fetch('/api/user-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...settings, excludedMediaPaths: currentExcluded }),
+    })
+
+    if (!response.ok) throw new Error('Failed to update settings')
+
+    createNotification(`Folder excluded: ${folderPath || 'Root'}`, NotificationType.SUCCESS)
+    navigateTo('/media')
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to exclude folder', NotificationType.ERROR)
+  }
 }
 
 const togglePublicAccess = async (event: Event) => {
@@ -595,6 +633,10 @@ watch(() => route.params.path, () => {
                    <button class="btn btn-sm btn-ghost gap-2 rounded-lg border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest" @click="downloadVideo">
                      <Icon name="mdi:download" class="w-4 h-4 text-success" />
                      Download
+                   </button>
+                   <button class="btn btn-sm btn-ghost gap-2 rounded-lg border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest text-error/80 hover:text-error hover:bg-error/10 hover:border-error/20" @click="excludeParentFolder">
+                     <Icon name="mdi:eye-off-outline" class="w-4 h-4" />
+                     Exclude Folder
                    </button>
                    <button class="btn btn-sm btn-primary gap-2 rounded-lg px-6 shadow-sm font-bold text-[10px] uppercase tracking-widest" @click="showShareModal = true">
                      <Icon name="mdi:share-variant" class="w-4 h-4" />

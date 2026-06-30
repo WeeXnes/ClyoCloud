@@ -20,12 +20,18 @@ const maxConcurrentPreviews = ref(3)
 const slideshowFrequency = ref(5)
 const experimentalMode = ref(false)
 const selectedShortsPaths = ref<string[]>([])
+const excludedMediaPaths = ref<string[]>([])
 const theme = useState<string>('currentTheme')
 const isSavingSettings = ref(false)
 const isRebuildingCache = ref(false)
 
 const removeSelectedPath = async (index: number) => {
   selectedShortsPaths.value.splice(index, 1)
+  await saveUserSettings()
+}
+
+const removeExcludedMediaPath = async (index: number) => {
+  excludedMediaPaths.value.splice(index, 1)
   await saveUserSettings()
 }
 
@@ -243,6 +249,7 @@ async function fetchUserSettings() {
       slideshowFrequency.value = data.slideshowFrequency || 5
       experimentalMode.value = data.experimentalMode || false
       selectedShortsPaths.value = data.selectedShortsPaths || []
+      excludedMediaPaths.value = data.excludedMediaPaths || []
       theme.value = data.theme || 'onedev'
 
     }
@@ -277,6 +284,7 @@ async function saveUserSettings() {
         slideshowFrequency: slideshowFrequency.value,
         experimentalMode: experimentalMode.value,
         selectedShortsPaths: selectedShortsPaths.value,
+        excludedMediaPaths: excludedMediaPaths.value,
         theme: theme.value,
 
       }),
@@ -1026,6 +1034,28 @@ async function logout() {
                     </button>
                  </div>
                  <div v-if="selectedShortsPaths.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No paths selected</div>
+               </div>
+             </div>
+          </section>
+
+          <!-- Media Exclusion -->
+          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
+             <div class="p-8 sm:p-10">
+               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Media Exclusion</h3>
+               <p class="text-[11px] font-bold text-base-content/50 mb-6 leading-relaxed">
+                 Manage directories excluded from the Media tab. Files in these directories will be hidden.
+               </p>
+
+               <div class="space-y-3">
+                 <div v-for="(path, index) in excludedMediaPaths" :key="path" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
+                    <div class="min-w-0 flex-1">
+                       <p class="text-[11px] font-bold truncate text-base-content">{{ path }}</p>
+                    </div>
+                    <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="removeExcludedMediaPath(index)">
+                      <Icon name="mdi:delete-outline" class="w-4 h-4" />
+                    </button>
+                 </div>
+                 <div v-if="excludedMediaPaths.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No paths excluded</div>
                </div>
              </div>
           </section>

@@ -132,12 +132,13 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
             );
         }
 
+        const config = useRuntimeConfig();
+        const usersData = await fs.readFile(config.usersFilePath, 'utf-8');
+        const users = JSON.parse(usersData);
+        const userData = users.find((u: any) => u.name === username);
+
         if (query.shuffle === 'true') {
             // Apply path selections
-            const config = useRuntimeConfig();
-            const usersData = await fs.readFile(config.usersFilePath, 'utf-8');
-            const users = JSON.parse(usersData);
-            const userData = users.find((u: any) => u.name === username);
             const selectedPaths = userData?.selectedShortsPaths || [];
 
             if (selectedPaths.length > 0) {
@@ -197,6 +198,14 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
             console.log(`Feed generated (Frequency: ${frequency}): ${items.filter(i => i.type === 'video').length} videos, ${items.filter(i => i.type === 'slideshow').length} slideshows (Total: ${items.length})`);
         } else {
             items = items.filter(i => i.type === 'video');
+            
+            // Apply path exclusions for the Media tab
+            const excludedPaths = userData?.excludedMediaPaths || [];
+            if (excludedPaths.length > 0) {
+                items = items.filter(item => !excludedPaths.some((excluded: string) => 
+                    item.fullPath === excluded || item.fullPath.startsWith(excluded + '/')
+                ));
+            }
         }
         const page = parseInt(query.page?.toString() || '0');
         const limit = parseInt(query.limit?.toString() || '0');
