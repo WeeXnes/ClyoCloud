@@ -125,21 +125,6 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
             mediaCache.set(username, { items, timestamp: Date.now() });
         }
 
-        // Apply path selections
-        const config = useRuntimeConfig();
-        const usersData = await fs.readFile(config.usersFilePath, 'utf-8');
-        const users = JSON.parse(usersData);
-        const userData = users.find((u: any) => u.name === username);
-        const selectedPaths = userData?.selectedShortsPaths || [];
-
-        if (selectedPaths.length > 0) {
-            items = items.filter(item => selectedPaths.some((selected: string) => 
-                item.fullPath === selected || item.fullPath.startsWith(selected + '/')
-            ));
-        } else {
-            items = [];
-        }
-
         const query = getQuery(event);
         const search = query.search ? query.search.toString().toLowerCase() : '';
         if (search) {
@@ -150,14 +135,23 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
         }
 
         if (query.shuffle === 'true') {
-            const videos = items.filter(i => i.type === 'video');
-            const slideshows = items.filter(i => i.type === 'slideshow') as SlideshowMedia[];
-            
-            // Fetch user settings for frequency
+            // Apply path selections
             const config = useRuntimeConfig();
             const usersData = await fs.readFile(config.usersFilePath, 'utf-8');
             const users = JSON.parse(usersData);
             const userData = users.find((u: any) => u.name === username);
+            const selectedPaths = userData?.selectedShortsPaths || [];
+
+            if (selectedPaths.length > 0) {
+                items = items.filter(item => selectedPaths.some((selected: string) => 
+                    item.fullPath === selected || item.fullPath.startsWith(selected + '/')
+                ));
+            } else {
+                items = [];
+            }
+
+            const videos = items.filter(i => i.type === 'video');
+            const slideshows = items.filter(i => i.type === 'slideshow') as SlideshowMedia[];
             const frequency = userData?.slideshowFrequency || 5;
 
             const result: ShortMedia[] = [];
