@@ -1,6 +1,7 @@
 import { defineEventHandler, createError, getCookie, sendRedirect } from 'h3'
 import jwt from 'jsonwebtoken'
 import { consola } from 'consola'
+import fs from 'fs/promises'
 
 export default defineEventHandler(async (event) => {
     // Normalize URL: lowercase and collapse multiple slashes
@@ -53,6 +54,27 @@ export default defineEventHandler(async (event) => {
             throw createError({
                 statusCode: 401,
                 statusMessage: 'Unauthorized: 2FA required',
+            })
+        }
+
+        // Verify that the user still exists in users.json
+        try {
+            const usersData = await fs.readFile(config.usersFilePath, 'utf-8')
+            const users: { name: string }[] = JSON.parse(usersData)
+            const userExists = users.some((u) => u.name === decoded.user.name)
+            if (!userExists) {
+                consola.warn(`[Auth] Blocked (User deleted): ${url} for user ${decoded.user.name}`)
+                throw createError({
+                    statusCode: 401,
+                    statusMessage: 'Unauthorized: User does not exist',
+                })
+            }
+        } catch (fileError: any) {
+            if (fileError.statusCode === 401) throw fileError
+            consola.error(`[Auth] Error reading user database during validation:`, fileError)
+            throw createError({
+                statusCode: 500,
+                statusMessage: 'Internal Server Error: Failed to validate user',
             })
         }
 
