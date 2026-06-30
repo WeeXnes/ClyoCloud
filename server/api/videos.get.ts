@@ -81,6 +81,7 @@ async function scanMedia(directoryPath: string, userStoragePath: string): Promis
                     name: `Slideshow: ${dirName}`,
                     fullPath: relativeDirPath || '.',
                     images: shuffledImages.slice(0, count),
+                    allImages: imagesInThisDir,
                     meta: meta || { tags: [] },
                     lastModified: Date.now(),
                 });
@@ -150,7 +151,7 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
 
         if (query.shuffle === 'true') {
             const videos = items.filter(i => i.type === 'video');
-            const slideshows = items.filter(i => i.type === 'slideshow');
+            const slideshows = items.filter(i => i.type === 'slideshow') as SlideshowMedia[];
             
             // Fetch user settings for frequency
             const config = useRuntimeConfig();
@@ -159,29 +160,49 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
             const userData = users.find((u: any) => u.name === username);
             const frequency = userData?.slideshowFrequency || 5;
 
-            const shuffledVideos = videos.sort(() => Math.random() - 0.5);
-            const shuffledSlideshows = slideshows.sort(() => Math.random() - 0.5);
-            
             const result: ShortMedia[] = [];
-            let videoIdx = 0;
-            let slideshowIdx = 0;
+            const limitVal = query.limit ? parseInt(query.limit.toString()) : 200;
+            const targetLimit = limitVal > 0 ? Math.min(limitVal, 200) : 200;
 
-            // Interleave slideshows every Nth position
-            for (let i = 0; i < shuffledVideos.length + (shuffledVideos.length / (frequency - 1)); i++) {
-                if ((i + 1) % frequency === 0 && slideshowIdx < shuffledSlideshows.length) {
-                    result.push(shuffledSlideshows[slideshowIdx++]);
-                } else if (videoIdx < shuffledVideos.length) {
-                    result.push(shuffledVideos[videoIdx++]);
+            if (videos.length > 0 || slideshows.length > 0) {
+                let videoIdx = 0;
+                let slideshowIdx = 0;
+
+                while (result.length < targetLimit) {
+                    const nextIsSlideshow = (result.length + 1) % frequency === 0 || videos.length === 0;
+
+                    if (nextIsSlideshow && slideshows.length > 0) {
+                        const candidate = slideshows[slideshowIdx % slideshows.length];
+                        slideshowIdx++;
+
+                        const allImages = candidate.allImages || candidate.images;
+                        if (allImages && allImages.length >= 4) {
+                            const count = Math.min(allImages.length, Math.floor(Math.random() * 7) + 4);
+                            const shuffled = [...allImages].sort(() => Math.random() - 0.5);
+
+                            result.push({
+                                type: 'slideshow',
+                                name: candidate.name,
+                                fullPath: candidate.fullPath,
+                                images: shuffled.slice(0, count),
+                                meta: candidate.meta,
+                                lastModified: Date.now() + result.length
+                            });
+                        } else {
+                            result.push(candidate);
+                        }
+                    } else if (videos.length > 0) {
+                        const video = videos[videoIdx % videos.length];
+                        videoIdx++;
+                        result.push(video);
+                    } else {
+                        break;
+                    }
                 }
             }
 
-            // Append remaining slideshows if any (unlikely with this ratio)
-            if (slideshowIdx < shuffledSlideshows.length && result.length < 200) {
-                result.push(...shuffledSlideshows.slice(slideshowIdx, slideshowIdx + (200 - result.length)));
-            }
-
             items = result;
-            console.log(`Feed generated (Frequency: ${frequency}): ${videoIdx} videos, ${slideshowIdx} slideshows (Total: ${items.length})`);
+            console.log(`Feed generated (Frequency: ${frequency}): ${items.filter(i => i.type === 'video').length} videos, ${items.filter(i => i.type === 'slideshow').length} slideshows (Total: ${items.length})`);
         } else {
             items = items.filter(i => i.type === 'video');
         }

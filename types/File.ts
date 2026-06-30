@@ -37,6 +37,7 @@ export interface SlideshowMedia {
     name: string;
     fullPath: string; // Folder path
     images: string[]; // List of relative image paths
+    allImages?: string[]; // All images in folder
     meta: FileMeta;
     lastModified: number;
 }
