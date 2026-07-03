@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
         const config = useRuntimeConfig()
         const userStoragePath = path.resolve(path.join(config.storagePath, event.context.user.name))
         const body = await readBody(event)
-        const { fullPath, description, tags, isPublic, isFavourite } = body
+        const { fullPath, description, tags, isPublic, isFavourite, previewImage } = body
 
         if (!fullPath) {
             throw createError({
@@ -47,6 +47,10 @@ export default defineEventHandler(async (event) => {
         }
 
         if (description !== undefined) meta.description = description
+        if (previewImage !== undefined) {
+            meta.previewImage = previewImage
+            await logActivity(event.context.user.name, 'FOLDER_ICON', fullPath, previewImage ? `Set preview image to ${previewImage}` : 'Reset preview image', event)
+        }
         if (tags !== undefined) {
             meta.tags = tags
             await logActivity(event.context.user.name, 'TAG', fullPath, `Updated tags`, event)

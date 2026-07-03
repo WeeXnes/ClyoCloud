@@ -1052,6 +1052,64 @@ const handleContextAction = (action: string) => {
     case 'delete':
       deleteFile(file)
       break
+    case 'set-folder-icon':
+      setFolderIcon()
+      break
+    case 'reset-folder-icon':
+      resetFolderIcon()
+      break
+  }
+}
+
+const setFolderIcon = async () => {
+  const file = contextMenuFile.value
+  if (!file || !currentFolder.value) return
+
+  try {
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: currentFolder.value,
+        previewImage: file.name,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to set folder icon')
+
+    createNotification('Folder icon updated', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to set folder icon', NotificationType.ERROR)
+  }
+}
+
+const resetFolderIcon = async () => {
+  const file = contextMenuFile.value
+  if (!file || !file.isFolder) return
+
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const targetFolder = folderPath ? `${folderPath}/${file.name}` : file.name
+
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: targetFolder,
+        previewImage: null,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to reset folder icon')
+
+    file.meta.previewImage = null
+    createNotification('Folder icon reset', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to reset folder icon', NotificationType.ERROR)
   }
 }
 
@@ -1792,7 +1850,17 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
                 <!-- File Content -->
                 <template v-if="file.isFolder">
-                  <Icon name="vscode-icons:default-folder" class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300" />
+                  <img v-if="file.meta?.previewImage"
+                       :src="getThumbnailUrl(file.name + '/' + file.meta.previewImage)"
+                       class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105"
+                       alt=""
+                       data-is-thumbnail="true"
+                       loading="lazy" />
+                  <Icon v-else name="vscode-icons:default-folder" class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300" />
+                  <!-- Folder indicator in corner if there's a custom preview image -->
+                  <div v-if="file.meta?.previewImage" class="absolute bottom-2 right-2 bg-base-100/90 backdrop-blur-md border border-base-content/10 p-1.5 rounded shadow-lg flex items-center justify-center pointer-events-none z-10">
+                    <Icon name="vscode-icons:default-folder" class="w-4 h-4" />
+                  </div>
                 </template>
                 <template v-else>
                   <img v-if="hasThumbnail(file.name)"
@@ -1957,6 +2025,16 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
             <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('toggle-shorts')">
               <Icon :name="isInShorts(contextMenuFile) ? 'mdi:folder-remove-outline' : 'mdi:folder-plus-outline'" class="w-4 h-4 text-primary" />
               {{ isInShorts(contextMenuFile) ? 'Remove from Shorts' : 'Add to Shorts' }}
+            </a>
+          </li>
+          <li v-if="contextMenuFile?.isFolder && contextMenuFile.meta?.previewImage">
+            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('reset-folder-icon')">
+              <Icon name="mdi:folder-refresh-outline" class="w-4 h-4" /> Reset Folder Icon
+            </a>
+          </li>
+          <li v-if="contextMenuFile && !contextMenuFile.isFolder && isImageFile(contextMenuFile.name) && currentFolder">
+            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('set-folder-icon')">
+              <Icon name="mdi:folder-image" class="w-4 h-4 text-primary" /> Set As Folder Icon
             </a>
           </li>
           <li v-if="contextMenuFile && isVideoFile(contextMenuFile.name)">

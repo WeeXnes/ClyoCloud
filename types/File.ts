@@ -15,6 +15,7 @@ export interface FileMeta {
     description?: string;
     isPublic?: boolean;
     isFavourite?: boolean;
+    previewImage?: string | null;
 }
 
 export interface Tag {

@@ -689,6 +689,33 @@ const handleContextAction = (action: string) => {
     case 'delete':
       deleteFile(file)
       break
+    case 'reset-folder-icon':
+      resetFolderIcon()
+      break
+  }
+}
+
+const resetFolderIcon = async () => {
+  const file = contextMenuFile.value
+  if (!file || !file.isFolder) return
+
+  try {
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: file.name,
+        previewImage: null,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to reset folder icon')
+
+    file.meta.previewImage = null
+    createNotification('Folder icon reset', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to reset folder icon', NotificationType.ERROR)
   }
 }
 
@@ -1210,7 +1237,17 @@ const getPreviewUrl = (fullPath: string) => {
 
                 <!-- File Content -->
                 <template v-if="file.isFolder">
-                  <Icon name="vscode-icons:default-folder" class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300" />
+                  <img v-if="file.meta?.previewImage"
+                       :src="getThumbnailUrl(file.name + '/' + file.meta.previewImage)"
+                       class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105"
+                       alt=""
+                       data-is-thumbnail="true"
+                       loading="lazy" />
+                  <Icon v-else name="vscode-icons:default-folder" class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300" />
+                  <!-- Folder indicator in corner if there's a custom preview image -->
+                  <div v-if="file.meta?.previewImage" class="absolute bottom-2 right-2 bg-base-100/90 backdrop-blur-md border border-base-content/10 p-1.5 rounded shadow-lg flex items-center justify-center pointer-events-none z-10">
+                    <Icon name="vscode-icons:default-folder" class="w-4 h-4" />
+                  </div>
                 </template>
                 <template v-else>
                   <img v-if="hasThumbnail(file.name)"
@@ -1349,6 +1386,11 @@ const getPreviewUrl = (fullPath: string) => {
           <li v-if="contextMenuFile && isVideoFile(contextMenuFile.name)">
             <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('media')">
               <Icon name="mdi:play-box-multiple-outline" class="w-4 h-4" /> Media Tab
+            </a>
+          </li>
+          <li v-if="contextMenuFile?.isFolder && contextMenuFile.meta?.previewImage">
+            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('reset-folder-icon')">
+              <Icon name="mdi:folder-refresh-outline" class="w-4 h-4 text-primary" /> Reset Folder Icon
             </a>
           </li>
           <div class="h-px bg-base-content/5 mx-2 my-1"></div>
