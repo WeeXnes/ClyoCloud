@@ -1,380 +1,276 @@
 # Changelog
 
-All notable changes to the **ClyoCloud** project are documented below.
+All notable changes to this project will be documented in this file.
 
 ---
 
 ## [2.3.0] - 2026-07-03
 
 ### Added
-- Added custom folder icon support: users can now set any image as a folder's custom cover/preview icon via the context menu.
-- Added option to reset custom folder icons to their default look.
-- Added folder indicator overlay in the corner when a custom preview image is present.
-- Added audit logging activity tracking when folder icons are changed.
-
----
-
-## [2.2.3] - 2026-07-03
-
-### Changed
-- Bumped version to 2.2.3 (Version bump for bug fixes or AUR package rebuild).
-
----
-
-## [2.2.2] - 2026-07-02
-
-### Changed
-- Bumped version to 2.2.2 (Version bump for bug fixes or AUR package rebuild).
+- Added custom folder icon support, allowing users to designate any image file as a folder's cover or preview thumbnail.
+- Added a folder symbol overlay on custom folder icons to distinguish folders from individual images.
+- Added a "Reset Folder Icon" context menu option to restore default folder styling.
+- Added directory monitoring and audit trail logs tracking custom folder icon changes.
 
 ---
 
 ## [2.2.1] - 2026-07-01
 
 ### Security
-- Patched a security vulnerability and hardened core APIs.
+- Improved token authentication middleware to verify that user accounts still exist in `users.json` prior to granting API access.
 
 ---
 
 ## [2.2.0] - 2026-06-30
 
 ### Added
-- Added support for specifying excluded directory paths in the media tab to filter out unwanted folders.
+- Added a path exclusion list in user settings to hide specific directories and their contents from appearing in the Media tab.
+- Added an "Exclude Folder" option directly inside the media view header.
 
 ---
 
 ## [2.1.1] - 2026-06-30
 
 ### Fixed
-- Fixed a bug affecting the media tab visibility and list behavior.
+- Fixed an indexing and display bug inside the media tab view.
 
 ---
 
 ## [2.1.0] - 2026-06-30
 
 ### Fixed
-- Resolved interactive behaviors and playback quirks in the Shorts video player.
+- Fixed interactive behaviors, autoplay configurations, and state transitions in the Shorts player.
 
 ---
 
 ## [2.0.4] - 2026-06-30
 
 ### Fixed
-- Fixed alignment and scrolling behaviors for Shorts content.
+- Fixed playback glitches and layout alignment errors in the Shorts view.
 
 ---
 
 ## [2.0.3] - 2026-06-30
 
 ### Fixed
-- Quick hotfix addressing miscellaneous runtime issues.
+- Fixed minor runtime errors.
 
 ---
 
 ## [2.0.2] - 2026-06-30
 
 ### Added
-- Added project documentation assets and guides.
+- Added foundational user and developer documentation.
 
 ### Changed
-- Tweaked tag metadata management and behaviors in the shorts viewer.
+- Improved video tagging options and metadata handling inside the Shorts feed.
 
 ---
 
 ## [2.0.1] - 2026-06-29
 
 ### Added
-- Added capability to generate static thumbnails in bulk video preview generation tasks.
+- Added support for generating static fallback thumbnails during bulk video preview generation.
 
 ---
 
 ## [2.0.0] - 2026-06-28
 
 ### Changed
-- **First Stable Release**: Promoted the codebase status and bumped version to 2.0.0 for production readiness.
+- First stable release.
 
 ---
 
 ## [1.0.0] - 2026-06-28
 
 ### Added
-- **Initial Release** introducing the core features of ClyoCloud:
-- **Root Delete Protection**: Prevented accidental deletion of vital storage roots alongside comprehensive testing.
-- **Media Management**: Custom video previews, bulk thumbnail generation, tagging, and collection caching.
-- **Shorts Player**: Vertical scrolling short-form video mode.
-- **Performance & UI**: Complete UI overhaul, performance optimizations (specifically for iOS browsers), and theme corrections.
-- **CI/CD Integration**: Added OneDev automation specs and build/release triggers.
+- Added root directory delete protection to prevent accidental removal of storage mount points.
+- Added automated tests for storage validation.
+- Added CI/CD release triggers on build completion.
 
 ---
 
 ## [ae6f049] - 2026-06-28
 
 ### Added
-- Implemented Theatre Mode for an immersive media viewing experience.
+- Added Theatre Mode, providing an experimental, Jellyfin-inspired media interface designed for watching movies.
+- Added responsive layout enhancements for media previews.
 
 ---
 
 ## [86a67fe] - 2026-06-24
 
 ### Added
-- Configured dynamic Nuxt page meta configuration.
+- Added dynamic Nuxt page meta configuration.
+
+### Fixed
+- Fixed minor layout and visual rendering issues in navigation components.
 
 ---
 
 ## [be45b9f] - 2026-06-23
 
 ### Security
-- Hardened server route handlers and validation methods.
+- Improved server route parameters to protect against directory traversal vectors.
 
 ---
 
 ## [da79887] - 2026-06-15
 
 ### Added
-- Added Collections support to organize files into virtual groups.
-- Added caching support for Collections to optimize retrieval speed.
-
----
-
-## [eb9e81c] - 2026-06-15
-
-### Added
-- Added custom tagging functionality for files.
+- Added custom tagging capabilities for all items.
+- Added Collections support to group assets.
+- Added client-side caching for collections to reduce fetch overhead.
 
 ---
 
 ## [bcea3ca] - 2026-06-12
 
 ### Added
-- Introduced ProgressManager to track ongoing background operations and thumbnail generation tasks.
+- Added ProgressManager to track ongoing background tasks.
+
+### Changed
+- Improved vertical video navigation and looping logic in the Shorts tab.
 
 ---
 
-## [7793aac] - 2026-05-21
+## [cc78c6f] - 2026-06-04
 
-### Added
-- Added video preview generation features.
-- Added support for bulk/batch preview generation to speed up library loading.
+### Changed
+- Changed user interface layout, redesigning headers, side panels, and responsive breakpoints.
+
+### Improved
+- Improved application themes and CSS styles.
+- Improved Vitest unit test suite.
 
 ---
 
 ## [76e76c5] - 2026-05-22
 
 ### Changed
-- Implemented frontend list performance optimizations.
+- Improved list rendering and performance for large directories.
+
+---
+
+## [7793aac] - 2026-05-21
+
+### Added
+- Added hovering video preview generation.
+- Added asynchronous bulk preview generation.
 
 ---
 
 ## [9777b28] - 2026-05-14
 
 ### Added
-- Implemented experimental TV layout mode for large-screen media navigation.
+- Added experimental TV layout mode supporting larger grid views and simplified keyboard-friendly navigation.
+
+### Changed
+- Improved rendering performance on iOS devices.
 
 ---
 
 ## [b254029] - 2026-05-13
 
 ### Added
-- Added capability to move/rename files and directories from the browser.
-
----
-
-## [a8e32ac] - 2026-05-13
-
-### Added
-- Initial implementation of the vertical-scrolling Shorts video player.
-
----
-
-## [e8fbdad] - 2026-05-13
-
-### Changed
-- Optimized folder rendering and preloading logic in the file browser.
+- Added file move and copy functionality directly inside the file browser.
+- Added vertical video feed Shorts browser.
+- Added browser file list caching and folder preloading.
 
 ---
 
 ## [b8fb87c] - 2026-05-12
 
 ### Added
-- Added Shared and Favorites views to the user interface.
-
----
-
-## [316b896] - 2026-05-12
+- Added dedicated tabs for Shared files and Favorite items.
 
 ### Changed
-- Extended valid authentication session token lifetime to 30 days.
-
----
-
-## [5be6f23] - 2026-04-27
-
-### Added
-- Added OneDev CI/CD automation configuration buildspec file.
+- Changed JWT session duration to 30 days for persistent logins.
 
 ---
 
 ## [08d811e] - 2026-04-27
 
-### Security
-- Added automated endpoint security traversal testing.
-
----
-
-## [05d488b] - 2026-04-27
-
 ### Added
-- Added script to manage users via command-line interface.
+- Added automated build specifications for CI pipelines.
+- Added API validation test cases covering directory traversal and authorization breaches.
 
 ---
 
 ## [74e9d4d] - 2026-04-26
 
-### Changed
-- Completed visual redesign and user interface overhaul.
-
----
-
-## [d7d542e] - 2026-04-26
-
 ### Added
-- Integrated system hardware status displays (CPU and RAM indicators).
-
----
-
-## [d319bb6] - 2026-04-26
+- Added System Info and hardware monitor widgets displaying host CPU and RAM utilization.
 
 ### Changed
-- Reworked background downloader process with configurable paths in system settings.
-
----
-
-## [284fd21] - 2026-04-24
-
-### Added
-- Added support for adding and displaying text descriptions on files.
+- Changed user interface design with a visual overhaul.
+- Changed background downloader process settings.
 
 ---
 
 ## [6b6019d] - 2026-04-24
 
+### Added
+- Added support for adding editable text descriptions to files.
+- Added notification system.
+
 ### Changed
-- Migrated metadata storage to new `.cloudinfo` sidecar format.
-
----
-
-## [18b98af] - 2026-04-24
-
-### Added
-- Completed initial notification system engine.
-
----
-
-## [dcd479b] - 2026-04-24
-
-### Added
-- Implemented public sharing functionality to generate secure, unauthenticated URLs.
-
----
-
-## [b5206b4] - 2026-04-24
-
-### Added
-- Integrated metadata tagging options directly within the file browser view.
+- Changed metadata management to portable .cloudinfo sidecar files stored adjacent to media files.
 
 ---
 
 ## [448e24d] - 2026-04-23
 
 ### Added
-- Integrated gallery-dl tools to handle batch photo downloads.
+- Added gallery-dl backend support for batch image downloads.
+- Added option to bundle directories into dynamic ZIP archives for bulk downloads.
+- Added file deletion endpoints.
+- Added image viewer lightbox supporting zoom and modal slideshow.
 
 ---
 
 ## [9b50b0d] - 2025-11-12
 
 ### Added
-- Designed and added the lightbox image viewer modal component.
-
----
-
-## [8dd0f0c] - 2025-11-13
-
-### Added
-- Added browser-side file deletion actions.
-
----
-
-## [8fd5b9a] - 2025-11-06
-
-### Added
-- Added basic file tagging.
+- Added directory creation options.
+- Added simple tag metadata indicators.
 
 ---
 
 ## [7283d1d] - 2025-10-27
 
 ### Added
-- Created dedicated pages for Media Mode.
-
----
-
-## [1f39dd7] - 2025-10-01
-
-### Added
-- Added search capabilities to the file browser.
+- Added file layout preferences (grid vs list toggle) persisting via browser cookies.
+- Added dedicated page routing structures for Media Mode.
 
 ---
 
 ## [d593d5e] - 2025-10-01
 
 ### Added
-- Initialized media browser view.
-
----
-
-## [2065d88] - 2025-08-05
-
-### Added
-- Implemented user-specific workspace directories.
+- Added Media Browser module.
+- Added basic tag filtering and textual file search functionality.
 
 ---
 
 ## [ec9e957] - 2025-08-05
 
 ### Added
-- Implemented JSON Web Token (JWT) based API authentication flow.
+- Added JWT token-based API authentication.
+- Added multi-user support with separated workspaces and user-specific home storage mounts.
 
 ---
 
-## [9b9412e] - 2025-07-26
-
-### Added
-- Added functional file uploading logic.
-
----
-
-## [90634ac] - 2025-07-26
+## [bb9d2f3] - 2025-07-26
 
 ### Added
 - Added range-aware video streaming support.
-
----
-
-## [3e565f6] - 2025-07-26
-
-### Added
-- Implemented image and video thumbnail generation APIs.
-
----
-
-## [c11a644] - 2025-07-25
-
-### Added
-- Initialized project documentation structure.
+- Added asynchronous thumbnail extraction using ffmpeg and ffprobe.
+- Added file upload endpoints and client-side UI handlers.
 
 ---
 
 ## [7474c0e] - 2025-07-25
 
 ### Added
-- Repository initialization.
+- Added initial project repository structure.
