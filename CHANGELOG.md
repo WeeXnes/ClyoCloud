@@ -98,12 +98,11 @@ All notable changes to the **ClyoCloud** project are documented below.
 
 ### Added
 - **Initial Release** introducing the core features of ClyoCloud:
-  - **Root Delete Protection**: Prevented accidental deletion of vital storage roots alongside comprehensive testing.
-  - **Media Management**: Custom video previews, bulk thumbnail generation, tagging, and collection caching.
-  - **Experimental TV Mode**: Initial features optimized for large-screen TV browsing.
-  - **Shorts Player**: Vertical scrolling short-form video mode.
-  - **Performance & UI**: Complete UI overhaul, performance optimizations (specifically for iOS browsers), and theme corrections.
-  - **CI/CD Integration**: Added OneDev automation specs and build/release triggers.
+- **Root Delete Protection**: Prevented accidental deletion of vital storage roots alongside comprehensive testing.
+- **Media Management**: Custom video previews, bulk thumbnail generation, tagging, and collection caching.
+- **Shorts Player**: Vertical scrolling short-form video mode.
+- **Performance & UI**: Complete UI overhaul, performance optimizations (specifically for iOS browsers), and theme corrections.
+- **CI/CD Integration**: Added OneDev automation specs and build/release triggers.
 
 ---
 
