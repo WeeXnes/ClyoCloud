@@ -34,7 +34,8 @@ export default defineEventHandler(async (event) => {
             theme: userData.theme || 'onedev',
             slideshowFrequency: userData.slideshowFrequency || 5,
             selectedShortsPaths: userData.selectedShortsPaths || [],
-            excludedMediaPaths: userData.excludedMediaPaths || []
+            excludedMediaPaths: userData.excludedMediaPaths || [],
+            maxDuplicateResults: userData.maxDuplicateResults || 50
         }
     } catch (error) {
         console.error('Get settings error:', error)

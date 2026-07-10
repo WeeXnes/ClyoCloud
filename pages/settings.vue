@@ -10,6 +10,30 @@ import { startOperation, updateOperation, completeOperation, failOperation, Prog
 import type { Tag } from '~/types/File'
 import { useState } from 'nuxt/app'
 
+const activeCategory = ref<string | null>(null)
+
+function getCategoryTitle(cat: string | null) {
+  switch (cat) {
+    case 'security': return 'Security & Access'
+    case 'system': return 'System & Storage'
+    case 'appearance': return 'Appearance & Identity'
+    case 'previews': return 'Media Processing'
+    case 'directories': return 'Directory Rules'
+    default: return 'Settings'
+  }
+}
+
+function getCategorySubtitle(cat: string | null) {
+  switch (cat) {
+    case 'security': return 'Update credentials, configure two-factor authentication, and manage sessions'
+    case 'system': return 'Configure custom paths, execute storage diagnostics, and rebuild indexes'
+    case 'appearance': return 'Select visual themes and define labels for file classification'
+    case 'previews': return 'Manage video and image cache compilation parameters'
+    case 'directories': return 'Inclusion and exclusion patterns for file queries'
+    default: return 'Cloud Settings'
+  }
+}
+
 const newPassword = ref('')
 const confirmPassword = ref('')
 const isChangingPassword = ref(false)
@@ -19,6 +43,7 @@ const mobileAutoPreview = ref(true)
 const maxConcurrentPreviews = ref(3)
 const slideshowFrequency = ref(5)
 const experimentalMode = ref(false)
+const maxDuplicateResults = ref(50)
 const selectedShortsPaths = ref<string[]>([])
 const excludedMediaPaths = ref<string[]>([])
 const theme = useState<string>('currentTheme')
@@ -251,6 +276,7 @@ async function fetchUserSettings() {
       selectedShortsPaths.value = data.selectedShortsPaths || []
       excludedMediaPaths.value = data.excludedMediaPaths || []
       theme.value = data.theme || 'onedev'
+      maxDuplicateResults.value = data.maxDuplicateResults || 50
 
     }
   } catch (err) {
@@ -286,6 +312,7 @@ async function saveUserSettings() {
         selectedShortsPaths: selectedShortsPaths.value,
         excludedMediaPaths: excludedMediaPaths.value,
         theme: theme.value,
+        maxDuplicateResults: maxDuplicateResults.value,
 
       }),
     })
@@ -501,625 +528,843 @@ async function logout() {
 }
 </script>
 
-<template>
-  <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
-    <header class="sticky top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
-      <div class="w-full px-4 py-3 md:py-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
-          <div class="flex flex-col gap-0.5 md:gap-1 min-w-0">
+<<template>
+  <div class="min-h-screen bg-base-300/40 flex flex-col font-sans text-base-content/90">
+    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
+      <div class="w-full px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+              <Icon name="mdi:menu" class="w-5 h-5" />
+            </label>
             <div class="flex items-center gap-2">
-              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-xs md:btn-sm lg:hidden">
-                <Icon name="mdi:menu" class="w-5 h-5" />
-              </label>
-              <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
                 <Icon name="mdi:cog-outline" class="text-primary w-5 h-5" />
-                Settings
-              </h1>
+              </div>
+              <div>
+                <h1 class="text-base font-extrabold tracking-tight">System Settings</h1>
+                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">Configuration</p>
+              </div>
             </div>
-            <p class="text-[9px] md:text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Configuration & Identity</p>
           </div>
         </div>
       </div>
     </header>
 
-    <main class="w-full max-w-[1200px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <main class="flex-1 w-full max-w-[800px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
       
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        
-        <!-- Left Column: Core & System -->
-        <div class="space-y-6">
-          <div class="flex items-center gap-3 px-2">
-             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-               <Icon name="mdi:shield-lock-outline" class="text-primary w-5 h-5" />
-             </div>
-             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Security & Core</h2>
-          </div>
-
-          <!-- Password Section -->
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Update Password</h3>
-               
-               <div class="space-y-4">
-                 <div class="form-control">
-                   <label class="label py-1">
-                     <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">New Secret Key</span>
-                   </label>
-                   <input 
-                     v-model="newPassword" 
-                     type="password" 
-                     placeholder="Min. 6 characters" 
-                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
-                   />
-                 </div>
-                 
-                 <div class="form-control">
-                   <label class="label py-1">
-                     <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Confirm Secret Key</span>
-                   </label>
-                   <input 
-                     v-model="confirmPassword" 
-                     type="password" 
-                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
-                   />
-                 </div>
-
-                 <div class="pt-6">
-                   <button 
-                     class="btn btn-primary btn-block h-11 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
-                     @click="changePassword" 
-                     :disabled="isChangingPassword"
-                   >
-                     <Icon v-if="!isChangingPassword" name="mdi:check-circle-outline" class="w-4 h-4" />
-                     <span v-else class="loading loading-spinner loading-xs"></span>
-                     Update Credentials
-                   </button>
-                 </div>
-               </div>
-             </div>
-          </section>
-
-          <!-- 2FA Section -->
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-            <div class="p-8 sm:p-10">
-              <div class="flex items-center justify-between mb-6">
-                <h3 class="text-base font-bold tracking-tight text-base-content">Two-Factor Auth</h3>
-                <div :class="`px-3 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest ${is2faEnabled ? 'bg-success/10 text-success' : 'bg-base-200 text-base-content/40'}`">
-                  {{ is2faEnabled ? 'Enabled' : 'Disabled' }}
-                </div>
-              </div>
-
-              <div v-if="!is2faEnabled">
-                <p class="text-[11px] font-bold text-base-content/50 mb-6 leading-relaxed">
-                  Enhance your account security by requiring a code from your authenticator app when signing in.
-                </p>
-                <button 
-                  v-if="!show2faSetup"
-                  class="btn btn-outline btn-primary btn-block h-11 rounded-lg gap-2 font-bold text-[10px] uppercase tracking-widest"
-                  @click="setup2fa"
-                >
-                  <Icon name="mdi:shield-plus-outline" class="w-4 h-4" />
-                  Configure 2FA
-                </button>
-
-                <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                  <div class="flex flex-col items-center gap-4 p-4 bg-base-200/50 rounded-lg">
-                    <img :src="qrCodeUrl" class="w-40 h-40 rounded-lg shadow-sm" alt="2FA QR Code" />
-                    <div class="text-center">
-                      <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/30 mb-1">Manual Entry Code</p>
-                      <code class="text-[10px] font-mono font-bold tracking-wider text-base-content/60">{{ totpSecret }}</code>
-                    </div>
-                  </div>
-
-                  <div class="form-control">
-                    <label class="label py-1">
-                      <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Verification Code</span>
-                    </label>
-                    <input 
-                      v-model="totpCode"
-                      type="text"
-                      placeholder="000 000"
-                      class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.3em] h-11 rounded-lg border-base-content/10"
-                      maxlength="6"
-                    />
-                  </div>
-
-                  <div class="flex gap-3">
-                    <button class="btn btn-ghost flex-1 h-11 rounded-lg font-bold text-[10px] uppercase tracking-widest" @click="show2faSetup = false">Cancel</button>
-                    <button 
-                      class="btn btn-primary flex-1 h-11 rounded-lg shadow-sm font-bold text-[10px] uppercase tracking-widest"
-                      @click="enable2fa"
-                      :disabled="isVerifying2fa || totpCode.length < 6"
-                    >
-                      <span v-if="isVerifying2fa" class="loading loading-spinner loading-xs"></span>
-                      Confirm
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div v-else>
-                <div v-if="!showDisableConfirm">
-                  <p class="text-[11px] font-bold text-base-content/50 mb-6 leading-relaxed">
-                    Your account is protected with two-factor authentication. You will need your authenticator app to log in.
-                  </p>
-                  <button 
-                    class="btn btn-error btn-outline btn-block h-11 rounded-lg gap-2 font-bold text-[10px] uppercase tracking-widest"
-                    @click="disable2fa"
-                  >
-                    <Icon name="mdi:shield-off-outline" class="w-4 h-4" />
-                    Disable 2FA
-                  </button>
-                </div>
-                
-                <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                  <div class="p-4 bg-error/5 rounded-lg border border-error/10 text-center">
-                    <p class="text-[9px] font-bold text-error uppercase tracking-widest mb-2">Confirm Identity</p>
-                    <p class="text-[10px] font-bold text-error/60">Please enter a code from your authenticator to disable security.</p>
-                  </div>
-
-                  <div class="form-control">
-                    <label class="label py-1">
-                      <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Authenticator Code</span>
-                    </label>
-                    <input 
-                      v-model="disableCode"
-                      type="text"
-                      placeholder="000 000"
-                      class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.3em] h-11 rounded-lg border-base-content/10"
-                      maxlength="6"
-                    />
-                  </div>
-
-                  <div class="flex gap-3">
-                    <button class="btn btn-ghost flex-1 h-11 rounded-lg font-bold text-[10px] uppercase tracking-widest" @click="showDisableConfirm = false">Cancel</button>
-                    <button 
-                      class="btn btn-error flex-1 h-11 rounded-lg shadow-sm font-bold text-[10px] uppercase tracking-widest"
-                      @click="confirmDisable2fa"
-                      :disabled="isVerifying2fa || disableCode.length < 6"
-                    >
-                      <span v-if="isVerifying2fa" class="loading loading-spinner loading-xs"></span>
-                      Disable Now
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-
-
-          <!-- Download Configuration -->
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Download Preferences</h3>
-               <div class="form-control">
-                 <label class="label py-1">
-                   <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Custom Retrieval Path</span>
-                 </label>
-                 <div class="flex flex-col sm:flex-row gap-3">
-                   <div class="flex-1 flex items-center bg-base-200/50 border border-base-content/10 rounded-lg focus-within:bg-base-100 focus-within:ring-1 focus-within:ring-primary/30 transition-all overflow-hidden px-4">
-                      <span class="text-base-content/30 text-[11px] font-bold whitespace-nowrap select-none">
-                        {{ user?.name }}/
-                      </span>
-                      <input 
-                        v-model="downloadPath" 
-                        type="text" 
-                        placeholder="e.g. videos/youtube" 
-                        class="bg-transparent border-none outline-none w-full font-bold text-xs h-11 pl-1 focus:ring-0" 
-                      />
-                   </div>
-                   <button 
-                     class="btn btn-primary h-11 rounded-lg px-8 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
-                     @click="saveUserSettings" 
-                     :disabled="isSavingSettings"
-                   >
-                     <Icon v-if="!isSavingSettings" name="mdi:content-save-outline" class="w-4 h-4" />
-                     <span v-else class="loading loading-spinner loading-xs"></span>
-                     Save
-                   </button>
-                 </div>
-                 <p class="mt-3 text-[9px] font-bold text-base-content/40 px-2 italic uppercase tracking-wider">Relative to your root storage. Leave empty for root.</p>
-               </div>
-             </div>
-          </section>
-
-          <!-- Danger Zone -->
-          <section class="bg-error/5 rounded-xl border border-error/10 p-8 sm:p-10">
-            <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-error/60 mb-6">Session Control</h3>
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div class="text-center sm:text-left">
-                <p class="text-sm font-bold tracking-tight text-base-content">Terminate Session</p>
-                <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-1">Disconnect from media cluster</p>
-              </div>
-              <button class="btn btn-error btn-outline h-11 px-8 rounded-lg font-bold uppercase text-[10px] tracking-widest" @click="logout">
-                Sign Out
-              </button>
-            </div>
-          </section>
+      <!-- Category Navigation Menu (Shown if activeCategory is null) -->
+      <div v-if="activeCategory === null" class="space-y-6">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-xl font-black tracking-tight">Cloud Control Panel</h2>
+          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Select a settings category below to manage your cloud environment</p>
         </div>
 
-        <!-- Right Column: Features & Maintenance -->
-        <div class="space-y-6">
-          <div class="flex items-center gap-3 px-2">
-             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-               <Icon name="mdi:palette-outline" class="text-primary w-5 h-5" />
-             </div>
-             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/40">Interface</h2>
-          </div>
-
-          <!-- Themes Section -->
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-            <div class="p-8 sm:p-10">
-              <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Visual Identity</h3>
-              <p class="text-[11px] font-bold text-base-content/50 mb-8 leading-relaxed">
-                Customize the visual Chroma of your workspace.
-              </p>
-
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div 
-                  v-for="t in ['onedev', 'light', 'dark', 'dracula', 'forest', 'retro', 'cyberpunk', 'valentine', 'aqua', 'nord', 'sunset', 'dim', 'coffee']" 
-                  :key="t"
-                  class="relative group cursor-pointer"
-                  @click="theme = t; saveUserSettings()"
-                >
-                  <div 
-                    class="h-20 rounded-lg border transition-all overflow-hidden flex flex-col"
-                    :class="theme === t ? 'border-primary ring-2 ring-primary/20 shadow-sm' : 'border-base-content/10 hover:border-base-content/30'"
-                    :data-theme="t"
-                  >
-                    <div class="flex-1 bg-base-100 p-2">
-                       <div class="flex gap-1">
-                          <div class="w-2 h-2 rounded-full bg-primary"></div>
-                          <div class="w-2 h-2 rounded-full bg-secondary"></div>
-                          <div class="w-2 h-2 rounded-full bg-accent"></div>
-                       </div>
-                    </div>
-                    <div class="bg-base-200 p-2 text-[8px] font-bold uppercase tracking-widest text-center text-base-content/60">
-                      {{ t }}
-                    </div>
-                  </div>
-                  <div v-if="theme === t" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary text-primary-content rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
-                    <Icon name="mdi:check" class="w-3 h-3" />
-                  </div>
-                </div>
+        <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm divide-y divide-base-content/5">
+          <!-- 1. Security & Authentication -->
+          <button 
+            @click="activeCategory = 'security'"
+            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+          >
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/10 group-hover:scale-105 transition-transform duration-300">
+                <Icon name="mdi:shield-lock-outline" class="w-5 h-5" />
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm tracking-tight text-base-content">Security & Access</h3>
+                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Update credentials, configure 2FA, session control</p>
               </div>
             </div>
-          </section>
+            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+          </button>
 
-          <!-- Predefined Tags -->
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <div class="flex items-center justify-between mb-8">
-                 <div>
-                   <h3 class="text-base font-bold tracking-tight text-base-content">Tag Library</h3>
-                   <p class="text-[11px] font-bold text-base-content/40">Standard labels for classification</p>
-                 </div>
-                 <div class="bg-base-200/50 px-3 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest text-base-content/40 border border-base-content/5">
-                   {{ tags.length }} Active
-                 </div>
-               </div>
-               
-               <div class="flex flex-wrap gap-2 mb-10 p-5 bg-base-200/30 rounded-lg border border-base-content/5 min-h-[80px] items-start content-start">
-                 <transition-group name="list">
-                   <div 
-                     v-for="(tag, index) in tags" 
-                     :key="tag.name" 
-                     class="flex items-center gap-2 pl-3 pr-1 py-1 rounded-md text-white font-bold text-[9px] uppercase tracking-wider shadow-sm ring-1 ring-white/10"
-                     :style="{ backgroundColor: tag.color }"
-                   >
-                     {{ tag.name }}
-                     <button @click="removeTag(index)" class="w-4 h-4 rounded-sm bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors">
-                       <Icon name="mdi:close" class="w-3 h-3" />
-                     </button>
-                   </div>
-                 </transition-group>
-                 <div v-if="tags.length === 0" class="w-full h-full flex flex-col items-center justify-center py-4 gap-2 opacity-30">
-                    <Icon name="mdi:tag-off-outline" class="w-8 h-8" />
-                    <p class="text-[9px] font-bold uppercase tracking-widest text-center">No identities established</p>
-                 </div>
-               </div>
+          <!-- 2. System & Storage -->
+          <button 
+            @click="activeCategory = 'system'"
+            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+          >
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/10 group-hover:scale-105 transition-transform duration-300">
+                <Icon name="mdi:server-network" class="w-5 h-5" />
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm tracking-tight text-base-content">System & Storage</h3>
+                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Download paths, storage scan, maintenance</p>
+              </div>
+            </div>
+            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+          </button>
 
-               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <div class="form-control">
-                   <label class="label py-1">
-                     <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Identity Label</span>
-                   </label>
-                   <input 
-                     v-model="newTagName" 
-                     type="text" 
-                     placeholder="e.g. Archives" 
-                     class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10" 
-                   />
-                 </div>
-                 <div class="form-control">
-                   <label class="label py-1">
-                     <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Visual Chroma</span>
-                   </label>
-                   <div class="flex gap-2">
-                     <input 
-                       v-model="newTagColor" 
-                       type="color" 
-                       class="w-11 h-11 rounded-lg cursor-pointer border-none bg-base-200/50" 
-                     />
-                     <input 
-                       v-model="newTagColor" 
-                       type="text" 
-                       class="input input-bordered flex-1 bg-base-200/50 focus:bg-base-100 transition-all font-mono text-[10px] font-bold h-11 rounded-lg border-base-content/10" 
-                     />
-                   </div>
-                 </div>
-               </div>
-               
-               <div class="mt-8">
-                 <button 
-                   class="btn btn-secondary btn-block h-12 rounded-lg shadow-sm gap-2 text-white font-bold text-[10px] uppercase tracking-widest" 
-                   @click="addTag" 
-                   :disabled="isSavingTags"
-                 >
-                   <Icon name="mdi:tag-plus" class="w-4 h-4" />
-                   Create Tag
-                 </button>
-               </div>
-             </div>
-          </section>
+          <!-- 3. Visuals & Identity -->
+          <button 
+            @click="activeCategory = 'appearance'"
+            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+          >
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success border border-success/10 group-hover:scale-105 transition-transform duration-300">
+                <Icon name="mdi:palette-outline" class="w-5 h-5" />
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm tracking-tight text-base-content">Appearance & Tags</h3>
+                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Visual themes, predefined tag indexing</p>
+              </div>
+            </div>
+            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+          </button>
 
-          <!-- Previews Section -->
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Media Processing</h3>
+          <!-- 4. Media Processing -->
+          <button 
+            @click="activeCategory = 'previews'"
+            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+          >
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/10 group-hover:scale-105 transition-transform duration-300">
+                <Icon name="mdi:movie-filter-outline" class="w-5 h-5" />
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm tracking-tight text-base-content">Media Processing</h3>
+                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Previews compilation, slide frequency, threads limit</p>
+              </div>
+            </div>
+            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+          </button>
 
-               <div class="space-y-6">
-                 <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-content/5">
-                    <div>
-                      <p class="text-xs font-bold uppercase tracking-widest text-base-content">Mobile Auto-Preview</p>
-                    </div>
-                    <input 
-                      type="checkbox" 
-                      class="toggle toggle-primary toggle-sm rounded-sm" 
-                      v-model="mobileAutoPreview" 
-                      @change="saveUserSettings"
-                    />
-                 </div>
-
-                 <div class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-xs font-bold uppercase tracking-widest text-base-content">Slideshow Frequency</p>
-                        <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">1 slideshow every {{ slideshowFrequency }} items</p>
-                      </div>
-                      <span class="badge badge-primary font-bold text-[10px]">{{ slideshowFrequency }}</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="2" 
-                      max="50" 
-                      v-model.number="slideshowFrequency" 
-                      class="range range-primary range-xs" 
-                      @change="saveUserSettings"
-                    />
-                 </div>
-
-                 <div class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-xs font-bold uppercase tracking-widest text-base-content">Max Concurrent Threads</p>
-                      </div>
-                      <span class="badge badge-primary font-bold text-[10px]">{{ maxConcurrentPreviews }}</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="1" 
-                      :max="experimentalMode ? 200 : 10" 
-                      v-model.number="maxConcurrentPreviews" 
-                      class="range range-primary range-xs" 
-                      @change="saveUserSettings"
-                    />
-                  </div>
-
-                  <div v-if="generationResults && (generationResults.isProcessing || generationResults.processed > 0)" class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5 animate-in fade-in duration-300">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-2">
-                        <span class="text-[9px] font-bold uppercase tracking-widest text-base-content">Video Previews Progress</span>
-                        <span v-if="generationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
-                      </div>
-                      <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ generationResults.processed }} / {{ generationResults.total }}</span>
-                    </div>
-                    
-                    <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
-                      <div 
-                        class="h-full bg-primary transition-all duration-500 ease-out" 
-                        :style="{ width: `${(generationResults.processed / (generationResults.total || 1)) * 100}%` }"
-                      ></div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-2 pt-1">
-                      <div class="flex flex-col">
-                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
-                        <span class="text-[10px] font-bold text-success">{{ generationResults.generated }}</span>
-                      </div>
-                      <div class="flex flex-col">
-                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
-                        <span class="text-[10px] font-bold text-base-content/60">{{ generationResults.skipped }}</span>
-                      </div>
-                      <div class="flex flex-col">
-                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
-                        <span class="text-[10px] font-bold text-error">{{ generationResults.errors }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-if="thumbnailGenerationResults && (thumbnailGenerationResults.isProcessing || thumbnailGenerationResults.processed > 0)" class="space-y-3 p-4 bg-base-200/50 rounded-lg border border-base-content/5 animate-in fade-in duration-300">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-2">
-                        <span class="text-[9px] font-bold uppercase tracking-widest text-base-content">Image Thumbnails Progress</span>
-                        <span v-if="thumbnailGenerationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
-                      </div>
-                      <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ thumbnailGenerationResults.processed }} / {{ thumbnailGenerationResults.total }}</span>
-                    </div>
-                    
-                    <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
-                      <div 
-                        class="h-full bg-primary transition-all duration-500 ease-out" 
-                        :style="{ width: `${(thumbnailGenerationResults.processed / (thumbnailGenerationResults.total || 1)) * 100}%` }"
-                      ></div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-2 pt-1">
-                      <div class="flex flex-col">
-                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
-                        <span class="text-[10px] font-bold text-success">{{ thumbnailGenerationResults.generated }}</span>
-                      </div>
-                      <div class="flex flex-col">
-                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
-                        <span class="text-[10px] font-bold text-base-content/60">{{ thumbnailGenerationResults.skipped }}</span>
-                      </div>
-                      <div class="flex flex-col">
-                        <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
-                        <span class="text-[10px] font-bold text-error">{{ thumbnailGenerationResults.errors }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="flex flex-col gap-3">
-                    <div class="flex flex-col sm:flex-row gap-3">
-                      <button 
-                        class="btn btn-primary flex-1 h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
-                        @click="generateAllPreviews" 
-                        :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
-                      >
-                        <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-4 h-4" />
-                        <span v-else class="loading loading-spinner loading-xs"></span>
-                        Generate Video Previews
-                      </button>
-                      <button 
-                        class="btn btn-primary flex-1 h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
-                        @click="generateAllThumbnails" 
-                        :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
-                      >
-                        <Icon v-if="!isGeneratingThumbnails" name="mdi:image-filter-hdr" class="w-4 h-4" />
-                        <span v-else class="loading loading-spinner loading-xs"></span>
-                        Generate Image Thumbnails
-                      </button>
-                    </div>
-                    <button 
-                      class="btn btn-error w-full h-12 rounded-lg shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest text-white" 
-                      @click="clearAllPreviews" 
-                      :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
-                    >
-                      <Icon v-if="!isClearingPreviews" name="mdi:trash-can-outline" class="w-4 h-4" />
-                      <span v-else class="loading loading-spinner loading-xs"></span>
-                      Clear Previews & Thumbnails
-                    </button>
-                  </div>
-                 </div>
-               </div>
-          </section>
-
-          <!-- Shorts Selection -->
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Shorts Selection</h3>
-               <p class="text-[11px] font-bold text-base-content/50 mb-6 leading-relaxed">
-                 Manage directories included in the Shorts feed. Only videos/slideshows in these folders will be shown.
-               </p>
-
-               <div class="space-y-3">
-                 <div v-for="(path, index) in selectedShortsPaths" :key="path" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
-                    <div class="min-w-0 flex-1">
-                       <p class="text-[11px] font-bold truncate text-base-content">{{ path }}</p>
-                    </div>
-                    <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="removeSelectedPath(index)">
-                      <Icon name="mdi:delete-outline" class="w-4 h-4" />
-                    </button>
-                 </div>
-                 <div v-if="selectedShortsPaths.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No paths selected</div>
-               </div>
-             </div>
-          </section>
-
-          <!-- Media Exclusion -->
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <h3 class="text-base font-bold tracking-tight mb-6 text-base-content">Media Exclusion</h3>
-               <p class="text-[11px] font-bold text-base-content/50 mb-6 leading-relaxed">
-                 Manage directories excluded from the Media tab. Files in these directories will be hidden.
-               </p>
-
-               <div class="space-y-3">
-                 <div v-for="(path, index) in excludedMediaPaths" :key="path" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
-                    <div class="min-w-0 flex-1">
-                       <p class="text-[11px] font-bold truncate text-base-content">{{ path }}</p>
-                    </div>
-                    <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="removeExcludedMediaPath(index)">
-                      <Icon name="mdi:delete-outline" class="w-4 h-4" />
-                    </button>
-                 </div>
-                 <div v-if="excludedMediaPaths.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No paths excluded</div>
-               </div>
-             </div>
-          </section>
-
-          <!-- Storage Health -->
-          <section class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden">
-             <div class="p-8 sm:p-10">
-               <div class="flex items-center justify-between mb-8">
-                 <div>
-                   <h3 class="text-base font-bold tracking-tight text-base-content">Storage Maintenance</h3>
-                   <p class="text-[11px] font-bold text-base-content/40">Optimize cluster efficiency</p>
-                 </div>
-                 <button 
-                  class="btn btn-ghost btn-sm gap-2 border border-base-content/10 bg-base-100/50 rounded-lg h-9"
-                  @click="fetchCleanupData"
-                  :disabled="isScanningStorage"
-                 >
-                   <Icon name="mdi:magnify-scan" class="w-4 h-4" :class="{ 'animate-pulse': isScanningStorage }" />
-                   <span class="text-[9px] font-bold uppercase tracking-widest">{{ isScanningStorage ? 'Scanning...' : 'Scan Storage' }}</span>
-                 </button>
-                 <button 
-                  class="btn btn-ghost btn-sm gap-2 border border-base-content/10 bg-base-100/50 rounded-lg h-9"
-                  @click="refreshTagCache"
-                  :disabled="isRebuildingCache"
-                 >
-                   <Icon name="mdi:cached" class="w-4 h-4" :class="{ 'animate-spin': isRebuildingCache }" />
-                   <span class="text-[9px] font-bold uppercase tracking-widest">{{ isRebuildingCache ? 'Rebuilding...' : 'Refresh Tag Cache' }}</span>
-                 </button>
-               </div>
-
-               <div v-if="isScanningStorage" class="py-10 flex flex-col items-center gap-4 animate-in fade-in duration-300">
-                  <div class="w-10 h-10 rounded-full border-2 border-primary/10 border-t-primary animate-spin"></div>
-                  <div class="text-center">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/60">Analyzing Storage Cluster</p>
-                    <p class="text-[9px] font-bold text-base-content/30 mt-1 uppercase">{{ cleanupStatus?.totalFiles || 0 }} files discovered</p>
-                  </div>
-               </div>
-
-               <div v-if="cleanupData && !isScanningStorage" class="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <!-- Large Files Section -->
-                  <div class="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                       <div v-for="file in cleanupData.largeFiles" :key="file.fullPath" class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-content/5 group hover:bg-base-200 transition-all">
-                          <div class="min-w-0 flex-1">
-                             <p class="text-[11px] font-bold truncate text-base-content">{{ file.name }}</p>
-                             <p class="text-[9px] font-bold text-base-content/30 uppercase truncate">{{ formatSize(file.size) }}</p>
-                          </div>
-                          <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
-                            <Icon name="mdi:delete-outline" class="w-4 h-4" />
-                          </button>
-                       </div>
-                       <div v-if="cleanupData.largeFiles.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No optimization targets</div>
-                  </div>
-               </div>
-             </div>
-          </section>
+          <!-- 5. Directory Rules -->
+          <button 
+            @click="activeCategory = 'directories'"
+            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+          >
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center text-info border border-info/10 group-hover:scale-105 transition-transform duration-300">
+                <Icon name="mdi:folder-outline" class="w-5 h-5" />
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm tracking-tight text-base-content">Directory Rules</h3>
+                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Shorts feed compilation, exclusion folder lists</p>
+              </div>
+            </div>
+            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
       </div>
-      
-      <!-- System Info -->
-      <footer class="pt-8 opacity-20 flex flex-col items-center gap-2">
-         <div class="w-10 h-px bg-base-content"></div>
-         <p class="text-[8px] font-bold uppercase tracking-[0.4em]">ClyoCloud - v{{ useRuntimeConfig().public.version }}</p>
-      </footer>
+
+      <!-- Sub-settings View (Shown if activeCategory is not null) -->
+      <div v-else class="space-y-6 animate-in fade-in duration-200">
+        
+        <!-- Back Navigation Bar -->
+        <div class="flex items-center justify-between pb-2 border-b border-base-content/5">
+          <button 
+            @click="activeCategory = null"
+            class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-primary hover:text-primary-focus transition-all group"
+          >
+            <Icon name="mdi:arrow-left" class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            Back to categories
+          </button>
+          <span class="text-[9px] font-bold text-base-content/20 uppercase tracking-widest">Sub-menu Configuration</span>
+        </div>
+
+        <!-- Section Title -->
+        <div class="flex flex-col gap-1">
+          <h2 class="text-xl font-black tracking-tight">{{ getCategoryTitle(activeCategory) }}</h2>
+          <p class="text-xs text-base-content/50 font-bold uppercase tracking-wide leading-tight">{{ getCategorySubtitle(activeCategory) }}</p>
+        </div>
+
+        <!-- Sub-setting groups -->
+
+        <!-- 1. SECURITY SUB-MENU -->
+        <div v-if="activeCategory === 'security'" class="space-y-6">
+          <!-- Update Password Card -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+                <Icon name="mdi:key-outline" class="w-4 h-4" />
+              </div>
+              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Update Credentials</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div class="form-control">
+                <label class="label py-1">
+                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">New Secret Key</span>
+                </label>
+                <input 
+                  v-model="newPassword" 
+                  type="password" 
+                  placeholder="Min. 6 characters" 
+                  class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-10 rounded-xl border-base-content/5 focus:outline-none focus:ring-1 focus:ring-primary/20" 
+                />
+              </div>
+              <div class="form-control">
+                <label class="label py-1">
+                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Confirm Secret Key</span>
+                </label>
+                <input 
+                  v-model="confirmPassword" 
+                  type="password" 
+                  class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-10 rounded-xl border-base-content/5 focus:outline-none focus:ring-1 focus:ring-primary/20" 
+                />
+              </div>
+            </div>
+            <button 
+              class="btn btn-primary rounded-xl h-10 min-h-0 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest w-full mt-2" 
+              @click="changePassword" 
+              :disabled="isChangingPassword"
+            >
+              <Icon v-if="!isChangingPassword" name="mdi:check-circle-outline" class="w-4 h-4" />
+              <span v-else class="loading loading-spinner loading-xs"></span>
+              Save new credentials
+            </button>
+          </div>
+
+          <!-- Two-Factor Authentication Card -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success border border-success/10">
+                  <Icon name="mdi:shield-lock-outline" class="w-4 h-4" />
+                </div>
+                <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Two-Factor Authentication</h3>
+              </div>
+              <div :class="`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${is2faEnabled ? 'bg-success/15 text-success' : 'bg-base-200 text-base-content/30'}`">
+                {{ is2faEnabled ? 'Enabled' : 'Disabled' }}
+              </div>
+            </div>
+
+            <div v-if="!is2faEnabled" class="pt-2">
+              <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-4">
+                Require a verification code from your authenticator app to authorize session access.
+              </p>
+              
+              <button 
+                v-if="!show2faSetup"
+                class="btn btn-outline btn-primary rounded-xl h-10 min-h-0 w-full gap-2 font-bold text-[10px] uppercase tracking-widest"
+                @click="setup2fa"
+              >
+                <Icon name="mdi:shield-plus-outline" class="w-4 h-4" />
+                Configure 2FA MFA
+              </button>
+
+              <div v-else class="space-y-6 pt-2 animate-in fade-in duration-300">
+                <div class="flex flex-col items-center gap-4 p-4 bg-base-300/40 rounded-xl border border-base-content/5">
+                  <img :src="qrCodeUrl" class="w-36 h-36 rounded-lg shadow-sm border border-base-content/10" alt="2FA QR Code" />
+                  <div class="text-center">
+                    <p class="text-[8px] font-bold uppercase tracking-widest text-base-content/30 mb-1">Manual secret key</p>
+                    <code class="text-[10px] font-mono font-black tracking-wider text-base-content/60">{{ totpSecret }}</code>
+                  </div>
+                </div>
+
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Verification Code</span>
+                  </label>
+                  <input 
+                    v-model="totpCode"
+                    type="text"
+                    placeholder="000000"
+                    class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-base tracking-[0.3em] h-10 rounded-xl border-base-content/5"
+                    maxlength="6"
+                  />
+                </div>
+
+                <div class="flex gap-3">
+                  <button class="btn btn-ghost flex-1 h-10 min-h-0 rounded-xl font-bold text-[10px] uppercase tracking-widest" @click="show2faSetup = false">Cancel</button>
+                  <button 
+                    class="btn btn-primary flex-1 h-10 min-h-0 rounded-xl shadow-sm font-bold text-[10px] uppercase tracking-widest"
+                    @click="enable2fa"
+                    :disabled="isVerifying2fa || totpCode.length < 6"
+                  >
+                    <span v-if="isVerifying2fa" class="loading loading-spinner loading-xs"></span>
+                    Confirm enable
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="pt-2">
+              <div v-if="!showDisableConfirm">
+                <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-4">
+                  Your account login is enforced with Google Authenticator TOTP token checks.
+                </p>
+                <button 
+                  class="btn btn-error btn-outline rounded-xl h-10 min-h-0 w-full gap-2 font-bold text-[10px] uppercase tracking-widest"
+                  @click="disable2fa"
+                >
+                  <Icon name="mdi:shield-off-outline" class="w-4 h-4" />
+                  Disable 2FA Security
+                </button>
+              </div>
+              
+              <div v-else class="space-y-6 animate-in fade-in duration-300">
+                <div class="p-4 bg-error/5 rounded-xl border border-error/10 text-center">
+                  <p class="text-[9px] font-bold text-error uppercase tracking-widest mb-1">Confirm identity</p>
+                  <p class="text-[10px] font-bold text-error/60">Enter verification token code from your authenticator device.</p>
+                </div>
+
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Authenticator Code</span>
+                  </label>
+                  <input 
+                    v-model="disableCode"
+                    type="text"
+                    placeholder="000000"
+                    class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-base tracking-[0.3em] h-10 rounded-xl border-base-content/5"
+                    maxlength="6"
+                  />
+                </div>
+
+                <div class="flex gap-3">
+                  <button class="btn btn-ghost flex-1 h-10 min-h-0 rounded-xl font-bold text-[10px] uppercase tracking-widest" @click="showDisableConfirm = false">Cancel</button>
+                  <button 
+                    class="btn btn-error flex-1 h-10 min-h-0 rounded-xl shadow-sm font-bold text-[10px] uppercase tracking-widest text-white"
+                    @click="confirmDisable2fa"
+                    :disabled="isVerifying2fa || disableCode.length < 6"
+                  >
+                    <span v-if="isVerifying2fa" class="loading loading-spinner loading-xs"></span>
+                    Confirm disable
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Session Sign Out (Session Control) -->
+          <div class="bg-error/5 border border-error/10 rounded-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <h3 class="text-xs font-black uppercase tracking-wider text-base-content/70">Terminate session</h3>
+                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Disconnect from cloud cluster client</p>
+              </div>
+              <button class="btn btn-error btn-outline rounded-xl h-10 min-h-0 px-6 font-bold uppercase text-[10px] tracking-widest" @click="logout">
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. SYSTEM & STORAGE SUB-MENU -->
+        <div v-if="activeCategory === 'system'" class="space-y-6">
+          <!-- List based rows for System options -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm divide-y divide-base-content/5">
+            
+            <!-- Download path config -->
+            <div class="p-5 space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10 shrink-0 mt-0.5">
+                  <Icon name="mdi:folder-download-outline" class="w-4 h-4" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-xs font-extrabold tracking-wide">Custom Retrieval Path</h4>
+                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Download directory target relative to root storage</p>
+                </div>
+              </div>
+
+              <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <div class="flex-1 flex items-center bg-base-200/50 border border-base-content/5 rounded-xl focus-within:bg-base-100 focus-within:ring-1 focus-within:ring-primary/20 transition-all overflow-hidden px-4">
+                   <span class="text-base-content/30 text-[11px] font-bold whitespace-nowrap select-none">
+                     {{ user?.name }}/
+                   </span>
+                   <input 
+                     v-model="downloadPath" 
+                     type="text" 
+                     placeholder="e.g. videos/youtube" 
+                     class="bg-transparent border-none outline-none w-full font-bold text-xs h-10 pl-1 focus:ring-0 focus:outline-none" 
+                   />
+                </div>
+                <button 
+                  class="btn btn-primary h-10 min-h-0 rounded-xl px-6 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+                  @click="saveUserSettings" 
+                  :disabled="isSavingSettings"
+                >
+                  <Icon v-if="!isSavingSettings" name="mdi:content-save-outline" class="w-4 h-4" />
+                  <span v-else class="loading loading-spinner loading-xs"></span>
+                  Save settings
+                </button>
+              </div>
+            </div>
+
+            <!-- Storage Diagnostics Scan -->
+            <div class="p-5 flex items-center justify-between gap-4">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/10 shrink-0 mt-0.5">
+                  <Icon name="mdi:magnify-scan" class="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 class="text-xs font-extrabold tracking-wide">Storage Diagnostics</h4>
+                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Scan cluster for old or oversized junk files</p>
+                </div>
+              </div>
+              <button 
+                class="btn btn-ghost border border-base-content/10 bg-base-200/40 rounded-xl h-10 min-h-0 px-4 font-bold text-[10px] uppercase tracking-widest shrink-0"
+                @click="fetchCleanupData"
+                :disabled="isScanningStorage"
+              >
+                <Icon name="mdi:magnify-scan" class="w-4 h-4" :class="{ 'animate-pulse': isScanningStorage }" />
+                {{ isScanningStorage ? 'Scanning...' : 'Scan Storage' }}
+              </button>
+            </div>
+
+            <!-- Tag Cache Index Rebuilding -->
+            <div class="p-5 flex items-center justify-between gap-4">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success border border-success/10 shrink-0 mt-0.5">
+                  <Icon name="mdi:database-refresh-outline" class="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 class="text-xs font-extrabold tracking-wide">Rebuild Tag Cache</h4>
+                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Synchronize and compile tag indexes</p>
+                </div>
+              </div>
+              <button 
+                class="btn btn-ghost border border-base-content/10 bg-base-200/40 rounded-xl h-10 min-h-0 px-4 font-bold text-[10px] uppercase tracking-widest shrink-0"
+                @click="refreshTagCache"
+                :disabled="isRebuildingCache"
+              >
+                <Icon name="mdi:cached" class="w-4 h-4" :class="{ 'animate-spin': isRebuildingCache }" />
+                {{ isRebuildingCache ? 'Rebuilding...' : 'Refresh Cache' }}
+              </button>
+            </div>
+
+            <!-- Duplicate scanner shortcut link -->
+            <div class="p-5 flex items-center justify-between gap-4">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-info/10 flex items-center justify-center text-info border border-info/10 shrink-0 mt-0.5">
+                  <Icon name="mdi:content-copy" class="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 class="text-xs font-extrabold tracking-wide">Duplicate Media Scanner</h4>
+                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Find matching checksum assets</p>
+                </div>
+              </div>
+              <NuxtLink 
+                to="/duplicates" 
+                class="btn btn-ghost border border-base-content/10 bg-base-200/40 rounded-xl h-10 min-h-0 px-4 font-bold text-[10px] uppercase tracking-widest shrink-0"
+              >
+                <Icon name="mdi:arrow-right" class="w-4 h-4" />
+                Open tool
+              </NuxtLink>
+            </div>
+
+            <!-- Duplicate scan limit -->
+            <div class="p-5 flex items-center justify-between gap-4">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10 shrink-0 mt-0.5">
+                  <Icon name="mdi:numeric-10-box" class="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 class="text-xs font-extrabold tracking-wide">Duplicate Scan Limit</h4>
+                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Max duplicate groups displayed (10 to 1000)</p>
+                </div>
+              </div>
+              <input 
+                v-model.number="maxDuplicateResults" 
+                type="number" 
+                min="10" 
+                max="1000" 
+                @change="saveUserSettings"
+                class="input input-bordered w-24 h-10 min-h-0 text-xs font-bold text-center bg-base-200/50 focus:bg-base-100 rounded-xl border-base-content/5" 
+              />
+            </div>
+          </div>
+
+          <!-- Diagnostics Loading/Scanning State details -->
+          <div v-if="isScanningStorage" class="bg-base-100/60 border border-base-content/5 rounded-2xl p-8 flex flex-col items-center gap-4 animate-in fade-in duration-300">
+            <span class="loading loading-spinner loading-md text-primary"></span>
+            <div class="text-center">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/70">Analyzing Storage Cluster</p>
+              <p class="text-[9px] font-bold text-base-content/30 mt-1 uppercase">{{ cleanupStatus?.totalFiles || 0 }} files discovered</p>
+            </div>
+          </div>
+
+          <!-- Diagnostics Scan details output list -->
+          <div v-if="cleanupData && !isScanningStorage" class="bg-base-100/60 border border-base-content/5 rounded-2xl p-6 space-y-4 animate-in fade-in duration-300">
+            <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Large Files Diagnostics</h3>
+            <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2 divide-y divide-base-content/5">
+              <div v-for="file in cleanupData.largeFiles" :key="file.fullPath" class="flex items-center justify-between py-2 group">
+                <div class="min-w-0 flex-1">
+                   <p class="text-xs font-extrabold truncate">{{ file.name }}</p>
+                   <p class="text-[9px] font-bold text-base-content/30 uppercase truncate mt-0.5">{{ formatSize(file.size) }}</p>
+                </div>
+                <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
+                  <Icon name="mdi:delete-outline" class="w-4 h-4" />
+                </button>
+              </div>
+              <div v-if="cleanupData.largeFiles.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No optimization targets</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. APPEARANCE & TAGS SUB-MENU -->
+        <div v-if="activeCategory === 'appearance'" class="space-y-6">
+          <!-- Themes Selection Section -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+                <Icon name="mdi:palette-outline" class="w-4 h-4" />
+              </div>
+              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Visual Themes</h3>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
+              <div 
+                v-for="t in ['onedev', 'light', 'dark', 'dracula', 'forest', 'retro', 'cyberpunk', 'valentine', 'aqua', 'nord', 'sunset', 'dim', 'coffee']" 
+                :key="t"
+                class="relative group cursor-pointer"
+                @click="theme = t; saveUserSettings()"
+              >
+                <div 
+                  class="h-16 rounded-xl border transition-all overflow-hidden flex flex-col"
+                  :class="theme === t ? 'border-primary ring-2 ring-primary/20 shadow-sm' : 'border-base-content/5 hover:border-base-content/20 bg-base-200/50'"
+                  :data-theme="t"
+                >
+                  <div class="flex-1 bg-base-100 p-2 flex items-center justify-between">
+                     <span class="text-[9px] font-black uppercase tracking-widest text-base-content/70">
+                       {{ t }}
+                     </span>
+                     <div class="flex gap-0.5">
+                        <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                        <div class="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+                        <div class="w-1.5 h-1.5 rounded-full bg-accent"></div>
+                     </div>
+                  </div>
+                </div>
+                <div v-if="theme === t" class="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-content rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
+                  <Icon name="mdi:check" class="w-2.5 h-2.5" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tag Library Card -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success border border-success/10">
+                  <Icon name="mdi:tag-multiple-outline" class="w-4 h-4" />
+                </div>
+                <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Predefined Tag Library</h3>
+              </div>
+              <span class="badge badge-sm font-bold text-[9px] uppercase tracking-widest bg-base-200 text-base-content/40 border-none">{{ tags.length }} Active</span>
+            </div>
+
+            <!-- Tag Pill Items -->
+            <div class="flex flex-wrap gap-2 p-4 bg-base-200/30 rounded-xl border border-base-content/5 min-h-[70px] items-start content-start">
+              <transition-group name="list">
+                <div 
+                  v-for="(tag, index) in tags" 
+                  :key="tag.name" 
+                  class="flex items-center gap-1.5 pl-2.5 pr-1 py-0.5 rounded-md text-white font-extrabold text-[8px] uppercase tracking-wider shadow-sm border border-white/10"
+                  :style="{ backgroundColor: tag.color }"
+                >
+                  {{ tag.name }}
+                  <button @click="removeTag(index)" class="w-3.5 h-3.5 rounded bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors">
+                    <Icon name="mdi:close" class="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              </transition-group>
+              <div v-if="tags.length === 0" class="w-full h-full flex flex-col items-center justify-center py-4 gap-2 opacity-30">
+                 <Icon name="mdi:tag-off-outline" class="w-6 h-6" />
+                 <p class="text-[9px] font-bold uppercase tracking-widest">No tags defined yet</p>
+              </div>
+            </div>
+
+            <!-- New Tag Inputs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div class="form-control">
+                <label class="label py-1">
+                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Label Name</span>
+                </label>
+                <input 
+                  v-model="newTagName" 
+                  type="text" 
+                  placeholder="e.g. Archives" 
+                  class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-10 rounded-xl border-base-content/5 focus:outline-none" 
+                />
+              </div>
+              <div class="form-control">
+                <label class="label py-1">
+                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Label Color</span>
+                </label>
+                <div class="flex gap-2">
+                  <input 
+                    v-model="newTagColor" 
+                    type="color" 
+                    class="w-10 h-10 rounded-xl cursor-pointer border-none bg-base-200/50 shrink-0" 
+                  />
+                  <input 
+                    v-model="newTagColor" 
+                    type="text" 
+                    class="input input-bordered flex-1 bg-base-200/50 focus:bg-base-100 transition-all font-mono text-[9px] font-bold h-10 rounded-xl border-base-content/5 focus:outline-none" 
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              class="btn btn-secondary text-white rounded-xl h-10 min-h-0 w-full shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest mt-2" 
+              @click="addTag" 
+              :disabled="isSavingTags"
+            >
+              <Icon name="mdi:tag-plus" class="w-4 h-4" />
+              Register New Tag
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. MEDIA PROCESSING SUB-MENU -->
+        <div v-if="activeCategory === 'previews'" class="space-y-6">
+          <!-- Media processing items styled as iOS lists -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm divide-y divide-base-content/5">
+            
+            <!-- Mobile Auto-Preview -->
+            <div class="flex items-center justify-between p-5 gap-4">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10 shrink-0 mt-0.5">
+                  <Icon name="mdi:cellphone-play" class="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 class="text-xs font-extrabold tracking-wide text-base-content">Mobile Auto-Preview</h4>
+                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Auto-play preview animations on mobile layouts</p>
+                </div>
+              </div>
+              <input 
+                type="checkbox" 
+                class="toggle toggle-primary toggle-sm rounded-md shrink-0" 
+                v-model="mobileAutoPreview" 
+                @change="saveUserSettings"
+              />
+            </div>
+
+            <!-- Slideshow Frequency range slider -->
+            <div class="p-5 space-y-3">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/10 shrink-0 mt-0.5">
+                    <Icon name="mdi:image-multiple-outline" class="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-extrabold tracking-wide text-base-content">Slideshow Frequency</h4>
+                    <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Create 1 slideshow every {{ slideshowFrequency }} entries</p>
+                  </div>
+                </div>
+                <span class="badge badge-primary font-bold text-[9px] uppercase tracking-widest shrink-0">{{ slideshowFrequency }} items</span>
+              </div>
+              <div class="pt-2">
+                <input 
+                  type="range" 
+                  min="2" 
+                  max="50" 
+                  v-model.number="slideshowFrequency" 
+                  class="range range-primary range-xs" 
+                  @change="saveUserSettings"
+                />
+              </div>
+            </div>
+
+            <!-- Thread limits slider -->
+            <div class="p-5 space-y-3">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success border border-success/10 shrink-0 mt-0.5">
+                    <Icon name="mdi:cpu-64-bit" class="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-extrabold tracking-wide text-base-content">Max Concurrent Threads</h4>
+                    <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Limit concurrency of background ffmpeg tasks</p>
+                  </div>
+                </div>
+                <span class="badge badge-primary font-bold text-[9px] uppercase tracking-widest shrink-0">{{ maxConcurrentPreviews }} cores</span>
+              </div>
+              <div class="pt-2">
+                <input 
+                  type="range" 
+                  min="1" 
+                  :max="experimentalMode ? 200 : 10" 
+                  v-model.number="maxConcurrentPreviews" 
+                  class="range range-primary range-xs" 
+                  @change="saveUserSettings"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Thread generation tasks progress widgets -->
+          <div 
+            v-if="(generationResults && (generationResults.isProcessing || generationResults.processed > 0)) || (thumbnailGenerationResults && (thumbnailGenerationResults.isProcessing || thumbnailGenerationResults.processed > 0))" 
+            class="bg-base-100/60 border border-base-content/5 rounded-2xl p-6 space-y-6"
+          >
+            <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Compiler Task Feeds</h3>
+            
+            <!-- Video preview tasks progress -->
+            <div v-if="generationResults && (generationResults.isProcessing || generationResults.processed > 0)" class="space-y-3 animate-in fade-in duration-300">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-[9px] font-bold uppercase tracking-widest">Video previews progress</span>
+                  <span v-if="generationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
+                </div>
+                <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ generationResults.processed }} / {{ generationResults.total }}</span>
+              </div>
+              
+              <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
+                <div 
+                  class="h-full bg-primary transition-all duration-500 ease-out" 
+                  :style="{ width: `${(generationResults.processed / (generationResults.total || 1)) * 100}%` }"
+                ></div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-base-content/5 mt-2">
+                <div class="flex flex-col">
+                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
+                  <span class="text-[10px] font-black text-success">{{ generationResults.generated }}</span>
+                </div>
+                <div class="flex flex-col border-l border-base-content/5 pl-3">
+                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
+                  <span class="text-[10px] font-black text-base-content/50">{{ generationResults.skipped }}</span>
+                </div>
+                <div class="flex flex-col border-l border-base-content/5 pl-3">
+                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
+                  <span class="text-[10px] font-black text-error">{{ generationResults.errors }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Image thumbnail tasks progress -->
+            <div v-if="thumbnailGenerationResults && (thumbnailGenerationResults.isProcessing || thumbnailGenerationResults.processed > 0)" class="space-y-3 animate-in fade-in duration-300">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-[9px] font-bold uppercase tracking-widest">Image thumbnails progress</span>
+                  <span v-if="thumbnailGenerationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
+                </div>
+                <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ thumbnailGenerationResults.processed }} / {{ thumbnailGenerationResults.total }}</span>
+              </div>
+              
+              <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
+                <div 
+                  class="h-full bg-primary transition-all duration-500 ease-out" 
+                  :style="{ width: `${(thumbnailGenerationResults.processed / (thumbnailGenerationResults.total || 1)) * 100}%` }"
+                ></div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-base-content/5 mt-2">
+                <div class="flex flex-col">
+                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
+                  <span class="text-[10px] font-black text-success">{{ thumbnailGenerationResults.generated }}</span>
+                </div>
+                <div class="flex flex-col border-l border-base-content/5 pl-3">
+                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
+                  <span class="text-[10px] font-black text-base-content/50">{{ thumbnailGenerationResults.skipped }}</span>
+                </div>
+                <div class="flex flex-col border-l border-base-content/5 pl-3">
+                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
+                  <span class="text-[10px] font-black text-error">{{ thumbnailGenerationResults.errors }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ffmpeg compiler trigger buttons -->
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button 
+                class="btn btn-primary rounded-xl h-11 min-h-0 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+                @click="generateAllPreviews" 
+                :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
+              >
+                <Icon v-if="!isGeneratingPreviews" name="mdi:movie-filter-outline" class="w-4 h-4" />
+                <span v-else class="loading loading-spinner loading-xs"></span>
+                Generate video previews
+              </button>
+              <button 
+                class="btn btn-primary rounded-xl h-11 min-h-0 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+                @click="generateAllThumbnails" 
+                :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
+              >
+                <Icon v-if="!isGeneratingThumbnails" name="mdi:image-filter-hdr" class="w-4 h-4" />
+                <span v-else class="loading loading-spinner loading-xs"></span>
+                Generate image thumbs
+              </button>
+            </div>
+            <button 
+              class="btn btn-error rounded-xl h-11 min-h-0 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest text-white w-full" 
+              @click="clearAllPreviews" 
+              :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
+            >
+              <Icon v-if="!isClearingPreviews" name="mdi:trash-can-outline" class="w-4 h-4" />
+              <span v-else class="loading loading-spinner loading-xs"></span>
+              Clear previews & cache
+            </button>
+          </div>
+        </div>
+
+        <!-- 5. DIRECTORY RULES SUB-MENU -->
+        <div v-if="activeCategory === 'directories'" class="space-y-6">
+          <!-- Shorts Selection compilation feeds -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+                <Icon name="mdi:play-box-outline" class="w-4 h-4" />
+              </div>
+              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Shorts Feed Targets</h3>
+            </div>
+            <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-2">
+              Compile video loops exclusively from the following directory mounts.
+            </p>
+
+            <div class="space-y-2 pt-2">
+              <div 
+                v-for="(path, index) in selectedShortsPaths" 
+                :key="path" 
+                class="flex items-center justify-between p-3.5 bg-base-200/50 rounded-xl border border-base-content/5 group"
+              >
+                <div class="min-w-0 flex-1">
+                   <p class="text-xs font-extrabold truncate text-base-content">{{ path }}</p>
+                </div>
+                <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="removeSelectedPath(index)">
+                  <Icon name="mdi:delete-outline" class="w-4 h-4" />
+                </button>
+              </div>
+              <div v-if="selectedShortsPaths.length === 0" class="text-center py-6 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No shorts targets configured</div>
+            </div>
+          </div>
+
+          <!-- Media Exclusion paths list -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/10">
+                <Icon name="mdi:eye-off-outline" class="w-4 h-4" />
+              </div>
+              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Excluded Media Paths</h3>
+            </div>
+            <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-2">
+              Directories excluded from visual indices. Content within these folders is hidden.
+            </p>
+
+            <div class="space-y-2 pt-2">
+              <div 
+                v-for="(path, index) in excludedMediaPaths" 
+                :key="path" 
+                class="flex items-center justify-between p-3.5 bg-base-200/50 rounded-xl border border-base-content/5 group"
+              >
+                <div class="min-w-0 flex-1">
+                   <p class="text-xs font-extrabold truncate text-base-content">{{ path }}</p>
+                </div>
+                <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="removeExcludedMediaPath(index)">
+                  <Icon name="mdi:delete-outline" class="w-4 h-4" />
+                </button>
+              </div>
+              <div v-if="excludedMediaPaths.length === 0" class="text-center py-6 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No exclusions configured</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </main>
+
+    <footer class="pt-8 opacity-20 flex flex-col items-center gap-2 mt-auto">
+       <div class="w-10 h-px bg-base-content"></div>
+       <p class="text-[8px] font-bold uppercase tracking-[0.4em]">ClyoCloud - v{{ useRuntimeConfig().public.version }}</p>
+    </footer>
   </div>
 </template>
 

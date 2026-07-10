@@ -4,7 +4,7 @@ import { logActivity } from '../utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { downloadPath, mobileAutoPreview, maxConcurrentPreviews, experimentalMode, theme, slideshowFrequency, selectedShortsPaths, excludedMediaPaths } = body
+    const { downloadPath, mobileAutoPreview, maxConcurrentPreviews, experimentalMode, theme, slideshowFrequency, selectedShortsPaths, excludedMediaPaths, maxDuplicateResults } = body
     const config = useRuntimeConfig()
     const user = event.context.user
 
@@ -54,6 +54,10 @@ export default defineEventHandler(async (event) => {
 
         if (Array.isArray(excludedMediaPaths)) {
             users[userIndex].excludedMediaPaths = excludedMediaPaths
+        }
+
+        if (typeof maxDuplicateResults === 'number') {
+            users[userIndex].maxDuplicateResults = Math.max(10, Math.min(1000, maxDuplicateResults))
         }
 
         await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')

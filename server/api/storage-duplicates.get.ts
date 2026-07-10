@@ -128,9 +128,23 @@ async function performScan(username: string, event: any) {
             }
         }
 
+        // Load user settings to get duplicate limit
+        let maxDuplicateResults = 50
+        try {
+            const usersFilePath = config.usersFilePath
+            const usersData = await fs.readFile(usersFilePath, 'utf-8')
+            const users = JSON.parse(usersData)
+            const userData = users.find((u: any) => u.name === username)
+            if (userData && typeof userData.maxDuplicateResults === 'number') {
+                maxDuplicateResults = userData.maxDuplicateResults
+            }
+        } catch (err) {
+            console.error('Error reading maxDuplicateResults for duplicate scan:', err)
+        }
+
         // Step 3: Sort by redundant size (most space saved first)
         updateDuplicateTaskStatus(username, { phase: 'sorting' })
-        const finalResults = duplicateGroups.sort((a, b) => b.redundantSize - a.redundantSize).slice(0, 50)
+        const finalResults = duplicateGroups.sort((a, b) => b.redundantSize - a.redundantSize).slice(0, maxDuplicateResults)
 
         updateDuplicateTaskStatus(username, {
             isScanning: false,

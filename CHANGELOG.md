@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2.4.0] - 2026-07-10
+
+### Changed
+- Redesigned the System Status Dashboard to include interactive SVG radial progress gauges, circular CPU/RAM dials, and a console-like activity timeline.
+- Redesigned the user Settings page into a list-styled category navigation view with unified menu hierarchy and back headers on both desktop and mobile.
+
+### Added
+- Added a user-configurable Duplicate Scan Limit setting (10 to 1000 range) in System settings to control backend duplicates query slice bounds dynamically.
+
+---
+
 ## [2.3.0] - 2026-07-03
 
 ### Added
