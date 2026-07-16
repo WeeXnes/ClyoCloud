@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.2] - 2026-07-16
+
+### Fixed
+- Fixed mobile tags drawer rendering glitch by separating the backdrop overlay as a sibling, avoiding CSS containing block issues on transform.
+- Fixed scrolling height bug where the drawer tags list did not scroll to the bottom immediately by applying `flex-1 min-h-0` to the scrollable container.
+
+---
+
+## [2.7.1] - 2026-07-16
+
+### Fixed
+- Fixed mobile tags drawer rendering corners issue by separating scrollable overflow from outer rounded wrapper.
+- Repositioned tags drawer container to reside directly in the outer modal container, preventing container flex-alignment clipping.
+- Enhanced glassy appearance of the tags drawer with a semi-translucent backdrop style (`bg-slate-950/40` and `backdrop-blur-2xl`).
+
+---
+
 ## [2.7.0] - 2026-07-16
 
 ### Added

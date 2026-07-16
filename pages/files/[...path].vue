@@ -2491,65 +2491,69 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           </button>
         </div>
 
-        <!-- Mobile Tags Drawer -->
+        <!-- Backdrop overlay for mobile tags drawer (Placed outside the transformed container to prevent containing block and layout glitches) -->
+        <div 
+          v-if="showMobileTagDrawer" 
+          class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[99]" 
+          @click="showMobileTagDrawer = false"
+        ></div>
+
+        <!-- Mobile Tags Drawer (Placed directly in outer modal container to prevent containing block issue) -->
         <div 
           class="fixed inset-x-0 bottom-0 z-[100] transition-transform duration-300 ease-out transform"
           :class="showMobileTagDrawer ? 'translate-y-0' : 'translate-y-full'"
+          @click.stop
         >
-          <!-- Backdrop overlay, visible only when open -->
-          <div 
-            v-if="showMobileTagDrawer" 
-            class="fixed inset-0 bg-black/60 backdrop-blur-xs -z-10" 
-            @click="showMobileTagDrawer = false"
-          ></div>
-
-          <!-- Drawer Content -->
-          <div class="bg-slate-950/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl p-6 shadow-2xl flex flex-col gap-4 text-white max-h-[50vh] overflow-y-auto" @click.stop>
-            <!-- Pull Handle bar -->
-            <div class="w-12 h-1 bg-white/20 rounded-full mx-auto cursor-pointer" @click="showMobileTagDrawer = false"></div>
-            
-            <!-- Header -->
-            <div class="flex items-center justify-between">
-              <div>
-                <h4 class="text-xs font-extrabold tracking-wide uppercase text-slate-300">File Tags</h4>
-                <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-0.5">Toggle tags for this entry</p>
-              </div>
-              <button 
-                class="btn btn-circle btn-xs bg-white/10 hover:bg-white/20 border-none text-white font-bold" 
-                @click="showMobileTagDrawer = false"
-              >
-                ✕
-              </button>
-            </div>
-
-            <!-- Tags List Grid -->
-            <div class="grid grid-cols-2 gap-2 mt-2">
-              <button
-                v-for="tag in predefinedTags"
-                :key="tag.name"
-                class="flex items-center justify-between gap-3 p-3 rounded-xl border transition-all duration-200"
-                :class="isMediaFileTagSelected(tag) 
-                  ? 'bg-primary/20 border-primary text-white shadow-md shadow-primary/10' 
-                  : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'"
-                @click="toggleMediaFileTag(tag)"
-              >
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: tag.color }"></span>
-                  <span class="text-[11px] font-bold truncate text-left">{{ tag.name }}</span>
+          <!-- Drawer Content (Glassy Card Wrapper with overflow-hidden to prevent black/rough corner renderings) -->
+          <div class="bg-slate-950/40 backdrop-blur-2xl border-t border-x border-white/15 rounded-t-3xl shadow-2xl overflow-hidden text-white max-h-[50vh] flex flex-col">
+            <!-- Scrollable Content container (Uses flex-1 min-h-0 to immediately size scroll bounds properly without click/reflow glitch) -->
+            <div class="p-6 overflow-y-auto flex-1 min-h-0 flex flex-col gap-4">
+              <!-- Pull Handle bar -->
+              <div class="w-12 h-1 bg-white/20 rounded-full mx-auto cursor-pointer shrink-0" @click="showMobileTagDrawer = false"></div>
+              
+              <!-- Header -->
+              <div class="flex items-center justify-between shrink-0">
+                <div>
+                  <h4 class="text-xs font-extrabold tracking-wide uppercase text-slate-300">File Tags</h4>
+                  <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-0.5">Toggle tags for this entry</p>
                 </div>
-                <Icon 
-                  :name="isMediaFileTagSelected(tag) ? 'mdi:check-circle' : 'mdi:circle-outline'" 
-                  class="w-4 h-4 shrink-0 transition-transform duration-200"
-                  :class="isMediaFileTagSelected(tag) ? 'text-primary' : 'text-white/20'"
-                />
-              </button>
-            </div>
+                <button 
+                  class="btn btn-circle btn-xs bg-white/10 hover:bg-white/20 border-none text-white font-bold" 
+                  @click="showMobileTagDrawer = false"
+                >
+                  ✕
+                </button>
+              </div>
 
-            <!-- Fallback if no tags exist -->
-            <div v-if="predefinedTags.length === 0" class="text-center py-6 text-white/40">
-              <Icon name="mdi:tag-outline" class="w-8 h-8 mx-auto opacity-30 mb-2 animate-bounce" />
-              <p class="text-[10px] font-bold uppercase tracking-wider">No predefined tags found</p>
-              <p class="text-[9px] mt-1">Configure tags in Settings > Appearance</p>
+              <!-- Tags List Grid -->
+              <div class="grid grid-cols-2 gap-2 mt-2">
+                <button
+                  v-for="tag in predefinedTags"
+                  :key="tag.name"
+                  class="flex items-center justify-between gap-3 p-3 rounded-xl border transition-all duration-200"
+                  :class="isMediaFileTagSelected(tag) 
+                    ? 'bg-primary/20 border-primary text-white shadow-md shadow-primary/10' 
+                    : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'"
+                  @click="toggleMediaFileTag(tag)"
+                >
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: tag.color }"></span>
+                    <span class="text-[11px] font-bold truncate text-left">{{ tag.name }}</span>
+                  </div>
+                  <Icon 
+                    :name="isMediaFileTagSelected(tag) ? 'mdi:check-circle' : 'mdi:circle-outline'" 
+                    class="w-4 h-4 shrink-0 transition-transform duration-200"
+                    :class="isMediaFileTagSelected(tag) ? 'text-primary' : 'text-white/20'"
+                  />
+                </button>
+              </div>
+
+              <!-- Fallback if no tags exist -->
+              <div v-if="predefinedTags.length === 0" class="text-center py-6 text-white/40 shrink-0">
+                <Icon name="mdi:tag-outline" class="w-8 h-8 mx-auto opacity-30 mb-2 animate-bounce" />
+                <p class="text-[10px] font-bold uppercase tracking-wider">No predefined tags found</p>
+                <p class="text-[9px] mt-1">Configure tags in Settings > Appearance</p>
+              </div>
             </div>
           </div>
         </div>
