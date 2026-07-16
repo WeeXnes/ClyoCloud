@@ -76,7 +76,10 @@ jobs:
       commands: |
         echo "Extracting version from package.json..."
         grep -oP '"version":\s*"\K[^"]+' package.json > version.txt
-        echo "Version extracted: $(cat version.txt)"
+        version=$(cat version.txt)
+        echo "Version extracted: $version"
+        echo "Extracting version description from CHANGELOG.md..."
+        awk -v ver="$version" '$0 ~ "^## \\[" ver "\\]" { started = 1; print; next } started { if ($0 ~ "^(---|## )") exit; print }' CHANGELOG.md > changelog_tag_msg.txt
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -145,7 +148,7 @@ jobs:
   - type: CreateTagStep
     name: create tag
     tagName: '@file:version.txt@'
-    tagMessage: Release Tag for @file:version.txt@
+    tagMessage: '@file:changelog_tag_msg.txt@'
     condition: SUCCESSFUL
     optional: false
   jobExecutor: Builder

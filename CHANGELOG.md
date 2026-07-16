@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [2.4.1] - 2026-07-16
+## [2.4.2] - 2026-07-16
 
 ### Fixed
 - Fixed a rendering crash on the System Status dashboard for users with empty storage (no uploaded files).
