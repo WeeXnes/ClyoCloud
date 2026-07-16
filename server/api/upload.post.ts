@@ -3,7 +3,7 @@ import { mkdir } from 'fs/promises'
 import { defineEventHandler, createError } from 'h3'
 import { IncomingForm, Fields, Files } from 'formidable'
 import path, { join, resolve } from 'path'
-import { isPathWithin } from '~/server/utils/fileUtils'
+import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -83,6 +83,8 @@ export default defineEventHandler(async (event) => {
 
             await logActivity(event.context.user.name, 'UPLOAD', relativePath, undefined, event)
         }
+
+        clearUserCache(event.context.user.name)
 
         return { message: 'Files uploaded successfully' }
     } catch (error: any) {

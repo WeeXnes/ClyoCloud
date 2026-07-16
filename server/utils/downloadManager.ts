@@ -1,6 +1,7 @@
 import { ChildProcess, spawn } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import { clearUserCache } from './fileUtils';
 
 interface LogEntry {
   type: string;
@@ -161,6 +162,9 @@ export const startDownloadJob = async (username: string, url: string, userPath: 
         message: code === 0 ? 'Download process finished successfully.' : `Process exited with code ${code}`,
         time: getFormattedTime()
       });
+    }
+    if (code === 0) {
+      clearUserCache(username);
     }
     child.stdout?.removeAllListeners();
     child.stderr?.removeAllListeners();

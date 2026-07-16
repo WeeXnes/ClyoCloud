@@ -2,7 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 
-import { isPathWithin } from '~/server/utils/fileUtils'
+import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -38,6 +38,8 @@ export default defineEventHandler(async (event) => {
     await updateFileInCache(event.context.user.name, relativePath, { tags: [] })
 
     await logActivity(event.context.user.name, 'MKDIR', relativePath, undefined, event)
+
+    clearUserCache(event.context.user.name)
 
     return { success: true }
   } catch (error) {

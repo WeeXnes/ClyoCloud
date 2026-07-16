@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { moveInFavorites } from '~/server/utils/favorites'
 
-import { isPathWithin } from '~/server/utils/fileUtils'
+import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -127,6 +127,8 @@ export default defineEventHandler(async (event) => {
             const successfulMoves = results.filter(r => r.success && !r.skipped).map(r => r.path)
             await moveInFavorites(event.context.user.name, successfulMoves, destinationPath)
         }
+
+        clearUserCache(event.context.user.name)
 
         return { success: true, results }
     } catch (error: any) {

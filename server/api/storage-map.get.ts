@@ -1,13 +1,15 @@
 import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
-import { getDirSize } from '~/server/utils/fileUtils'
+import { getDirSize, storageMapCache } from '~/server/utils/fileUtils'
 
 interface StorageNode {
     name: string
     size: number
     children?: StorageNode[]
 }
+
+const STORAGE_MAP_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
 
 export default defineEventHandler(async (event) => {
     try {
@@ -18,8 +20,25 @@ export default defineEventHandler(async (event) => {
             })
         }
 
+        const username = event.context.user.name
+
+        // Check cache first
+        const cached = storageMapCache.get(username)
+        if (cached && Date.now() - cached.timestamp < STORAGE_MAP_CACHE_TTL) {
+            return cached.data
+        }
+
         const config = useRuntimeConfig()
-        const userStoragePath = path.join(config.storagePath, event.context.user.name)
+        const userStoragePath = path.join(config.storagePath, username)
+
+        // Return early with empty root if user directory does not exist
+        try {
+            await fs.access(userStoragePath)
+        } catch {
+            const emptyRoot: StorageNode = { name: 'root', size: 0 }
+            storageMapCache.set(username, { data: emptyRoot, timestamp: Date.now() })
+            return emptyRoot
+        }
 
         async function getStorageMap(dirPath: string, name: string, depth: number = 0): Promise<StorageNode> {
             const node: StorageNode = { name, size: 0 }
@@ -77,7 +96,9 @@ export default defineEventHandler(async (event) => {
             return node
         }
 
-        return await getStorageMap(userStoragePath, 'root')
+        const mapData = await getStorageMap(userStoragePath, 'root')
+        storageMapCache.set(username, { data: mapData, timestamp: Date.now() })
+        return mapData
     } catch (error) {
         console.error('Error generating storage map:', error)
         throw createError({

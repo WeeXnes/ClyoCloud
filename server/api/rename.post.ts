@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { renameInFavorites } from '~/server/utils/favorites'
 
-import { isPathWithin } from '~/server/utils/fileUtils'
+import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -84,6 +84,8 @@ export default defineEventHandler(async (event) => {
 
         // Update favorites index if needed
         await renameInFavorites(event.context.user.name, oldPath, path.relative(userStoragePath, newFullPath).replace(/\\/g, '/'))
+
+        clearUserCache(event.context.user.name)
 
         return { success: true }
     } catch (error: any) {

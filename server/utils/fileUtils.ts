@@ -41,6 +41,36 @@ export function clearSizeCache(dirPath: string) {
     }
 }
 
+export const storageMapCache = new Map<string, { data: any; timestamp: number }>()
+
+/**
+ * Clear sizeCache and storageMapCache for a specific user.
+ */
+export function clearUserCache(username: string) {
+    try {
+        const config = useRuntimeConfig()
+        const userStoragePath = path.resolve(path.join(config.storagePath, username))
+        
+        for (const key of sizeCache.keys()) {
+            const resolvedKey = path.resolve(key)
+            if (resolvedKey === userStoragePath || resolvedKey.startsWith(userStoragePath + path.sep)) {
+                sizeCache.delete(key)
+            }
+        }
+    } catch (e) {
+        // Fallback if useRuntimeConfig is not available
+        for (const key of sizeCache.keys()) {
+            const parts = key.split(path.sep)
+            if (parts.includes(username)) {
+                sizeCache.delete(key)
+            }
+        }
+    }
+    
+    // Clear storage map cache
+    storageMapCache.delete(username)
+}
+
 import type { File, FileMeta } from '~/types/File'
 
 /**

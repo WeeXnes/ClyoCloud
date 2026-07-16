@@ -38,7 +38,7 @@
               </span>
             </div>
             <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-1">
-              Welcome back, <span class="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{{ stats?.username || 'User' }}</span>
+              Welcome back, <span class="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{{ userState?.name || stats?.username || 'User' }}</span>
             </h2>
             <p class="text-xs text-base-content/50 font-bold uppercase tracking-wider pl-0.5">ClyoCloud is fully synchronized and secure</p>
           </div>
@@ -261,7 +261,7 @@
                   <div class="flex items-baseline gap-2 mt-0.5">
                     <p class="text-lg font-black tracking-tight">{{ formatSize(hoveredNode.size) }}</p>
                     <p class="text-[8px] font-bold text-base-content/30 uppercase tracking-widest">
-                      ~{{ storageMapData ? ((hoveredNode.size / storageMapData.size) * 100).toFixed(1) : 0 }}% of total cluster
+                      ~{{ storageMapData && storageMapData.size > 0 ? ((hoveredNode.size / storageMapData.size) * 100).toFixed(1) : '0.0' }}% of total cluster
                     </p>
                   </div>
                 </div>
@@ -421,6 +421,7 @@ interface ActivityEntry {
 }
 
 const stats = ref<Stats | null>(null)
+const userState = useState<{ name: string } | null>('user')
 const activities = ref<ActivityEntry[]>([])
 const storageMapData = ref<{ name: string; size: number; children: any[] } | null>(null)
 const isLoading = ref(true)
@@ -461,7 +462,7 @@ const ramPercentage = computed(() => {
 })
 
 const treemapNodes = computed(() => {
-  if (!storageMapData.value) return []
+  if (!storageMapData.value || !storageMapData.value.children) return []
   return [...storageMapData.value.children]
     .sort((a, b) => b.size - a.size)
     .slice(0, 12)

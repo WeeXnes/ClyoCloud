@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2.4.1] - 2026-07-16
+
+### Fixed
+- Fixed a rendering crash on the System Status dashboard for users with empty storage (no uploaded files).
+- Fixed a username load flicker in the welcome banner by loading user data from global state during page hydration instead of waiting for the stats API.
+
+### Optimized
+- Optimized cold start response time and polling overhead by caching dynamic hardware stats (CPU, RAM, mounted drives) and pre-warming the cache on startup.
+- Implemented a real-time invalidation mechanism that immediately updates dashboard size stats and storage map allocations upon file uploads, deletions, renames, moves, folder creations, and remote downloads.
+
+---
+
 ## [2.4.0] - 2026-07-10
 
 ### Changed

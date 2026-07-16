@@ -4,6 +4,60 @@ import path from 'path'
 import si from 'systeminformation'
 import { getDirSize } from '~/server/utils/fileUtils'
 
+// Static CPU info cache
+let cachedCpuInfo: any = null
+async function getCpuInfo() {
+    if (!cachedCpuInfo) {
+        cachedCpuInfo = await si.cpu()
+    }
+    return cachedCpuInfo
+}
+
+// Memory cache
+let cachedMemory: any = null
+let lastMemoryFetch = 0
+const MEM_CACHE_TTL = 5000 // 5 seconds
+async function getMemory() {
+    const now = Date.now()
+    if (!cachedMemory || now - lastMemoryFetch > MEM_CACHE_TTL) {
+        cachedMemory = await si.mem()
+        lastMemoryFetch = now
+    }
+    return cachedMemory
+}
+
+// Load cache
+let cachedLoad: any = null
+let lastLoadFetch = 0
+const LOAD_CACHE_TTL = 5000 // 5 seconds
+async function getLoad() {
+    const now = Date.now()
+    if (!cachedLoad || now - lastLoadFetch > LOAD_CACHE_TTL) {
+        cachedLoad = await si.currentLoad()
+        lastLoadFetch = now
+    }
+    return cachedLoad
+}
+
+// FS size cache
+let cachedFsStats: any = null
+let lastFsStatsFetch = 0
+const FS_CACHE_TTL = 30000 // 30 seconds
+async function getFsStats() {
+    const now = Date.now()
+    if (!cachedFsStats || now - lastFsStatsFetch > FS_CACHE_TTL) {
+        cachedFsStats = await si.fsSize()
+        lastFsStatsFetch = now
+    }
+    return cachedFsStats
+}
+
+// Warm up caches asynchronously on boot
+getCpuInfo().catch((err) => console.error('Failed to warm CPU cache:', err))
+getMemory().catch(() => {})
+getLoad().catch(() => {})
+getFsStats().catch(() => {})
+
 export default defineEventHandler(async (event) => {
     if (!event.context.user) {
         throw createError({
@@ -16,13 +70,20 @@ export default defineEventHandler(async (event) => {
         const config = useRuntimeConfig()
         const userStoragePath = path.join(config.storagePath, event.context.user.name)
         
-        // Parallelize system calls
-        const [dynamicStats, memory, cpuInfo, load, fsStats] = await Promise.all([
-            getDirSize(userStoragePath),
-            si.mem(),
-            si.cpu(),
-            si.currentLoad(),
-            si.fsSize()
+        let dynamicStats = 0
+        try {
+            await fs.access(userStoragePath)
+            dynamicStats = await getDirSize(userStoragePath)
+        } catch {
+            // Directory doesn't exist, size is 0
+        }
+
+        // Parallelize system calls using the cached/warmed methods
+        const [memory, cpuInfo, load, fsStats] = await Promise.all([
+            getMemory(),
+            getCpuInfo(),
+            getLoad(),
+            getFsStats()
         ])
 
         // Filter out virtual and system file systems

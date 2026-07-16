@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { removeFromFavorites } from '~/server/utils/favorites'
 
-import { isPathWithin } from '~/server/utils/fileUtils'
+import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -63,6 +63,8 @@ export default defineEventHandler(async (event) => {
     } catch (e) {
       // Ignore if .cloudinfo doesn't exist
     }
+
+    clearUserCache(event.context.user.name)
 
     return { success: true }
   } catch (error) {
