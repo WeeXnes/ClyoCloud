@@ -34,6 +34,7 @@ const selectedImageUrl = ref('')
 const currentMediaFile = ref<File | null>(null)
 const touchStartX = ref(0)
 const touchStartY = ref(0)
+const transitionName = ref('slide-right')
 
 const mediaFilesList = computed(() => {
   return sortedFiles.value.filter(f => !f.isFolder && (isImageFile(f.name) || isVideoFile(f.name)))
@@ -1480,6 +1481,7 @@ const closeImageViewer = () => {
 
 const nextMedia = () => {
   if (mediaFilesList.value.length === 0) return
+  transitionName.value = 'slide-right'
   const nextIdx = (currentMediaIndex.value + 1) % mediaFilesList.value.length
   currentMediaFile.value = mediaFilesList.value[nextIdx]
   selectedImageUrl.value = getStaticUrl(currentMediaFile.value)
@@ -1487,6 +1489,7 @@ const nextMedia = () => {
 
 const prevMedia = () => {
   if (mediaFilesList.value.length === 0) return
+  transitionName.value = 'slide-left'
   const prevIdx = (currentMediaIndex.value - 1 + mediaFilesList.value.length) % mediaFilesList.value.length
   currentMediaFile.value = mediaFilesList.value[prevIdx]
   selectedImageUrl.value = getStaticUrl(currentMediaFile.value)
@@ -2293,7 +2296,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
     <!-- Image/Media Viewer -->
     <div class="modal image-viewer-modal backdrop-blur-md" :class="{ 'modal-open': showImageViewerModal }" @click="closeImageViewer">
-      <div class="relative w-full h-full flex items-center justify-center p-4 md:p-12" @click.stop>
+      <div class="relative w-full h-full max-w-full max-h-full flex items-center justify-center p-4 md:p-12 overflow-hidden" @click.stop>
         
         <!-- Header Overlay -->
         <div class="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/85 to-transparent flex items-center justify-between text-white z-50">
@@ -2340,26 +2343,30 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
         <!-- Main Media Container -->
         <div 
-          class="relative max-h-[85vh] max-w-[90vw] md:max-h-[80vh] md:max-w-[80vw] flex items-center justify-center select-none"
+          class="relative max-h-[65dvh] max-w-[90dvw] md:max-h-[80vh] md:max-w-[80vw] flex items-center justify-center select-none"
           @touchstart="handleMediaTouchStart"
           @touchend="handleMediaTouchEnd"
         >
-          <!-- Images & Gifs -->
-          <img 
-            v-if="currentMediaFile && isImageFile(currentMediaFile.name)" 
-            :src="selectedImageUrl" 
-            alt="Full size preview" 
-            class="max-h-[80vh] max-w-[90vw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg shadow-2xl ring-1 ring-white/10 object-contain select-none pointer-events-none" 
-          />
+          <transition :name="transitionName" mode="out-in">
+            <!-- Images & Gifs -->
+            <img 
+              v-if="currentMediaFile && isImageFile(currentMediaFile.name)" 
+              :key="currentMediaFile.name"
+              :src="selectedImageUrl" 
+              alt="Full size preview" 
+              class="max-h-[60dvh] max-w-[90dvw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg shadow-2xl ring-1 ring-white/10 object-contain select-none pointer-events-none" 
+            />
 
-          <!-- Videos -->
-          <video 
-            v-else-if="currentMediaFile && isVideoFile(currentMediaFile.name)" 
-            :src="selectedImageUrl" 
-            controls 
-            autoplay 
-            class="max-h-[80vh] max-w-[90vw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg shadow-2xl ring-1 ring-white/10 object-contain"
-          ></video>
+            <!-- Videos -->
+            <video 
+              v-else-if="currentMediaFile && isVideoFile(currentMediaFile.name)" 
+              :key="currentMediaFile.name"
+              :src="selectedImageUrl" 
+              controls 
+              autoplay 
+              class="max-h-[60dvh] max-w-[90dvw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg shadow-2xl ring-1 ring-white/10 object-contain"
+            ></video>
+          </transition>
         </div>
 
         <!-- Right Navigation Arrow (Desktop Only) -->
@@ -2758,6 +2765,38 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
   align-items: center;
   justify-content: center;
   z-index: 10000;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-width: 100vw !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+.slide-right-enter-active,
+.slide-right-leave-active,
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
 }
 
 .modal-box-image img {

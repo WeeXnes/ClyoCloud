@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.1] - 2026-07-16
+
+### Fixed
+- Fixed mobile image viewer size boundaries to fit strictly within the viewport width and height (`100dvw` / `100dvh`), preventing it from expanding the viewport or clipping elements off-screen.
+- Added smooth horizontal slide transitions when cycling through files using swipe gestures or navigation controls.
+
+---
+
 ## [2.5.0] - 2026-07-16
 
 ### Added
