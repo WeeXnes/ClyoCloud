@@ -1,6 +1,6 @@
 {
   "name": "clyocloud",
-  "version": "2.4.8",
+  "version": "2.5.8",
   "private": true,
   "type": "module",
   "scripts": {

@@ -30,6 +30,19 @@ const showNewTagForm = ref(true)
 const newTagName = ref('')
 const newTagColor = ref('#4B5EAA')
 const selectedImageUrl = ref('')
+
+const currentMediaFile = ref<File | null>(null)
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+
+const mediaFilesList = computed(() => {
+  return sortedFiles.value.filter(f => !f.isFolder && (isImageFile(f.name) || isVideoFile(f.name)))
+})
+
+const currentMediaIndex = computed(() => {
+  if (!currentMediaFile.value) return -1
+  return mediaFilesList.value.findIndex(f => f.name === currentMediaFile.value?.name)
+})
 const selectedFilesForUpload = ref<FileList | null>(null)
 const isUploading = ref(false)
 const uploadError = ref('')
@@ -962,6 +975,17 @@ const handleKeydown = (event: KeyboardEvent) => {
     return
   }
 
+  if (showImageViewerModal.value) {
+    if (event.key === 'ArrowRight') {
+      nextMedia()
+      return
+    }
+    if (event.key === 'ArrowLeft') {
+      prevMedia()
+      return
+    }
+  }
+
   // Escape: Close all modals
   if (event.key === 'Escape') {
     showFileInfoModal.value = false
@@ -1383,9 +1407,8 @@ const onFileClick = (event: MouseEvent, file: File) => {
     const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
     const newPath = folderPath ? `${folderPath}/${encodeURIComponent(file.name)}` : encodeURIComponent(file.name)
     navigateTo(`/files/${newPath}`)
-  } else if (isImageFile(file.name) && isThumbnail) {
-    selectedImageUrl.value = getStaticUrl(file)
-    showImageViewerModal.value = true
+  } else if (!file.isFolder && (isImageFile(file.name) || isVideoFile(file.name))) {
+    openMediaViewer(file)
   } else {
     selectedFile.value = file
     isEditingDescription.value = false
@@ -1443,9 +1466,49 @@ const closeFileModal = () => {
   isEditingDescription.value = false
 }
 
+const openMediaViewer = (file: File) => {
+  currentMediaFile.value = file
+  selectedImageUrl.value = getStaticUrl(file)
+  showImageViewerModal.value = true
+}
+
 const closeImageViewer = () => {
   showImageViewerModal.value = false
+  currentMediaFile.value = null
   selectedImageUrl.value = ''
+}
+
+const nextMedia = () => {
+  if (mediaFilesList.value.length === 0) return
+  const nextIdx = (currentMediaIndex.value + 1) % mediaFilesList.value.length
+  currentMediaFile.value = mediaFilesList.value[nextIdx]
+  selectedImageUrl.value = getStaticUrl(currentMediaFile.value)
+}
+
+const prevMedia = () => {
+  if (mediaFilesList.value.length === 0) return
+  const prevIdx = (currentMediaIndex.value - 1 + mediaFilesList.value.length) % mediaFilesList.value.length
+  currentMediaFile.value = mediaFilesList.value[prevIdx]
+  selectedImageUrl.value = getStaticUrl(currentMediaFile.value)
+}
+
+const handleMediaTouchStart = (e: TouchEvent) => {
+  touchStartX.value = e.touches[0].clientX
+  touchStartY.value = e.touches[0].clientY
+}
+
+const handleMediaTouchEnd = (e: TouchEvent) => {
+  if (e.changedTouches.length === 0) return
+  const deltaX = e.changedTouches[0].clientX - touchStartX.value
+  const deltaY = e.changedTouches[0].clientY - touchStartY.value
+  
+  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+    if (deltaX > 0) {
+      prevMedia()
+    } else {
+      nextMedia()
+    }
+  }
 }
 
 const togglePublicAccess = async (event: Event) => {
@@ -2093,7 +2156,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
                   <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
                 </video>
-                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-contain transition-transform duration-300 group-hover/preview:scale-105 cursor-pointer" @click="selectedImageUrl = getStaticUrl(selectedFile), showImageViewerModal = true" />
+                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-contain transition-transform duration-300 group-hover/preview:scale-105 cursor-pointer" @click="openMediaViewer(selectedFile)" />
              </div>
           </div>
 
@@ -2228,12 +2291,97 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
       </div>
     </div>
 
-    <!-- Image Viewer -->
+    <!-- Image/Media Viewer -->
     <div class="modal image-viewer-modal backdrop-blur-md" :class="{ 'modal-open': showImageViewerModal }" @click="closeImageViewer">
-      <div class="modal-box-image p-2 bg-transparent border-none shadow-none" @click.stop>
-        <div class="relative group">
-          <img :src="selectedImageUrl" alt="Full size preview" class="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl ring-1 ring-white/10" />
-          <button class="btn btn-circle btn-xs absolute -top-3 -right-3 bg-base-100 shadow-lg border-none" @click="closeImageViewer">✕</button>
+      <div class="relative w-full h-full flex items-center justify-center p-4 md:p-12" @click.stop>
+        
+        <!-- Header Overlay -->
+        <div class="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/85 to-transparent flex items-center justify-between text-white z-50">
+          <div class="min-w-0 flex-1 mr-4">
+            <h3 class="font-extrabold text-sm truncate">{{ currentMediaFile?.name }}</h3>
+            <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none mt-1">
+              {{ currentFolder ? '/' + currentFolder : 'Root' }}
+            </p>
+          </div>
+          <div class="flex items-center gap-2 md:gap-4 shrink-0">
+            <!-- Favorite button -->
+            <button 
+              v-if="currentMediaFile"
+              @click="toggleFavourite(currentMediaFile)" 
+              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white"
+              title="Toggle Favorite"
+            >
+              <Icon :name="currentMediaFile.meta?.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" :class="{ 'text-orange-500': currentMediaFile.meta?.isFavourite }" />
+            </button>
+            <!-- Download button -->
+            <button 
+              v-if="currentMediaFile"
+              @click="downloadFile(currentMediaFile)" 
+              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white"
+              title="Download File"
+            >
+              <Icon name="mdi:download" class="w-4 h-4" />
+            </button>
+            <span class="text-[10px] font-bold bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block">
+              {{ currentMediaIndex + 1 }} / {{ mediaFilesList.length }}
+            </span>
+            <button class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white font-bold" @click="closeImageViewer">✕</button>
+          </div>
+        </div>
+
+        <!-- Left Navigation Arrow (Desktop Only) -->
+        <button 
+          v-if="mediaFilesList.length > 1" 
+          @click="prevMedia" 
+          class="hidden md:flex btn btn-circle btn-ghost bg-black/20 hover:bg-black/40 text-white absolute left-6 z-40 border-white/10 h-12 w-12 items-center justify-center animate-in fade-in duration-300"
+        >
+          <Icon name="mdi:chevron-left" class="w-8 h-8" />
+        </button>
+
+        <!-- Main Media Container -->
+        <div 
+          class="relative max-h-[85vh] max-w-[90vw] md:max-h-[80vh] md:max-w-[80vw] flex items-center justify-center select-none"
+          @touchstart="handleMediaTouchStart"
+          @touchend="handleMediaTouchEnd"
+        >
+          <!-- Images & Gifs -->
+          <img 
+            v-if="currentMediaFile && isImageFile(currentMediaFile.name)" 
+            :src="selectedImageUrl" 
+            alt="Full size preview" 
+            class="max-h-[80vh] max-w-[90vw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg shadow-2xl ring-1 ring-white/10 object-contain select-none pointer-events-none" 
+          />
+
+          <!-- Videos -->
+          <video 
+            v-else-if="currentMediaFile && isVideoFile(currentMediaFile.name)" 
+            :src="selectedImageUrl" 
+            controls 
+            autoplay 
+            class="max-h-[80vh] max-w-[90vw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg shadow-2xl ring-1 ring-white/10 object-contain"
+          ></video>
+        </div>
+
+        <!-- Right Navigation Arrow (Desktop Only) -->
+        <button 
+          v-if="mediaFilesList.length > 1" 
+          @click="nextMedia" 
+          class="hidden md:flex btn btn-circle btn-ghost bg-black/20 hover:bg-black/40 text-white absolute right-6 z-40 border-white/10 h-12 w-12 items-center justify-center animate-in fade-in duration-300"
+        >
+          <Icon name="mdi:chevron-right" class="w-8 h-8" />
+        </button>
+
+        <!-- Mobile Touch Swipe Helper / Navigation Bar -->
+        <div v-if="mediaFilesList.length > 1" class="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-6 md:hidden z-40">
+          <button @click="prevMedia" class="btn btn-circle btn-sm bg-black/30 text-white border-white/10 hover:bg-black/50">
+            <Icon name="mdi:chevron-left" class="w-5 h-5" />
+          </button>
+          <span class="text-[10px] font-bold bg-black/40 text-white px-3 py-1.5 rounded-full uppercase tracking-wider">
+            {{ currentMediaIndex + 1 }} / {{ mediaFilesList.length }}
+          </span>
+          <button @click="nextMedia" class="btn btn-circle btn-sm bg-black/30 text-white border-white/10 hover:bg-black/50">
+            <Icon name="mdi:chevron-right" class="w-5 h-5" />
+          </button>
         </div>
       </div>
     </div>
@@ -2605,7 +2753,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 }
 
 .image-viewer-modal {
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(10, 10, 10, 0.95);
   display: flex !important;
   align-items: center;
   justify-content: center;
