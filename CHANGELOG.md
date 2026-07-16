@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2.4.3] - 2026-07-16
+
+### Added
+- Persisted settings sub-category navigation state in URL query parameters (`?cat=`) to prevent reloading from resetting the navigation back to the main menu.
+
+---
+
 ## [2.4.2] - 2026-07-16
 
 ### Fixed

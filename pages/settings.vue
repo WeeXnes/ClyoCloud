@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute, useRouter } from 'nuxt/app'
 
 useHead({
   title: 'Settings'
@@ -10,7 +11,21 @@ import { startOperation, updateOperation, completeOperation, failOperation, Prog
 import type { Tag } from '~/types/File'
 import { useState } from 'nuxt/app'
 
-const activeCategory = ref<string | null>(null)
+const route = useRoute()
+const router = useRouter()
+
+const activeCategory = computed<string | null>({
+  get() {
+    const cat = route.query.cat as string
+    if (cat && ['security', 'system', 'appearance', 'previews', 'directories'].includes(cat)) {
+      return cat
+    }
+    return null
+  },
+  set(val) {
+    router.push({ query: val ? { cat: val } : {} })
+  }
+})
 
 function getCategoryTitle(cat: string | null) {
   switch (cat) {
