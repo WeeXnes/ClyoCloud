@@ -1339,7 +1339,7 @@ const handleDrop = (event: DragEvent) => {
 
 const hasThumbnail = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return ['jpg', 'jpeg', 'png', 'mp4', 'webm', 'mov', 'mkv'].includes(ext)
+  return ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'mov', 'mkv'].includes(ext)
 }
 
 const isVideoFile = (filename: string) => {

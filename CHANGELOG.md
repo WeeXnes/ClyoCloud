@@ -2,12 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.5.8] - 2026-07-16
+## [2.5.0] - 2026-07-16
 
 ### Added
 - Implemented a fully functional Media Viewer supporting images, animated GIFs, and inline video playback, replacing the simple image lightbox.
 - Added desktop keyboard controls (left/right arrows) and mobile swipe gestures (left/right) to cycle through media files in the current folder.
 - Integrated quick actions to favorite/unstar and download files directly from the viewer overlay, alongside a parent-folder tracking sub-label.
+- Enabled thumbnail rendering support for GIF files in the file explorer list and grid views.
 
 ---
 

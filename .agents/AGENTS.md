@@ -3,7 +3,7 @@
 Whenever you make noteworthy changes to the codebase:
 1. **Version Bump**:
    - Increment the version number in `package.json` by `+0.0.1` for minor/small changes/bugfixes.
-   - Increment the version number in `package.json` by `+0.1.0` for major/large changes/new features.
+   - Increment the version number in `package.json` by `+0.1.0` for major/large changes/new features (and reset the last digit to 0, e.g., 2.4.8 -> 2.5.0).
 2. **Changelog Update**:
    - Automatically document the list of changes in `CHANGELOG.md` under the bumped version number, using the current date in local time (format: `YYYY-MM-DD`).
 3. **Build & Test Verification**:
