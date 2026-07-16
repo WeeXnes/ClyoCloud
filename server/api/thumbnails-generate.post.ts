@@ -1,5 +1,6 @@
 import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
+import os from 'os'
 import path from 'path'
 import mime from 'mime-types'
 import { runFfmpeg, runFfprobe } from '~/server/utils/ffmpeg'
@@ -58,7 +59,9 @@ export default defineEventHandler(async (event) => {
             const usersData = await fs.readFile(config.usersFilePath, 'utf-8')
             const users: any[] = JSON.parse(usersData)
             const userData = users.find((u) => u.name === user!.name)
-            const CONCURRENCY = userData?.maxConcurrentPreviews || 3
+            const CPU_CORES = os.cpus().length
+            const maxConcurrency = Math.min(Math.max(CPU_CORES * 2, 4), 32)
+            const CONCURRENCY = Math.min(userData?.maxConcurrentPreviews || 3, maxConcurrency)
 
             const images = await findImages(userStoragePath)
             updateThumbnailTaskStatus(user!.name, {

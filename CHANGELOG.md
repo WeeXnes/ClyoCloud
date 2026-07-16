@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2.4.5] - 2026-07-16
+
+### Added
+- Implemented dynamic concurrency scaling based on the system's actual CPU core count (using `Math.min(Math.max(cores * 2, 4), 32)`) to safely maximize processing throughput without exceeding OS process/file descriptor limits.
+
+---
+
+## [2.4.4] - 2026-07-16
+
+### Fixed
+- Fixed high CPU load and website unresponsiveness during bulk thumbnail/preview generation by running ffmpeg and ffprobe sub-processes with low process priority (`nice -n 19` on UNIX/Linux systems).
+- Enforced a safe maximum server-side concurrency limit of 8 for both preview and thumbnail background tasks to prevent disk I/O thrashing and memory exhaustion.
+
+---
+
 ## [2.4.3] - 2026-07-16
 
 ### Added
