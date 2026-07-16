@@ -1698,8 +1698,8 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
     </div>
     <!-- Edge-to-Edge Sticky Header -->
     <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
-      <div class="w-full px-6 py-4">
-        <div class="flex items-center justify-between">
+      <div class="w-full px-4 md:px-6 py-3 md:py-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
 
           <!-- Title and Breadcrumbs -->
           <div class="flex items-center gap-3">
@@ -1730,9 +1730,9 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           </div>
 
           <!-- Actions -->
-          <div class="flex flex-wrap items-center gap-2 md:gap-3">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3 w-full md:w-auto">
              <!-- Search -->
-             <div class="relative flex-1 md:flex-none md:min-w-[240px]">
+             <div class="relative w-full sm:w-64">
                 <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                   <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
                 </div>
@@ -1744,55 +1744,55 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 />
              </div>
 
-             <div class="flex items-center gap-1.5 md:gap-2 ml-auto md:ml-0">
-               <button 
-                class="btn btn-xs md:btn-sm btn-ghost border border-base-content/10 bg-base-100/50 transition-all duration-200" 
-                :class="{ 'text-orange-500 bg-orange-500/10 border-orange-500/20 shadow-sm': showFavouritesOnly }"
-                @click="showFavouritesOnly = !showFavouritesOnly"
-                title="Show Favourites Only"
-               >
-                 <Icon :name="showFavouritesOnly ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
-                 <span class="hidden xl:inline ml-1 font-bold text-[10px] uppercase tracking-widest">Favorites</span>
-               </button>
+             <div class="flex flex-wrap items-center gap-1.5 md:gap-2 justify-end w-full sm:w-auto">
+                <button 
+                 class="btn btn-xs md:btn-sm btn-ghost border border-base-content/10 bg-base-100/50 transition-all duration-200" 
+                 :class="{ 'text-orange-500 bg-orange-500/10 border-orange-500/20 shadow-sm': showFavouritesOnly }"
+                 @click="showFavouritesOnly = !showFavouritesOnly"
+                 title="Show Favourites Only"
+                >
+                  <Icon :name="showFavouritesOnly ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
+                  <span class="hidden xl:inline ml-1 font-bold text-[10px] uppercase tracking-widest">Favorites</span>
+                </button>
 
-               <div class="dropdown dropdown-end">
-                 <button tabindex="0" class="btn btn-xs md:btn-sm btn-ghost gap-2 border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest">
-                    <Icon name="mdi:sort-variant" class="w-4 h-4" />
-                    <span class="hidden sm:inline">Sort</span>
-                 </button>
-                 <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-lg w-40 border border-base-content/10 mt-2 font-bold text-[10px] uppercase tracking-widest">
-                   <li><a @click="sortOption = 'name'" :class="{ 'active': sortOption === 'name' }">Name</a></li>
-                   <li><a @click="sortOption = 'size'" :class="{ 'active': sortOption === 'size' }">Size</a></li>
-                   <li><a @click="sortOption = 'date'" :class="{ 'active': sortOption === 'date' }">Date</a></li>
-                 </ul>
-               </div>
+                <div class="dropdown dropdown-end">
+                  <button tabindex="0" class="btn btn-xs md:btn-sm btn-ghost gap-2 border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest">
+                     <Icon name="mdi:sort-variant" class="w-4 h-4" />
+                     <span class="hidden sm:inline">Sort</span>
+                  </button>
+                  <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-lg w-40 border border-base-content/10 mt-2 font-bold text-[10px] uppercase tracking-widest">
+                    <li><a @click="sortOption = 'name'" :class="{ 'active': sortOption === 'name' }">Name</a></li>
+                    <li><a @click="sortOption = 'size'" :class="{ 'active': sortOption === 'size' }">Size</a></li>
+                    <li><a @click="sortOption = 'date'" :class="{ 'active': sortOption === 'date' }">Date</a></li>
+                  </ul>
+                </div>
 
-               <button class="btn btn-xs md:btn-sm btn-ghost border border-base-content/10 bg-base-100/50" @click="openCreateFolderModal" title="Create Folder">
-                 <Icon name="mdi:folder-plus" class="w-4 h-4" />
-               </button>
+                <button class="btn btn-xs md:btn-sm btn-ghost border border-base-content/10 bg-base-100/50" @click="openCreateFolderModal" title="Create Folder">
+                  <Icon name="mdi:folder-plus" class="w-4 h-4" />
+                </button>
 
-               <div class="h-6 w-px bg-base-content/10 mx-0.5 md:mx-1"></div>
+                <div class="h-6 w-px bg-base-content/10 mx-0.5 md:mx-1"></div>
 
-               <div class="flex bg-base-200/50 p-1 rounded-lg border border-base-content/10">
-                 <button 
-                  class="btn btn-xs btn-ghost rounded-md px-1.5" 
-                  :class="{ 'bg-base-100 shadow-sm text-primary': !isGridView }"
-                  @click="isGridView = false"
-                 >
-                   <Icon name="mdi:view-list" class="w-4 h-4" />
-                 </button>
-                 <button 
-                  class="btn btn-xs btn-ghost rounded-md px-1.5" 
-                  :class="{ 'bg-base-100 shadow-sm text-primary': isGridView }"
-                  @click="isGridView = true"
-                 >
-                   <Icon name="mdi:view-grid" class="w-4 h-4" />
-                 </button>
-               </div>
+                <div class="flex bg-base-200/50 p-1 rounded-lg border border-base-content/10">
+                  <button 
+                   class="btn btn-xs btn-ghost rounded-md px-1.5" 
+                   :class="{ 'bg-base-100 shadow-sm text-primary': !isGridView }"
+                   @click="isGridView = false"
+                  >
+                    <Icon name="mdi:view-list" class="w-4 h-4" />
+                  </button>
+                  <button 
+                   class="btn btn-xs btn-ghost rounded-md px-1.5" 
+                   :class="{ 'bg-base-100 shadow-sm text-primary': isGridView }"
+                   @click="isGridView = true"
+                  >
+                    <Icon name="mdi:view-grid" class="w-4 h-4" />
+                  </button>
+                </div>
 
-               <label class="btn btn-xs md:btn-sm btn-primary px-3 md:px-5 shadow-sm rounded-lg font-bold text-[9px] md:text-[10px] uppercase tracking-widest" for="upload-modal">
-                 Upload
-               </label>
+                <label class="btn btn-xs md:btn-sm btn-primary px-3 md:px-5 shadow-sm rounded-lg font-bold text-[9px] md:text-[10px] uppercase tracking-widest" for="upload-modal">
+                  Upload
+                </label>
              </div>
           </div>
         </div>
@@ -2299,19 +2299,19 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
       <div class="relative w-full h-full max-w-full max-h-full flex items-center justify-center p-4 md:p-12 overflow-hidden" @click.stop>
         
         <!-- Header Overlay -->
-        <div class="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/85 to-transparent flex items-center justify-between text-white z-50">
-          <div class="min-w-0 flex-1 mr-4">
-            <h3 class="font-extrabold text-sm truncate">{{ currentMediaFile?.name }}</h3>
-            <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none mt-1">
+        <div class="absolute top-0 left-0 right-0 p-3 md:p-4 bg-gradient-to-b from-black/85 to-transparent flex items-center justify-between text-white z-50">
+          <div class="min-w-0 flex-1 mr-2 md:mr-4">
+            <h3 class="font-extrabold text-xs md:text-sm truncate">{{ currentMediaFile?.name }}</h3>
+            <p class="text-[8px] md:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none mt-0.5 md:mt-1">
               {{ currentFolder ? '/' + currentFolder : 'Root' }}
             </p>
           </div>
-          <div class="flex items-center gap-2 md:gap-4 shrink-0">
+          <div class="flex items-center gap-1.5 md:gap-4 shrink-0">
             <!-- Favorite button -->
             <button 
               v-if="currentMediaFile"
               @click="toggleFavourite(currentMediaFile)" 
-              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white"
+              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white animate-in fade-in duration-200"
               title="Toggle Favorite"
             >
               <Icon :name="currentMediaFile.meta?.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" :class="{ 'text-orange-500': currentMediaFile.meta?.isFavourite }" />
@@ -2320,7 +2320,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
             <button 
               v-if="currentMediaFile"
               @click="downloadFile(currentMediaFile)" 
-              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white"
+              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white animate-in fade-in duration-200"
               title="Download File"
             >
               <Icon name="mdi:download" class="w-4 h-4" />

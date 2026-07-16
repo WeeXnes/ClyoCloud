@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.2] - 2026-07-16
+
+### Fixed
+- Redesigned the primary page header navigation to dynamically stack into a clean vertical list on mobile viewports, preventing search fields and quick actions from clipping out of the screen.
+- Compacted the image/media viewer header overlay controls, padding, and labels on mobile to prevent clipping and improve usability on small devices.
+
+---
+
 ## [2.5.1] - 2026-07-16
 
 ### Fixed
