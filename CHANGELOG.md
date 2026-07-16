@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.0] - 2026-07-16
+
+### Added
+- Added a gesture-driven mobile tags drawer menu in the media viewer (slide up to open, slide down or click backdrop to close).
+- Added a clickable Tag icon button in the desktop/mobile media viewer header for direct, tap-based tags drawer management.
+
+---
+
 ## [2.6.0] - 2026-07-16
 
 ### Added

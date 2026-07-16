@@ -23,6 +23,7 @@ const showFileInfoModal = ref(false)
 const showCreateFolderModal = ref(false)
 const newFolderName = ref('')
 const showImageViewerModal = ref(false)
+const showMobileTagDrawer = ref(false)
 const showTagModal = ref(false)
 const selectedTags = ref<Tag[]>([])
 const predefinedTags = ref<Tag[]>([])
@@ -389,6 +390,7 @@ watch(showImageViewerModal, (isOpen) => {
       }
     }
   } else {
+    showMobileTagDrawer.value = false
     if (imageViewerMobileFullscreen.value && isMobile.value) {
       if (document.fullscreenElement && document.exitFullscreen) {
         document.exitFullscreen().catch((err) => {
@@ -1500,6 +1502,7 @@ const openMediaViewer = (file: File) => {
 
 const closeImageViewer = () => {
   showImageViewerModal.value = false
+  showMobileTagDrawer.value = false
   currentMediaFile.value = null
   selectedImageUrl.value = ''
 }
@@ -1520,6 +1523,55 @@ const prevMedia = () => {
   selectedImageUrl.value = getStaticUrl(currentMediaFile.value)
 }
 
+const isMediaFileTagSelected = (tag: Tag) => {
+  if (!currentMediaFile.value || !currentMediaFile.value.meta || !currentMediaFile.value.meta.tags) return false
+  return currentMediaFile.value.meta.tags.some(t => t.name.toLowerCase() === tag.name.toLowerCase())
+}
+
+const toggleMediaFileTag = async (tag: Tag) => {
+  if (!currentMediaFile.value) return
+  
+  const currentTags = currentMediaFile.value.meta?.tags || []
+  const hasTag = currentTags.some(t => t.name.toLowerCase() === tag.name.toLowerCase())
+  
+  let updatedTags = []
+  if (hasTag) {
+    updatedTags = currentTags.filter(t => t.name.toLowerCase() !== tag.name.toLowerCase())
+  } else {
+    updatedTags = [...currentTags, tag]
+  }
+
+  try {
+    const route = useRoute()
+    const pathParam = route.params.path
+    const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
+    const filePath = folderPath ? `${folderPath}/${currentMediaFile.value.name}` : currentMediaFile.value.name
+
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullPath: filePath,
+        tags: updatedTags,
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to update tags')
+    
+    currentMediaFile.value.meta.tags = updatedTags
+    const fileInList = files.value.find(f => f.name === currentMediaFile.value?.name)
+    if (fileInList) {
+      if (!fileInList.meta) fileInList.meta = {}
+      fileInList.meta.tags = updatedTags
+    }
+    
+    createNotification(hasTag ? 'Tag removed' : 'Tag added', NotificationType.SUCCESS)
+  } catch (err) {
+    console.error('Error toggling tag:', err)
+    createNotification('Failed to update tag', NotificationType.ERROR)
+  }
+}
+
 const handleMediaTouchStart = (e: TouchEvent) => {
   touchStartX.value = e.touches[0].clientX
   touchStartY.value = e.touches[0].clientY
@@ -1530,11 +1582,25 @@ const handleMediaTouchEnd = (e: TouchEvent) => {
   const deltaX = e.changedTouches[0].clientX - touchStartX.value
   const deltaY = e.changedTouches[0].clientY - touchStartY.value
   
-  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-    if (deltaX > 0) {
-      prevMedia()
-    } else {
-      nextMedia()
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX > 0) {
+        prevMedia()
+      } else {
+        nextMedia()
+      }
+    }
+  } else {
+    if (Math.abs(deltaY) > 50) {
+      if (deltaY < 0) {
+        if (isMobile.value) {
+          showMobileTagDrawer.value = true
+        }
+      } else {
+        if (isMobile.value && showMobileTagDrawer.value) {
+          showMobileTagDrawer.value = false
+        }
+      }
     }
   }
 }
@@ -2341,6 +2407,15 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
             >
               <Icon :name="currentMediaFile.meta?.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" :class="{ 'text-orange-500': currentMediaFile.meta?.isFavourite }" />
             </button>
+            <!-- Tag button -->
+            <button 
+              v-if="currentMediaFile"
+              @click="showMobileTagDrawer = true" 
+              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white animate-in fade-in duration-200"
+              title="Manage Tags"
+            >
+              <Icon name="mdi:tag" class="w-4 h-4" />
+            </button>
             <!-- Download button -->
             <button 
               v-if="currentMediaFile"
@@ -2414,6 +2489,69 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           <button @click="nextMedia" class="btn btn-circle btn-sm bg-black/30 text-white border-white/10 hover:bg-black/50">
             <Icon name="mdi:chevron-right" class="w-5 h-5" />
           </button>
+        </div>
+
+        <!-- Mobile Tags Drawer -->
+        <div 
+          class="fixed inset-x-0 bottom-0 z-[100] transition-transform duration-300 ease-out transform"
+          :class="showMobileTagDrawer ? 'translate-y-0' : 'translate-y-full'"
+        >
+          <!-- Backdrop overlay, visible only when open -->
+          <div 
+            v-if="showMobileTagDrawer" 
+            class="fixed inset-0 bg-black/60 backdrop-blur-xs -z-10" 
+            @click="showMobileTagDrawer = false"
+          ></div>
+
+          <!-- Drawer Content -->
+          <div class="bg-slate-950/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl p-6 shadow-2xl flex flex-col gap-4 text-white max-h-[50vh] overflow-y-auto" @click.stop>
+            <!-- Pull Handle bar -->
+            <div class="w-12 h-1 bg-white/20 rounded-full mx-auto cursor-pointer" @click="showMobileTagDrawer = false"></div>
+            
+            <!-- Header -->
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-xs font-extrabold tracking-wide uppercase text-slate-300">File Tags</h4>
+                <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-0.5">Toggle tags for this entry</p>
+              </div>
+              <button 
+                class="btn btn-circle btn-xs bg-white/10 hover:bg-white/20 border-none text-white font-bold" 
+                @click="showMobileTagDrawer = false"
+              >
+                ✕
+              </button>
+            </div>
+
+            <!-- Tags List Grid -->
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              <button
+                v-for="tag in predefinedTags"
+                :key="tag.name"
+                class="flex items-center justify-between gap-3 p-3 rounded-xl border transition-all duration-200"
+                :class="isMediaFileTagSelected(tag) 
+                  ? 'bg-primary/20 border-primary text-white shadow-md shadow-primary/10' 
+                  : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'"
+                @click="toggleMediaFileTag(tag)"
+              >
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: tag.color }"></span>
+                  <span class="text-[11px] font-bold truncate text-left">{{ tag.name }}</span>
+                </div>
+                <Icon 
+                  :name="isMediaFileTagSelected(tag) ? 'mdi:check-circle' : 'mdi:circle-outline'" 
+                  class="w-4 h-4 shrink-0 transition-transform duration-200"
+                  :class="isMediaFileTagSelected(tag) ? 'text-primary' : 'text-white/20'"
+                />
+              </button>
+            </div>
+
+            <!-- Fallback if no tags exist -->
+            <div v-if="predefinedTags.length === 0" class="text-center py-6 text-white/40">
+              <Icon name="mdi:tag-outline" class="w-8 h-8 mx-auto opacity-30 mb-2 animate-bounce" />
+              <p class="text-[10px] font-bold uppercase tracking-wider">No predefined tags found</p>
+              <p class="text-[9px] mt-1">Configure tags in Settings > Appearance</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
