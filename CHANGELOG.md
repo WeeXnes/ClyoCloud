@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.3] - 2026-07-16
+
+### Fixed
+- Fixed layout clipping and right-overflow in the Media player page under the Media tab on mobile screens by making the action buttons container flex-wrap.
+
+---
+
 ## [2.7.2] - 2026-07-16
 
 ### Fixed

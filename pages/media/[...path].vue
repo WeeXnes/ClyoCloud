@@ -623,7 +623,7 @@ watch(() => route.params.path, () => {
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                    <button 
                      class="btn btn-sm btn-ghost gap-2 rounded-lg border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest"
                      :class="{ 'text-orange-500 bg-orange-500/10 border-orange-500/20 shadow-sm': currentVideo.meta.isFavourite }"
