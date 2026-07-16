@@ -87,20 +87,22 @@ onMounted(fetchShared)
 
 <template>
   <div class="min-h-screen bg-base-200/50">
-    <header class="sticky top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
-      <div class="w-full px-4 py-3 md:py-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
-          <div class="flex flex-col gap-0.5 md:gap-1 min-w-0">
+    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
+      <div class="w-full px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+              <Icon name="mdi:menu" class="w-5 h-5" />
+            </label>
             <div class="flex items-center gap-2">
-              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-xs md:btn-sm lg:hidden">
-                <Icon name="mdi:menu" class="w-5 h-5" />
-              </label>
-              <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+              <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center border border-success/20">
                 <Icon name="mdi:share-variant" class="text-success w-5 h-5" />
-                Shared Files
-              </h1>
+              </div>
+              <div>
+                <h1 class="text-base font-extrabold tracking-tight">Shared Files</h1>
+                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">Manage your public links</p>
+              </div>
             </div>
-            <p class="text-[9px] md:text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Manage your public links</p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 md:gap-3">

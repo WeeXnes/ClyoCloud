@@ -1067,22 +1067,24 @@ const getPreviewUrl = (fullPath: string) => {
     </div>
 
     <!-- Edge-to-Edge Sticky Header -->
-    <header class="sticky top-0 z-[40] w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
-      <div class="w-full px-4 py-3 md:py-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
+      <div class="w-full px-6 py-4">
+        <div class="flex items-center justify-between">
           
           <!-- Title -->
-          <div class="flex flex-col gap-0.5 md:gap-1 min-w-0">
+          <div class="flex items-center gap-3">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+              <Icon name="mdi:menu" class="w-5 h-5" />
+            </label>
             <div class="flex items-center gap-2">
-              <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-xs md:btn-sm lg:hidden">
-                <Icon name="mdi:menu" class="w-5 h-5" />
-              </label>
-              <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 text-base-content">
+              <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
                 <Icon name="mdi:star" class="text-orange-500 w-5 h-5" />
-                Favorites
-              </h1>
+              </div>
+              <div>
+                <h1 class="text-base font-extrabold tracking-tight">Favorites</h1>
+                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">Your starred collection</p>
+              </div>
             </div>
-            <p class="text-[9px] md:text-[10px] font-bold text-base-content/40 uppercase tracking-widest pl-1">Your starred collection</p>
           </div>
 
           <!-- Actions -->

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.8] - 2026-07-16
+
+### Changed
+- Standardized all internal page headers to match the dashboard and settings design system, featuring a visually matching icon wrapper with a subtle border and secondary typography alignment.
+- Removed tech-heavy terms ("tachy speech") across the application, changing "URL integrations" to "Web Downloads" on the dashboard, and simplifying "Compiler Task Feeds", "Previews compilation", etc. in the Settings page to more user-friendly terminology.
+
 ---
 
 ## [2.4.7] - 2026-07-16

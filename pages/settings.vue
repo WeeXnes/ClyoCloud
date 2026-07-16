@@ -43,7 +43,7 @@ function getCategorySubtitle(cat: string | null) {
     case 'security': return 'Update credentials, configure two-factor authentication, and manage sessions'
     case 'system': return 'Configure custom paths, execute storage diagnostics, and rebuild indexes'
     case 'appearance': return 'Select visual themes and define labels for file classification'
-    case 'previews': return 'Manage video and image cache compilation parameters'
+    case 'previews': return 'Manage video and image preview settings'
     case 'directories': return 'Inclusion and exclusion patterns for file queries'
     default: return 'Cloud Settings'
   }
@@ -645,7 +645,7 @@ async function logout() {
               </div>
               <div>
                 <h3 class="font-extrabold text-sm tracking-tight text-base-content">Media Processing</h3>
-                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Previews compilation, slide frequency, threads limit</p>
+                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Previews generation, slide duration, processing threads</p>
               </div>
             </div>
             <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
@@ -662,7 +662,7 @@ async function logout() {
               </div>
               <div>
                 <h3 class="font-extrabold text-sm tracking-tight text-base-content">Directory Rules</h3>
-                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Shorts feed compilation, exclusion folder lists</p>
+                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Shorts preferences, folders and exclusions</p>
               </div>
             </div>
             <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
@@ -934,7 +934,7 @@ async function logout() {
                 </div>
                 <div>
                   <h4 class="text-xs font-extrabold tracking-wide">Rebuild Tag Cache</h4>
-                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Synchronize and compile tag indexes</p>
+                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Synchronize and update tag indexes</p>
                 </div>
               </div>
               <button 
@@ -1257,7 +1257,7 @@ async function logout() {
             v-if="(generationResults && (generationResults.isProcessing || generationResults.processed > 0)) || (thumbnailGenerationResults && (thumbnailGenerationResults.isProcessing || thumbnailGenerationResults.processed > 0))" 
             class="bg-base-100/60 border border-base-content/5 rounded-2xl p-6 space-y-6"
           >
-            <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Compiler Task Feeds</h3>
+            <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Background Tasks</h3>
             
             <!-- Video preview tasks progress -->
             <div v-if="generationResults && (generationResults.isProcessing || generationResults.processed > 0)" class="space-y-3 animate-in fade-in duration-300">
@@ -1368,10 +1368,10 @@ async function logout() {
               <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
                 <Icon name="mdi:play-box-outline" class="w-4 h-4" />
               </div>
-              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Shorts Feed Targets</h3>
+              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Shorts Sources</h3>
             </div>
             <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-2">
-              Compile video loops exclusively from the following directory mounts.
+              Select directories from which to show short video loops.
             </p>
 
             <div class="space-y-2 pt-2">

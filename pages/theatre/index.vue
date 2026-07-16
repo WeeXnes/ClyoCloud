@@ -591,14 +591,19 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
   <div class="min-h-screen bg-neutral-950 text-slate-100 flex flex-col font-sans select-none pb-12">
     <!-- Header -->
     <header class="sticky top-0 z-[40] w-full bg-neutral-900/80 backdrop-blur-md border-b border-neutral-800">
-      <div class="w-full px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      <div class="w-full px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-xs md:btn-sm lg:hidden text-slate-400">
+          <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden text-slate-400 hover:bg-white/10">
             <Icon name="mdi:menu" class="w-5 h-5" />
           </label>
           <div class="flex items-center gap-2">
-            <Icon name="mdi:theater" class="text-primary w-6 h-6" />
-            <h1 class="text-lg font-bold tracking-tight text-white">Clyo Theatre</h1>
+            <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+              <Icon name="mdi:theater" class="text-primary w-5 h-5" />
+            </div>
+            <div>
+              <h1 class="text-base font-extrabold tracking-tight text-white leading-none">Clyo Theatre</h1>
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">Cinematic Experience</p>
+            </div>
           </div>
         </div>
 

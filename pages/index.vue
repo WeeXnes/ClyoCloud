@@ -314,7 +314,7 @@
                     <Icon name="mdi:cloud-download-outline" class="text-orange-500 w-5 h-5" />
                   </div>
                   <h4 class="font-extrabold text-xs tracking-tight">Downloader</h4>
-                  <p class="text-[8px] font-bold text-base-content/30 uppercase tracking-widest mt-0.5">URL integrations</p>
+                  <p class="text-[8px] font-bold text-base-content/30 uppercase tracking-widest mt-0.5">Web Downloads</p>
                </NuxtLink>
             </div>
           </div>
