@@ -1,5 +1,10 @@
 import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
+import os from 'os'
+
+// Compute CPU cores and max concurrency limit once at startup (caching the resource check)
+const CPU_CORES = os.cpus().length
+const SERVER_MAX_CONCURRENCY = Math.min(Math.max(CPU_CORES * 2, 4), 32)
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -35,7 +40,9 @@ export default defineEventHandler(async (event) => {
             slideshowFrequency: userData.slideshowFrequency || 5,
             selectedShortsPaths: userData.selectedShortsPaths || [],
             excludedMediaPaths: userData.excludedMediaPaths || [],
-            maxDuplicateResults: userData.maxDuplicateResults || 50
+            maxDuplicateResults: userData.maxDuplicateResults || 50,
+            cpuCores: CPU_CORES,
+            serverMaxConcurrency: SERVER_MAX_CONCURRENCY
         }
     } catch (error) {
         console.error('Get settings error:', error)

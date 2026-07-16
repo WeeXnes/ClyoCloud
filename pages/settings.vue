@@ -58,6 +58,9 @@ const mobileAutoPreview = ref(true)
 const maxConcurrentPreviews = ref(3)
 const slideshowFrequency = ref(5)
 const experimentalMode = ref(false)
+const cpuCores = ref<number | null>(null)
+const serverMaxConcurrency = ref<number | null>(null)
+const isLoadingSettings = ref(true)
 const maxDuplicateResults = ref(50)
 const selectedShortsPaths = ref<string[]>([])
 const excludedMediaPaths = ref<string[]>([])
@@ -288,6 +291,8 @@ async function fetchUserSettings() {
       maxConcurrentPreviews.value = data.maxConcurrentPreviews || 3
       slideshowFrequency.value = data.slideshowFrequency || 5
       experimentalMode.value = data.experimentalMode || false
+      cpuCores.value = data.cpuCores || 4
+      serverMaxConcurrency.value = data.serverMaxConcurrency || 8
       selectedShortsPaths.value = data.selectedShortsPaths || []
       excludedMediaPaths.value = data.excludedMediaPaths || []
       theme.value = data.theme || 'onedev'
@@ -296,6 +301,8 @@ async function fetchUserSettings() {
     }
   } catch (err) {
     console.error('Error fetching user settings:', err)
+  } finally {
+    isLoadingSettings.value = false
   }
 }
 
@@ -1128,8 +1135,48 @@ async function logout() {
 
         <!-- 4. MEDIA PROCESSING SUB-MENU -->
         <div v-if="activeCategory === 'previews'" class="space-y-6">
+          <!-- Loading Skeleton -->
+          <div v-if="isLoadingSettings" class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-6 animate-pulse">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-base-content/10"></div>
+                <div class="space-y-2">
+                  <div class="h-3 w-32 bg-base-content/10 rounded"></div>
+                  <div class="h-2 w-48 bg-base-content/5 rounded"></div>
+                </div>
+              </div>
+              <div class="w-10 h-6 bg-base-content/10 rounded-md"></div>
+            </div>
+            <div class="space-y-3 pt-4 border-t border-base-content/5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-base-content/10"></div>
+                  <div class="space-y-2">
+                    <div class="h-3 w-32 bg-base-content/10 rounded"></div>
+                    <div class="h-2 w-48 bg-base-content/5 rounded"></div>
+                  </div>
+                </div>
+                <div class="w-12 h-4 bg-base-content/10 rounded-full"></div>
+              </div>
+              <div class="h-2 bg-base-content/10 rounded-full w-full"></div>
+            </div>
+            <div class="space-y-3 pt-4 border-t border-base-content/5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-base-content/10"></div>
+                  <div class="space-y-2">
+                    <div class="h-3 w-32 bg-base-content/10 rounded"></div>
+                    <div class="h-2 w-48 bg-base-content/5 rounded"></div>
+                  </div>
+                </div>
+                <div class="w-12 h-4 bg-base-content/10 rounded-full"></div>
+              </div>
+              <div class="h-2 bg-base-content/10 rounded-full w-full"></div>
+            </div>
+          </div>
+
           <!-- Media processing items styled as iOS lists -->
-          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm divide-y divide-base-content/5">
+          <div v-else class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm divide-y divide-base-content/5">
             
             <!-- Mobile Auto-Preview -->
             <div class="flex items-center justify-between p-5 gap-4">
@@ -1185,16 +1232,18 @@ async function logout() {
                   </div>
                   <div>
                     <h4 class="text-xs font-extrabold tracking-wide text-base-content">Max Concurrent Threads</h4>
-                    <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Limit concurrency of background ffmpeg tasks</p>
+                    <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">
+                      Limit concurrency of background ffmpeg tasks (Detected: {{ cpuCores }} CPU cores, dynamic ceiling: {{ serverMaxConcurrency }} threads)
+                    </p>
                   </div>
                 </div>
-                <span class="badge badge-primary font-bold text-[9px] uppercase tracking-widest shrink-0">{{ maxConcurrentPreviews }} cores</span>
+                <span class="badge badge-primary font-bold text-[9px] uppercase tracking-widest shrink-0">{{ maxConcurrentPreviews }} threads</span>
               </div>
               <div class="pt-2">
                 <input 
                   type="range" 
                   min="1" 
-                  :max="experimentalMode ? 200 : 10" 
+                  :max="experimentalMode ? 200 : serverMaxConcurrency" 
                   v-model.number="maxConcurrentPreviews" 
                   class="range range-primary range-xs" 
                   @change="saveUserSettings"

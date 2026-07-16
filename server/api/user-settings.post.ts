@@ -1,6 +1,11 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
+import os from 'os'
 import { logActivity } from '../utils/activityLogger'
+
+// Compute CPU cores and max concurrency limit once at startup (caching the resource check)
+const CPU_CORES = os.cpus().length
+const DYNAMIC_MAX_CONCURRENCY = Math.min(Math.max(CPU_CORES * 2, 4), 32)
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
@@ -36,7 +41,7 @@ export default defineEventHandler(async (event) => {
             users[userIndex].experimentalMode = experimentalMode
         }
         if (typeof maxConcurrentPreviews === 'number') {
-            const maxLimit = users[userIndex].experimentalMode ? 200 : 10
+            const maxLimit = users[userIndex].experimentalMode ? 200 : DYNAMIC_MAX_CONCURRENCY
             users[userIndex].maxConcurrentPreviews = Math.max(1, Math.min(maxLimit, maxConcurrentPreviews))
         }
 

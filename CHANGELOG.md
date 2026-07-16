@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2.4.7] - 2026-07-16
+
+### Added
+- Cached host CPU cores and dynamic concurrency max limit calculations at the server module level so that resource checks are computed once on server startup rather than on every endpoint execution.
+- Added a sleek loading skeleton to the Settings Media Processing submenu to eliminate any layout shifting while user settings are loading.
+
+---
+
+## [2.4.6] - 2026-07-16
+
+### Fixed
+- Fixed concurrency thread slider max limit dynamically matching the host OS hardware capacity (cores count and safety ceilings), removing the need for manual experimental configuration toggle.
+
+---
+
 ## [2.4.5] - 2026-07-16
 
 ### Added

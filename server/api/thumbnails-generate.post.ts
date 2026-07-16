@@ -6,6 +6,10 @@ import mime from 'mime-types'
 import { runFfmpeg, runFfprobe } from '~/server/utils/ffmpeg'
 import { getThumbnailTaskStatus, updateThumbnailTaskStatus, resetThumbnailTaskStatus } from '~/server/utils/previewTask'
 
+// Compute CPU cores and max concurrency limit once at startup (caching the resource check)
+const CPU_CORES = os.cpus().length
+const MAX_CONCURRENCY = Math.min(Math.max(CPU_CORES * 2, 4), 32)
+
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const user = event.context.user
@@ -59,9 +63,7 @@ export default defineEventHandler(async (event) => {
             const usersData = await fs.readFile(config.usersFilePath, 'utf-8')
             const users: any[] = JSON.parse(usersData)
             const userData = users.find((u) => u.name === user!.name)
-            const CPU_CORES = os.cpus().length
-            const maxConcurrency = Math.min(Math.max(CPU_CORES * 2, 4), 32)
-            const CONCURRENCY = Math.min(userData?.maxConcurrentPreviews || 3, maxConcurrency)
+            const CONCURRENCY = Math.min(userData?.maxConcurrentPreviews || 3, MAX_CONCURRENCY)
 
             const images = await findImages(userStoragePath)
             updateThumbnailTaskStatus(user!.name, {
