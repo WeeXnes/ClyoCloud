@@ -9,7 +9,7 @@ const DYNAMIC_MAX_CONCURRENCY = Math.min(Math.max(CPU_CORES * 2, 4), 32)
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { downloadPath, mobileAutoPreview, maxConcurrentPreviews, experimentalMode, theme, slideshowFrequency, selectedShortsPaths, excludedMediaPaths, maxDuplicateResults } = body
+    const { downloadPath, mobileAutoPreview, imageViewerMobileFullscreen, maxConcurrentPreviews, experimentalMode, theme, slideshowFrequency, selectedShortsPaths, excludedMediaPaths, maxDuplicateResults } = body
     const config = useRuntimeConfig()
     const user = event.context.user
 
@@ -36,6 +36,9 @@ export default defineEventHandler(async (event) => {
         users[userIndex].downloadPath = downloadPath || ''
         if (typeof mobileAutoPreview === 'boolean') {
             users[userIndex].mobileAutoPreview = mobileAutoPreview
+        }
+        if (typeof imageViewerMobileFullscreen === 'boolean') {
+            users[userIndex].imageViewerMobileFullscreen = imageViewerMobileFullscreen
         }
         if (typeof experimentalMode === 'boolean') {
             users[userIndex].experimentalMode = experimentalMode

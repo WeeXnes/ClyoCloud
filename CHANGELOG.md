@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.0] - 2026-07-16
+
+### Added
+- Added "Image Viewer Mobile Fullscreen" option in the settings.
+- Automatically request fullscreen when opening a file in the new media viewer on mobile viewports.
+- Automatically exit fullscreen when leaving/closing the media viewer on mobile viewports.
+
+---
+
 ## [2.5.2] - 2026-07-16
 
 ### Fixed

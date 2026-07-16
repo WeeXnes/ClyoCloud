@@ -379,10 +379,31 @@ watch(isGridView, (newVal) => {
   isGridViewCookie.value = newVal
 })
 
+watch(showImageViewerModal, (isOpen) => {
+  if (isOpen) {
+    if (imageViewerMobileFullscreen.value && isMobile.value) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.error('Error entering fullscreen:', err)
+        })
+      }
+    }
+  } else {
+    if (imageViewerMobileFullscreen.value && isMobile.value) {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch((err) => {
+          console.error('Error exiting fullscreen:', err)
+        })
+      }
+    }
+  }
+})
+
 const hoveredFile = ref<string | null>(null)
 const visibleFiles = ref<Set<string>>(new Set())
 const isMobile = ref(false)
 const mobileAutoPreview = ref(true)
+const imageViewerMobileFullscreen = ref(false)
 const selectedShortsPaths = ref<string[]>([])
 let touchTimer: any = null
 let observer: IntersectionObserver | null = null
@@ -394,6 +415,7 @@ const fetchUserSettings = async () => {
       const data = await response.json()
       mobileAutoPreview.value = data.mobileAutoPreview ?? true
       selectedShortsPaths.value = data.selectedShortsPaths || []
+      imageViewerMobileFullscreen.value = data.imageViewerMobileFullscreen ?? false
     }
   } catch (err) {
     console.error('Error fetching user settings:', err)
@@ -1163,6 +1185,9 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleMainScroll)
   window.removeEventListener('keydown', handleKeydown)
   if (observer) observer.disconnect()
+  if (document.fullscreenElement && document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {})
+  }
 })
 
 watch(() => useRoute().params.path, async () => {

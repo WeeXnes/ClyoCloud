@@ -34,6 +34,7 @@ export default defineEventHandler(async (event) => {
             downloadPath: userData.downloadPath || '',
             twoFactorEnabled: userData.twoFactorEnabled || false,
             mobileAutoPreview: userData.mobileAutoPreview ?? true,
+            imageViewerMobileFullscreen: userData.imageViewerMobileFullscreen ?? false,
             maxConcurrentPreviews: userData.maxConcurrentPreviews || 3,
             experimentalMode: userData.experimentalMode || false,
             theme: userData.theme || 'onedev',

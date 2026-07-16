@@ -55,6 +55,7 @@ const isChangingPassword = ref(false)
 
 const downloadPath = ref('')
 const mobileAutoPreview = ref(true)
+const imageViewerMobileFullscreen = ref(false)
 const maxConcurrentPreviews = ref(3)
 const slideshowFrequency = ref(5)
 const experimentalMode = ref(false)
@@ -288,6 +289,7 @@ async function fetchUserSettings() {
       const data = await response.json()
       downloadPath.value = data.downloadPath || ''
       mobileAutoPreview.value = data.mobileAutoPreview ?? true
+      imageViewerMobileFullscreen.value = data.imageViewerMobileFullscreen ?? false
       maxConcurrentPreviews.value = data.maxConcurrentPreviews || 3
       slideshowFrequency.value = data.slideshowFrequency || 5
       experimentalMode.value = data.experimentalMode || false
@@ -328,6 +330,7 @@ async function saveUserSettings() {
       body: JSON.stringify({ 
         downloadPath: downloadPath.value,
         mobileAutoPreview: mobileAutoPreview.value,
+        imageViewerMobileFullscreen: imageViewerMobileFullscreen.value,
         maxConcurrentPreviews: maxConcurrentPreviews.value,
         slideshowFrequency: slideshowFrequency.value,
         experimentalMode: experimentalMode.value,
@@ -1193,6 +1196,25 @@ async function logout() {
                 type="checkbox" 
                 class="toggle toggle-primary toggle-sm rounded-md shrink-0" 
                 v-model="mobileAutoPreview" 
+                @change="saveUserSettings"
+              />
+            </div>
+
+            <!-- Image Viewer Mobile Fullscreen -->
+            <div class="flex items-center justify-between p-5 gap-4">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10 shrink-0 mt-0.5">
+                  <Icon name="mdi:fullscreen" class="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 class="text-xs font-extrabold tracking-wide text-base-content">Image Viewer Mobile Fullscreen</h4>
+                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Automatically open media viewer in fullscreen on mobile devices</p>
+                </div>
+              </div>
+              <input 
+                type="checkbox" 
+                class="toggle toggle-primary toggle-sm rounded-md shrink-0" 
+                v-model="imageViewerMobileFullscreen" 
                 @change="saveUserSettings"
               />
             </div>
