@@ -17,6 +17,9 @@ export default defineNitroPlugin(async (nitroApp) => {
     console.info("Running server init...")
     if (config.jwtSecret === 'jei0ghjesi0ogj8ie0jg8093jg8390') {
         console.warn(chalk.red('[SECURITY WARNING] Using default hardcoded JWT secret! Please set JWT_SECRET environment variable.'));
+    } else {
+        const secretStart = config.jwtSecret ? config.jwtSecret.slice(0, 4) : '';
+        console.info(chalk.green(`[SECURITY] Using custom JWT secret (starts with: ${secretStart}...)`));
     }
 
     console.info("Initializing media backend...")

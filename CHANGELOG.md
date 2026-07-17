@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.1] - 2026-07-17
+
+### Added
+- Added server initialization log to print when a custom JWT secret is configured, showcasing the start of the secret as a confirmation teaser.
+
+---
+
 ## [2.8.0] - 2026-07-17
 
 ### Added
