@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 import { renameInFavorites } from '~/server/utils/favorites'
+import { renameInWallpapers } from '~/server/utils/wallpapers'
 
 import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
 
@@ -82,8 +83,10 @@ export default defineEventHandler(async (event) => {
         // Update tag cache
         moveFileInCache(event.context.user.name, oldPath, relativeNewPath.replace(/\\/g, '/'))
 
-        // Update favorites index if needed
-        await renameInFavorites(event.context.user.name, oldPath, path.relative(userStoragePath, newFullPath).replace(/\\/g, '/'))
+        // Update favorites and wallpapers indexes if needed
+        const normalizedNewPath = relativeNewPath.replace(/\\/g, '/')
+        await renameInFavorites(event.context.user.name, oldPath, normalizedNewPath)
+        await renameInWallpapers(event.context.user.name, oldPath, normalizedNewPath)
 
         clearUserCache(event.context.user.name)
 

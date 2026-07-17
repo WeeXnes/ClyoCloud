@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import type { FileMeta } from '~/types/File'
 import { addToFavorites, removeFromFavorites } from '~/server/utils/favorites'
+import { addToWallpapers, removeFromWallpapers } from '~/server/utils/wallpapers'
 
 import { isPathWithin } from '~/server/utils/fileUtils'
 
@@ -18,7 +19,7 @@ export default defineEventHandler(async (event) => {
         const config = useRuntimeConfig()
         const userStoragePath = path.resolve(path.join(config.storagePath, event.context.user.name))
         const body = await readBody(event)
-        const { fullPath, description, tags, isPublic, isFavourite, previewImage } = body
+        const { fullPath, description, tags, isPublic, isFavourite, previewImage, isWallpaper } = body
 
         if (!fullPath) {
             throw createError({
@@ -69,6 +70,18 @@ export default defineEventHandler(async (event) => {
                 await addToFavorites(event.context.user.name, fullPath, stats.isDirectory())
             } else {
                 await removeFromFavorites(event.context.user.name, fullPath)
+            }
+        }
+        if (isWallpaper !== undefined) {
+            meta.isWallpaper = isWallpaper
+            await logActivity(event.context.user.name, 'WALLPAPER', fullPath, isWallpaper ? 'Added to wallpapers' : 'Removed from wallpapers', event)
+            
+            // Update wallpapers index
+            if (isWallpaper) {
+                const stats = await fs.stat(filePath)
+                await addToWallpapers(event.context.user.name, fullPath, stats.isDirectory())
+            } else {
+                await removeFromWallpapers(event.context.user.name, fullPath)
             }
         }
 

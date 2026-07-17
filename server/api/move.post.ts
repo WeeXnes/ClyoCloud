@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 import { moveInFavorites } from '~/server/utils/favorites'
+import { moveInWallpapers } from '~/server/utils/wallpapers'
 
 import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
 
@@ -126,6 +127,7 @@ export default defineEventHandler(async (event) => {
         if (results.some(r => r.success && !r.skipped)) {
             const successfulMoves = results.filter(r => r.success && !r.skipped).map(r => r.path)
             await moveInFavorites(event.context.user.name, successfulMoves, destinationPath)
+            await moveInWallpapers(event.context.user.name, successfulMoves, destinationPath)
         }
 
         clearUserCache(event.context.user.name)

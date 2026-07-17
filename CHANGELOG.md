@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.0] - 2026-07-17
+
+### Added
+- Implemented Wallpapers Integration allowing users to mark image files as wallpapers for fetching directly by mobile clients/Android app.
+- Added `/api/wallpapers` endpoint to retrieve all marked wallpapers.
+- Integrated wallpaper toggle controls into files explorer list, grid, context menus, and favorites page sidebar.
+
+### Security
+- Protected `/api/wallpapers` with JWT token authorization middleware and verified access control in security integration tests.
+
+---
+
 ## [2.7.3] - 2026-07-16
 
 ### Fixed

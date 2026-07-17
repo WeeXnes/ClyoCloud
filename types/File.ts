@@ -15,6 +15,7 @@ export interface FileMeta {
     description?: string;
     isPublic?: boolean;
     isFavourite?: boolean;
+    isWallpaper?: boolean;
     previewImage?: string | null;
 }
 

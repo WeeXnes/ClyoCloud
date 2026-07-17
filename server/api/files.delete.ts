@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 import { removeFromFavorites } from '~/server/utils/favorites'
+import { removeFromWallpapers } from '~/server/utils/wallpapers'
 
 import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
 
@@ -53,8 +54,9 @@ export default defineEventHandler(async (event) => {
     // Update tag cache
     removeFileFromCache(event.context.user.name, safeSubPath)
 
-    // Update favorites index
+    // Update favorites and wallpapers indexes
     await removeFromFavorites(event.context.user.name, safeSubPath)
+    await removeFromWallpapers(event.context.user.name, safeSubPath)
 
     // Also delete .cloudinfo file if it exists
     try {

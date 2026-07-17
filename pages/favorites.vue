@@ -686,6 +686,9 @@ const handleContextAction = (action: string) => {
     case 'favourite':
       toggleFavourite(file)
       break
+    case 'wallpaper':
+      toggleWallpaper(file)
+      break
     case 'delete':
       deleteFile(file)
       break
@@ -969,6 +972,28 @@ const toggleFavourite = async (file: File) => {
   } catch (err) {
     console.error(err)
     createNotification('Failed to update favorite status', NotificationType.ERROR)
+  }
+}
+
+const toggleWallpaper = async (file: File) => {
+  const isWallpaper = !file.meta.isWallpaper
+  
+  try {
+    const filePath = file.name
+    const response = await fetch('/api/file-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullPath: filePath, isWallpaper }),
+    })
+    
+    if (!response.ok) throw new Error('Failed to update wallpaper status')
+    
+    file.meta.isWallpaper = isWallpaper
+    createNotification(`File ${isWallpaper ? 'added to' : 'removed from'} wallpapers`, NotificationType.INFO)
+    
+  } catch (err) {
+    console.error(err)
+    createNotification('Failed to update wallpaper status', NotificationType.ERROR)
   }
 }
 
@@ -1403,6 +1428,12 @@ const getPreviewUrl = (fullPath: string) => {
           <li><a class="py-2.5 px-4" @click="handleContextAction('favourite')">
             <Icon name="mdi:star" class="w-4 h-4 text-orange-500" /> Unstar
           </a></li>
+          <li v-if="contextMenuFile && !contextMenuFile.isFolder && isImageFile(contextMenuFile.name)">
+            <a class="py-2.5 px-4 hover:text-primary transition-colors cursor-pointer" @click="handleContextAction('wallpaper')">
+              <Icon :name="contextMenuFile?.meta.isWallpaper ? 'mdi:wallpaper' : 'mdi:image-outline'" class="w-4 h-4 text-purple-500" />
+              {{ contextMenuFile?.meta.isWallpaper ? 'Remove from Wallpapers' : 'Select as Wallpaper' }}
+            </a>
+          </li>
           <li><a class="py-2.5 px-4" @click="handleContextAction('download')"><Icon name="mdi:download" class="w-4 h-4 text-success" /> Download</a></li>
           <div class="h-px bg-base-content/5 mx-2 my-1"></div>
           <li><a class="py-2.5 px-4 text-error" @click="handleContextAction('delete')"><Icon name="mdi:delete" class="w-4 h-4" /> Delete</a></li>
@@ -1534,6 +1565,22 @@ const getPreviewUrl = (fullPath: string) => {
                     @click="toggleFavourite(selectedFile)"
                   >
                     <Icon name="mdi:star" class="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div v-if="!selectedFile.isFolder && isImageFile(selectedFile.name)" class="h-px bg-base-content/5"></div>
+
+                <div v-if="!selectedFile.isFolder && isImageFile(selectedFile.name)" class="flex items-center justify-between">
+                  <div>
+                    <span class="text-xs font-bold tracking-tight text-base-content uppercase">Wallpaper</span>
+                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Available in Android App</p>
+                  </div>
+                  <button 
+                    class="btn btn-xs btn-ghost btn-circle rounded-md h-8 w-8 bg-base-200/50"
+                    :class="selectedFile.meta.isWallpaper ? 'text-purple-500' : 'text-base-content/20'"
+                    @click="toggleWallpaper(selectedFile)"
+                  >
+                    <Icon :name="selectedFile.meta.isWallpaper ? 'mdi:wallpaper' : 'mdi:image-outline'" class="w-4 h-4" />
                   </button>
                 </div>
 

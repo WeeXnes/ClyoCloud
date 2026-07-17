@@ -8,3 +8,6 @@ Whenever you make noteworthy changes to the codebase:
    - Automatically document the list of changes in `CHANGELOG.md` under the bumped version number, using the current date in local time (format: `YYYY-MM-DD`).
 3. **Build & Test Verification**:
    - Proactively run `npm run build` and tests to ensure no compilation/test regression has occurred with the new version and package files.
+4. **Security & Test Verification**:
+   - When making changes, always check if security checks/tests need any updates to keep everything tested and safe.
+

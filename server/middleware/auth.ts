@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     // Protect all other API, Stream, File, and Page routes
     consola.start(`[Auth] Protecting Route: ${url}`)
     const config = useRuntimeConfig()
-    const token = getCookie(event, 'token')
+    const token = getCookie(event, 'token') || event.node.req.headers['authorization']?.replace('Bearer ', '')
 
     if (!token) {
         consola.warn(`[Auth] Blocked (No Token): ${url}`)

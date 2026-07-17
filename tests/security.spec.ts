@@ -36,6 +36,7 @@ const protectedEndpoints = [
   '/api/user-settings',
   '/api/verify',
   '/api/videos',
+  '/api/wallpapers',
   '/api/zip',
   '/api/storage-clean-status',
   '/api/storage-duplicates-status',
