@@ -13,7 +13,6 @@ const protectedEndpoints = [
   '/api/activity-full',
   '/api/bulk-download',
   '/api/change-password',
-  '/api/devices',
   '/api/download',
   '/api/download-stop',
   '/api/favorites',
@@ -34,7 +33,6 @@ const protectedEndpoints = [
   '/api/tags/files',
   '/api/tags/rebuild-cache',
   '/api/upload',
-  '/api/user-qr',
   '/api/user-settings',
   '/api/verify',
   '/api/videos',
@@ -130,48 +128,6 @@ describe('Security: Authentication Guard', () => {
     })
   })
 
-  describe('Bearer Token Authentication', () => {
-    it('rejects an invalid Bearer token', async () => {
-      const response = await fetch(`${BASE_URL}/api/verify`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer invalid.jwt.token'
-        }
-      })
-      expect(response.status).toBe(401)
-    })
-
-    it('rejects a case-variant bearer prefix with invalid token', async () => {
-      const response = await fetch(`${BASE_URL}/api/verify`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'bearer invalid.jwt.token'
-        }
-      })
-      expect(response.status).toBe(401)
-    })
-
-    it('rejects an empty Authorization header', async () => {
-      const response = await fetch(`${BASE_URL}/api/verify`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': ''
-        }
-      })
-      expect(response.status).toBe(401)
-    })
-
-    it('rejects a Bearer header with no token value', async () => {
-      const response = await fetch(`${BASE_URL}/api/verify`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer '
-        }
-      })
-      expect(response.status).toBe(401)
-    })
-  })
-
   describe('Deny-by-Default Policy', () => {
     it('blocks a completely random/unknown path', async () => {
       const response = await fetch(`${BASE_URL}/some/hidden/admin/path`, {
@@ -181,4 +137,3 @@ describe('Security: Authentication Guard', () => {
     })
   })
 })
-

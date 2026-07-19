@@ -2,7 +2,6 @@ import { defineEventHandler, createError, getCookie, sendRedirect } from 'h3'
 import jwt from 'jsonwebtoken'
 import { consola } from 'consola'
 import fs from 'fs/promises'
-import { isDeviceValid, touchDevice } from '../utils/deviceRegistry'
 
 export default defineEventHandler(async (event) => {
     // Normalize URL: lowercase and collapse multiple slashes
@@ -32,10 +31,7 @@ export default defineEventHandler(async (event) => {
     // Protect all other API, Stream, File, and Page routes
     consola.start(`[Auth] Protecting Route: ${url}`)
     const config = useRuntimeConfig()
-    // Case-insensitive Bearer token extraction
-    const authHeader = event.node.req.headers['authorization'] || ''
-    const bearerToken = authHeader.replace(/^bearer\s+/i, '')
-    const token = getCookie(event, 'token') || (bearerToken !== authHeader ? bearerToken : '')
+    const token = getCookie(event, 'token') || event.node.req.headers['authorization']?.replace('Bearer ', '')
 
     if (!token) {
         consola.warn(`[Auth] Blocked (No Token): ${url}`)
@@ -49,7 +45,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const decoded = jwt.verify(token, config.jwtSecret) as { user: { name: string }, isPartial?: boolean, deviceId?: string }
+        const decoded = jwt.verify(token, config.jwtSecret) as { user: { name: string }, isPartial?: boolean }
 
         // If it's a partial token (for 2FA), only allow verify-login (handled above)
         // Any other protected route should be rejected
@@ -80,20 +76,6 @@ export default defineEventHandler(async (event) => {
                 statusCode: 500,
                 statusMessage: 'Internal Server Error: Failed to validate user',
             })
-        }
-
-        // Validate device-bound tokens against the device registry
-        if (decoded.deviceId) {
-            const deviceValid = await isDeviceValid(decoded.user.name, decoded.deviceId)
-            if (!deviceValid) {
-                consola.warn(`[Auth] Blocked (Device Revoked): ${url} for user ${decoded.user.name}`)
-                throw createError({
-                    statusCode: 401,
-                    statusMessage: 'Unauthorized: Device has been revoked',
-                })
-            }
-            // Update last-used timestamp (fire-and-forget to avoid blocking)
-            touchDevice(decoded.user.name, decoded.deviceId).catch(() => {})
         }
 
         event.context.user = decoded.user // Attach user to context for API/routes

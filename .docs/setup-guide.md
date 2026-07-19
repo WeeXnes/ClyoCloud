@@ -87,7 +87,6 @@ The variables map directly to the Nitro runtime configuration inside [nuxt.confi
 | `PREVIEW_PATH` | `~/.clyo/previews` | Location where larger previews are generated. |
 | `USERS_FILE_PATH`| `~/.clyo/users.json` | Path to the JSON configuration containing hashed user credentials. |
 | `TAGS_FILE_PATH` | `~/.clyo/tags.json` | Path to the JSON file managing available tags and their colors. |
-| `DEVICES_FILE_PATH`| `~/.clyo/devices.json` | Path to the JSON file tracking registered mobile app devices for QR code logins. |
 | `JWT_SECRET` | `jei0ghjesi0ogj8ie0jg8093jg8390` | Key used to sign JWT session cookies. (Change this for production!). |
 
 > [!IMPORTANT]

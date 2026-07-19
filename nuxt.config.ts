@@ -50,10 +50,6 @@ export default defineNuxtConfig({
             process.env.TAGS_FILE_PATH ||
             path.join(os.homedir(), '.clyo', 'tags.json'),
 
-        devicesFilePath:
-            process.env.DEVICES_FILE_PATH ||
-            path.join(os.homedir(), '.clyo', 'devices.json'),
-
         maxFileSize: 100 * 1024  * 1024 * 1024,
         jwtSecret: 'jei0ghjesi0ogj8ie0jg8093jg8390',
     },

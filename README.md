@@ -33,20 +33,6 @@ ClyoCloud is designed to be a lightweight, privacy-focused alternative to mainst
 
 ---
 
-## 📱 Mobile Apps
-
-ClyoCloud has two companion Android apps that connect to your self-hosted instance:
-
-| App | Description | Source | Docs | Download |
-| :--- | :--- | :--- | :--- | :--- |
-| **ClyoWallpaper** | Sync and manage live wallpapers directly from your ClyoCloud storage. Browse wallpapers, arrange crops, and configure automatic wallpaper cycling. | [Source](https://code.weexnes.dev/ClyoWallpaper) | [Docs](https://weexnes.dev/project/ClyoWallpaper?path=introduction.md) | [APK](https://weexnes.dev/project/ClyoWallpaper#artifacts) |
-| **ClyoCloud Android** | Full-featured mobile client for browsing, uploading, streaming, and managing your cloud files on the go. | [Source](https://code.weexnes.dev/ClyoCloudAndroid) | [Docs](https://weexnes.dev/project/ClyoCloudAndroid?path=introduction.md) | [APK](https://weexnes.dev/project/ClyoCloudAndroid#artifacts) |
-
-> [!TIP]
-> Both apps support **QR Code Quick Login** — generate a QR code from your ClyoCloud Settings page and scan it from the app's login screen to connect instantly. Each QR code creates a device-specific token that can be individually revoked from the Settings page.
-
----
-
 ## 🛠 Tech Stack & Architecture
 
 ClyoCloud leverages a modern, lightweight JavaScript stack to maximize performance and portability.
@@ -133,7 +119,6 @@ Follow these steps to get your server up and running:
 
 ### Key Security Implementation:
 *   **Path Validation**: All user operations are strictly checked to prevent Directory Traversal attacks.
-*   **Token Authentication**: API routes are guarded with signed JSON Web Tokens (JWT), supporting both cookie-based sessions (browser) and `Authorization: Bearer` header authentication (mobile apps).
+*   **Token Authentication**: API routes are guarded with signed JSON Web Tokens (JWT).
 *   **2FA (TOTP)**: Session generation requires a valid two-factor authentication token once configured, protecting your cloud storage from unauthorized logins.
-*   **Device-Bound App Tokens**: QR code logins generate device-specific JWTs with unique device identifiers. Each connected app device is tracked and individually revocable from the Settings page, providing granular session control without affecting browser sessions.
 
