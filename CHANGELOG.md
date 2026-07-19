@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.0] - 2026-07-19
+
+### Added
+- Implemented App Quick Login QR Code flow. Logged-in users can generate a QR code containing server URL, username, and token settings.
+- Added `/api/user-qr` endpoint to generate app quick connection QR codes.
+- Updated `/api/verify` endpoint to accept JWT authentication token via HTTP `Authorization: Bearer <token>` header.
+
+---
+
 ## [2.8.2] - 2026-07-19
 
 ### Fixed

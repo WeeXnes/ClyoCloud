@@ -271,6 +271,22 @@ async function confirmDisable2fa() {
   }
 }
 
+const appQrCodeUrl = ref('')
+const isGeneratingAppQr = ref(false)
+
+async function fetchAppQrCode() {
+  isGeneratingAppQr.value = true
+  try {
+    const origin = window.location.origin
+    const data: any = await $fetch(`/api/user-qr?origin=${encodeURIComponent(origin)}`)
+    appQrCodeUrl.value = data.qrCodeUrl
+  } catch (err: any) {
+    createNotification(err.data?.statusMessage || 'Failed to generate App Login QR Code', NotificationType.ERROR)
+  } finally {
+    isGeneratingAppQr.value = false
+  }
+}
+
 async function fetchTags() {
   try {
     const response = await fetch('/api/tags', { credentials: 'include' })
@@ -849,6 +865,43 @@ async function logout() {
                     Confirm disable
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- App Connection QR Code -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+                <Icon name="mdi:qrcode" class="w-4 h-4" />
+              </div>
+              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">App Quick Login</h3>
+            </div>
+            <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-2">
+              Scan this QR code from the ClyoCloud or ClyoWallpaper mobile app login screen to automatically configure and authenticate the client.
+            </p>
+
+            <div class="flex flex-col items-center gap-4 pt-2">
+              <button 
+                v-if="!appQrCodeUrl"
+                class="btn btn-outline btn-primary rounded-xl h-10 min-h-0 w-full gap-2 font-bold text-[10px] uppercase tracking-widest"
+                @click="fetchAppQrCode"
+                :disabled="isGeneratingAppQr"
+              >
+                <Icon v-if="!isGeneratingAppQr" name="mdi:qrcode-scan" class="w-4 h-4" />
+                <span v-else class="loading loading-spinner loading-xs"></span>
+                Generate Login QR Code
+              </button>
+              <div v-else class="flex flex-col items-center gap-4 w-full animate-in fade-in duration-300">
+                <div class="p-4 bg-white rounded-xl border border-base-content/10 shadow-inner">
+                  <img :src="appQrCodeUrl" class="w-44 h-44 object-contain" alt="App Login QR Code" />
+                </div>
+                <button 
+                  class="btn btn-ghost rounded-xl h-10 min-h-0 text-[10px] font-bold uppercase tracking-widest" 
+                  @click="appQrCodeUrl = ''"
+                >
+                  Hide QR Code
+                </button>
               </div>
             </div>
           </div>

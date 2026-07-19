@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
-    const token = getCookie(event, 'token')
+    const token = getCookie(event, 'token') || event.node.req.headers['authorization']?.replace('Bearer ', '')
 
     if (!token) {
         throw createError({
