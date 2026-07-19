@@ -151,21 +151,27 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
 
             const videos = items.filter(i => i.type === 'video');
             const slideshows = items.filter(i => i.type === 'slideshow') as SlideshowMedia[];
+            const shuffledVideos = [...videos].sort(() => Math.random() - 0.5);
+            const shuffledSlideshows = [...slideshows].sort(() => Math.random() - 0.5);
             const frequency = userData?.slideshowFrequency || 5;
 
             const result: ShortMedia[] = [];
             const limitVal = query.limit ? parseInt(query.limit.toString()) : 200;
             const targetLimit = limitVal > 0 ? Math.min(limitVal, 200) : 200;
 
-            if (videos.length > 0 || slideshows.length > 0) {
+            if (shuffledVideos.length > 0 || shuffledSlideshows.length > 0) {
                 let videoIdx = 0;
                 let slideshowIdx = 0;
 
                 while (result.length < targetLimit) {
-                    const nextIsSlideshow = (result.length + 1) % frequency === 0 || videos.length === 0;
+                    const nextIsSlideshow = (result.length + 1) % frequency === 0 || shuffledVideos.length === 0;
 
-                    if (nextIsSlideshow && slideshows.length > 0) {
-                        const candidate = slideshows[slideshowIdx % slideshows.length];
+                    if (nextIsSlideshow && shuffledSlideshows.length > 0) {
+                        if (slideshowIdx >= shuffledSlideshows.length) {
+                            shuffledSlideshows.sort(() => Math.random() - 0.5);
+                            slideshowIdx = 0;
+                        }
+                        const candidate = shuffledSlideshows[slideshowIdx];
                         slideshowIdx++;
 
                         const allImages = candidate.allImages || candidate.images;
@@ -184,8 +190,12 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
                         } else {
                             result.push(candidate);
                         }
-                    } else if (videos.length > 0) {
-                        const video = videos[videoIdx % videos.length];
+                    } else if (shuffledVideos.length > 0) {
+                        if (videoIdx >= shuffledVideos.length) {
+                            shuffledVideos.sort(() => Math.random() - 0.5);
+                            videoIdx = 0;
+                        }
+                        const video = shuffledVideos[videoIdx];
                         videoIdx++;
                         result.push(video);
                     } else {

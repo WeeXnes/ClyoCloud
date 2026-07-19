@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.2] - 2026-07-19
+
+### Fixed
+- Fixed backend shorts feed generation on the `/api/videos` endpoint to perform properly random shuffling of the source video and slideshow directories.
+
+---
+
 ## [2.8.1] - 2026-07-17
 
 ### Added
