@@ -274,16 +274,65 @@ async function confirmDisable2fa() {
 const appQrCodeUrl = ref('')
 const isGeneratingAppQr = ref(false)
 
+interface ConnectedDevice {
+  deviceId: string
+  deviceModel: string
+  createdAt: string
+  lastUsed: string
+}
+const connectedDevices = ref<ConnectedDevice[]>([])
+const isLoadingDevices = ref(false)
+const isRevokingDevice = ref<string | null>(null)
+
 async function fetchAppQrCode() {
   isGeneratingAppQr.value = true
   try {
     const origin = window.location.origin
     const data: any = await $fetch(`/api/user-qr?origin=${encodeURIComponent(origin)}`)
     appQrCodeUrl.value = data.qrCodeUrl
+    // Refresh devices list after generating a new QR (new pending device)
+    await fetchConnectedDevices()
   } catch (err: any) {
     createNotification(err.data?.statusMessage || 'Failed to generate App Login QR Code', NotificationType.ERROR)
   } finally {
     isGeneratingAppQr.value = false
+  }
+}
+
+async function fetchConnectedDevices() {
+  isLoadingDevices.value = true
+  try {
+    const data: any = await $fetch('/api/devices')
+    connectedDevices.value = data.devices || []
+  } catch (err) {
+    console.error('Error fetching devices:', err)
+  } finally {
+    isLoadingDevices.value = false
+  }
+}
+
+async function revokeDevice(deviceId: string) {
+  isRevokingDevice.value = deviceId
+  try {
+    await $fetch('/api/devices', {
+      method: 'DELETE',
+      body: { deviceId }
+    })
+    connectedDevices.value = connectedDevices.value.filter(d => d.deviceId !== deviceId)
+    createNotification('Device revoked successfully', NotificationType.SUCCESS)
+  } catch (err: any) {
+    createNotification(err.data?.statusMessage || 'Failed to revoke device', NotificationType.ERROR)
+  } finally {
+    isRevokingDevice.value = null
+  }
+}
+
+function formatDeviceDate(iso: string): string {
+  try {
+    const d = new Date(iso)
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return iso
   }
 }
 
@@ -328,6 +377,7 @@ onMounted(() => {
   fetchTags()
   fetchUserSettings()
   fetch2faStatus()
+  fetchConnectedDevices()
   fetchGenerationStatus() // Check if a task is already running
   fetchThumbnailGenerationStatus() // Check if a task is already running
 })
@@ -901,6 +951,64 @@ async function logout() {
                   @click="appQrCodeUrl = ''"
                 >
                   Hide QR Code
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connected Devices -->
+          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+                <Icon name="mdi:cellphone-link" class="w-4 h-4" />
+              </div>
+              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Connected Devices</h3>
+            </div>
+            <p class="text-[11px] text-base-content/50 font-bold leading-relaxed">
+              App sessions created via QR code login. Revoking a device immediately disconnects it.
+            </p>
+
+            <div v-if="isLoadingDevices" class="flex justify-center py-6">
+              <span class="loading loading-spinner loading-sm text-primary"></span>
+            </div>
+
+            <div v-else-if="connectedDevices.length === 0" class="text-center py-6">
+              <Icon name="mdi:cellphone-off" class="w-8 h-8 text-base-content/20 mx-auto mb-2" />
+              <p class="text-[11px] text-base-content/40 font-bold">No connected devices</p>
+            </div>
+
+            <div v-else class="space-y-2">
+              <div
+                v-for="device in connectedDevices"
+                :key="device.deviceId"
+                class="flex items-center gap-4 bg-base-200/40 border border-base-content/5 rounded-xl px-4 py-3 group hover:bg-base-200/60 transition-all"
+              >
+                <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10 shrink-0">
+                  <Icon name="mdi:cellphone" class="w-4 h-4" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-extrabold tracking-wide truncate">
+                    {{ device.deviceModel }}
+                  </p>
+                  <div class="flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">
+                    <span class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest">
+                      Connected {{ formatDeviceDate(device.createdAt) }}
+                    </span>
+                    <span class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest">
+                      Last used {{ formatDeviceDate(device.lastUsed) }}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  class="btn btn-error btn-outline btn-xs rounded-lg h-8 min-h-0 px-3 font-bold text-[9px] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity"
+                  @click="revokeDevice(device.deviceId)"
+                  :disabled="isRevokingDevice === device.deviceId"
+                >
+                  <span v-if="isRevokingDevice === device.deviceId" class="loading loading-spinner loading-xs"></span>
+                  <template v-else>
+                    <Icon name="mdi:link-off" class="w-3.5 h-3.5" />
+                    Revoke
+                  </template>
                 </button>
               </div>
             </div>

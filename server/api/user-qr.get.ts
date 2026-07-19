@@ -1,5 +1,8 @@
-import { defineEventHandler, getCookie, createError, getQuery } from 'h3'
+import { defineEventHandler, createError, getQuery } from 'h3'
 import { createRequire } from 'module'
+import jwt from 'jsonwebtoken'
+import { registerDevice } from '../utils/deviceRegistry'
+
 const require = createRequire(import.meta.url)
 const QRCode = require('qrcode')
 
@@ -9,18 +12,26 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 401, statusMessage: 'Unauthorized: User context missing' })
     }
 
-    const token = getCookie(event, 'token')
-    if (!token) {
-        throw createError({ statusCode: 401, statusMessage: 'Unauthorized: No token cookie found' })
-    }
+    const username = event.context.user.name
+    const config = useRuntimeConfig()
 
     const query = getQuery(event)
     const origin = (query.origin as string) || `http://${event.node.req.headers.host}`
 
+    // Generate a unique device ID and register it in the device store
+    const deviceId = await registerDevice(username)
+
+    // Sign a new device-bound JWT (separate from the user's browser session)
+    const deviceToken = jwt.sign(
+        { user: { name: username }, deviceId },
+        config.jwtSecret,
+        { expiresIn: '30d' }
+    )
+
     const payload = {
         serverUrl: origin,
-        username: event.context.user.name,
-        token: token
+        username,
+        token: deviceToken,
     }
 
     try {
@@ -36,3 +47,4 @@ export default defineEventHandler(async (event) => {
         })
     }
 })
+

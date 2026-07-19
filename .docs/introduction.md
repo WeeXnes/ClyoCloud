@@ -38,3 +38,22 @@ Instead of using a centralized database engine (such as PostgreSQL, MySQL, or SQ
 *   **Ultimate Portability**: All metadata (tags, description, public share settings, favorites) is stored inside a JSON file named `<filename>.cloudinfo` directly adjacent to the resource file itself. If a directory is moved, copied, or backed up on the OS level, all metadata automatically migrates with it.
 *   **Zero Database Administration**: There is no database server to maintain, no schema migrations to run, and no connection pools to manage.
 *   **In-Memory Speed**: To prevent slow disk read operations during search and indexing, ClyoCloud rebuilds an in-memory cache of file tags and statuses on startup. All subsequent page list searches look up this in-memory cache, which is kept in sync during write operations.
+
+---
+
+## Mobile App Integration
+
+ClyoCloud provides companion Android apps that connect directly to your self-hosted instance:
+
+*   **[ClyoWallpaper](https://code.weexnes.dev/ClyoWallpaper)**: Sync and manage live wallpapers from your ClyoCloud storage. Browse wallpapers, arrange crops, and configure automatic wallpaper cycling on your Android device. [Documentation](https://weexnes.dev/project/ClyoWallpaper?path=introduction.md) · [Download APK](https://weexnes.dev/project/ClyoWallpaper#artifacts)
+*   **[ClyoCloud Android](https://code.weexnes.dev/ClyoCloudAndroid)**: Full-featured mobile client for browsing, uploading, streaming, and managing your cloud files on the go. [Documentation](https://weexnes.dev/project/ClyoCloudAndroid?path=introduction.md) · [Download APK](https://weexnes.dev/project/ClyoCloudAndroid#artifacts)
+
+### QR Code Quick Connect
+
+Both apps support a **QR Code Quick Login** flow for instant device pairing:
+1.  Open **Settings → Security** in your ClyoCloud dashboard.
+2.  Click **Generate Login QR Code** to create a device-specific connection token.
+3.  Scan the QR code from the app's login screen.
+4.  The device registers automatically and appears in the **Connected Devices** list in Settings.
+5.  Each device can be individually **revoked** from Settings, instantly disconnecting the app without affecting browser sessions or other devices.
+

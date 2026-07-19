@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.10.0] - 2026-07-19
+
+### Added
+- Implemented device-bound QR code login tokens: each generated QR code now contains a unique, revocable device-specific JWT instead of the user's browser session token.
+- Added device registry system (`devices.json`) to track connected mobile app sessions with device model, connection date, and last-used timestamp.
+- Added **Connected Devices** management section in the Settings page, displaying registered app devices with individual revoke controls.
+- Added `/api/devices` GET endpoint to list registered devices for the current user.
+- Added `/api/devices` DELETE endpoint to revoke a device, instantly invalidating its JWT.
+- Added `DEVICES_FILE_PATH` environment variable for configurable device registry storage location.
+
+### Security
+- Hardened `/api/verify` endpoint: added user-existence check against `users.json`, `isPartial` (2FA-pending) token rejection, and case-insensitive `Authorization: Bearer` header parsing.
+- Hardened `server/middleware/auth.ts`: added case-insensitive Bearer header parsing and device-bound token validation against the device registry.
+- Added `/api/user-qr` and `/api/devices` to the security test suite's protected endpoints list.
+- Added Bearer token authentication test group verifying invalid, case-variant, empty, and value-less Bearer headers.
+
+### Changed
+- Updated README with a Mobile Apps section linking to ClyoWallpaper and ClyoCloud Android companion apps (source, docs, APK downloads).
+- Updated developer documentation (introduction, security-testing, setup-guide) with device-bound token architecture, Bearer auth, and mobile app integration details.
+- Updated ClyoWallpaper Android app to send device model (`Build.MANUFACTURER + Build.MODEL`) as a query parameter when verifying QR-scanned tokens.
+
+---
+
 ## [2.9.0] - 2026-07-19
 
 ### Added
