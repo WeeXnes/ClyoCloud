@@ -53,6 +53,10 @@ const protectedEndpoints = [
   '/api/2fa/enable',
   '/api/2fa/setup',
 
+  // Admin API
+  '/api/admin/stats',
+  '/api/admin/activity',
+
   // Content Delivery (Raw Routes)
   '/file/test.txt',
   '/files/test-folder', // Verifying plural route protection

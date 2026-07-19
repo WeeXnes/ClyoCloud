@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import jwt from 'jsonwebtoken'
 import { createRequire } from 'module'
 import { logActivity } from '../../utils/activityLogger'
+import { loginLimiter, getClientIP } from '../../utils/rateLimiter'
 
 const require = createRequire(import.meta.url)
 const otplib = require('otplib')
@@ -19,6 +20,17 @@ export default defineEventHandler(async (event) => {
         throw createError({
             statusCode: 400,
             statusMessage: 'Token and code are required',
+        })
+    }
+
+    // Rate limiting check (shares limiter with login)
+    const clientIP = getClientIP(event)
+    const rateLimitResult = loginLimiter.check(clientIP)
+    if (!rateLimitResult.allowed) {
+        console.warn(`[SECURITY] Rate limited 2FA attempt from IP: ${clientIP}`)
+        throw createError({
+            statusCode: 429,
+            statusMessage: `Too many attempts. Try again in ${Math.ceil(rateLimitResult.retryAfterMs / 1000)} seconds.`,
         })
     }
 
@@ -68,6 +80,9 @@ export default defineEventHandler(async (event) => {
             })
         }
 
+        // Successful 2FA — reset rate limiter
+        loginLimiter.reset(clientIP)
+
         console.log(`[2FA] ACCEPTED: Code ${cleanCode} is valid for user ${username}`)
         await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful 2FA verification', event)
 
@@ -84,3 +99,4 @@ export default defineEventHandler(async (event) => {
         })
     }
 })
+

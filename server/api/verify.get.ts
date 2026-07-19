@@ -33,16 +33,18 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        // Verify that the user still exists in users.json
+        // Verify that the user still exists in users.json and read isAdmin
         const usersData = await fs.readFile(config.usersFilePath, 'utf-8')
-        const users: { name: string }[] = JSON.parse(usersData)
-        const userExists = users.some((u) => u.name === decoded.user.name)
-        if (!userExists) {
+        const users: { name: string; isAdmin?: boolean }[] = JSON.parse(usersData)
+        const foundUser = users.find((u) => u.name === decoded.user.name)
+        if (!foundUser) {
             throw createError({
                 statusCode: 401,
                 statusMessage: 'Unauthorized: User does not exist',
             })
         }
+
+        const isAdmin = foundUser.isAdmin === true
 
         // If it's a device token, verify it still exists and update its activity status
         if (decoded.isDevice && decoded.deviceId) {
@@ -58,7 +60,7 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        return { user: decoded.user }
+        return { user: { ...decoded.user, isAdmin } }
     } catch (error: any) {
         if (error.statusCode === 401) throw error
         console.error('JWT verification error:', error)

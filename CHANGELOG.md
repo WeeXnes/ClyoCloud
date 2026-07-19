@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.11.0] - 2026-07-20
+
+### Added
+- **Admin Dashboard** (`/admin`): Premium admin-only control panel with real-time traffic charts, rate limit status, user management, device overview, security event log, and server diagnostics.
+- **Admin Role System**: Users can now be designated as administrators via `isAdmin: true` in `users.json`. The admin flag is propagated through the auth middleware and sidebar navigation.
+- **Rate Limiting**: In-memory sliding-window rate limiter protecting sensitive endpoints:
+  - Login + 2FA: 5 attempts per 15 minutes, 15-minute block on exceeded
+  - QR Code generation: 10 attempts per 5 minutes
+  - General API: 200 requests per minute per IP
+- **Traffic Tracking**: Real-time in-memory traffic metrics collector tracking requests per minute, status code distribution, top endpoints, and top client IPs.
+- Added `/api/admin/stats` and `/api/admin/activity` admin-only API endpoints.
+- Activity logging for QR code generation (`QR_GENERATE`), device registration (`DEVICE_REGISTER`), and device revocation (`DEVICE_REVOKE`).
+
+### Security
+- All rate-limited endpoints return `429 Too Many Requests` with human-readable retry-after messages.
+- Admin API endpoints are guarded by `isAdmin` check — non-admin users receive `403 Forbidden`.
+- Rate limiters automatically reset on successful authentication to avoid penalizing legitimate users.
+- Stale rate limit entries are automatically cleaned up every 5 minutes to prevent memory leaks.
+- Added admin endpoints to security regression test suite.
+
+---
+
 ## [2.10.0] - 2026-07-20
 
 ### Added

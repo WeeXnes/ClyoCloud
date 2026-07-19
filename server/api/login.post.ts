@@ -4,6 +4,7 @@ import path from 'path'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { logActivity } from '../utils/activityLogger'
+import { loginLimiter, getClientIP } from '../utils/rateLimiter'
 
 interface User {
     name: string
@@ -19,6 +20,17 @@ export default defineEventHandler(async (event) => {
         throw createError({
             statusCode: 400,
             statusMessage: 'Username and password are required',
+        })
+    }
+
+    // Rate limiting check
+    const clientIP = getClientIP(event)
+    const rateLimitResult = loginLimiter.check(clientIP)
+    if (!rateLimitResult.allowed) {
+        console.warn(`[SECURITY] Rate limited login attempt from IP: ${clientIP}`)
+        throw createError({
+            statusCode: 429,
+            statusMessage: `Too many login attempts. Try again in ${Math.ceil(rateLimitResult.retryAfterMs / 1000)} seconds.`,
         })
     }
 
@@ -48,6 +60,9 @@ export default defineEventHandler(async (event) => {
                 statusMessage: 'Invalid username or password',
             })
         }
+
+        // Successful password verification — reset rate limiter for this IP
+        loginLimiter.reset(clientIP)
 
         if (user.twoFactorEnabled) {
             try {

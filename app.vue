@@ -108,6 +108,18 @@
               </ul>
             </div>
 
+            <div v-if="user && user.isAdmin" class="mb-6">
+              <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-error/40 mb-3">Administration</h3>
+              <ul class="space-y-1">
+                <li>
+                  <NuxtLink to="/admin" :class="['nav-link', { active: isLinkActive('/admin') }]">
+                    <Icon name="mdi:shield-crown" class="w-5 h-5" />
+                    <span>Admin Panel</span>
+                  </NuxtLink>
+                </li>
+              </ul>
+            </div>
+
             <div>
               <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-3">Account</h3>
               <ul class="space-y-1">
@@ -156,7 +168,7 @@ import { useState, useCookie, useRoute } from 'nuxt/app'
 import { onMounted, watch, computed } from 'vue'
 
 const route = useRoute()
-const user = useState<{ name: string } | null>('user')
+const user = useState<{ name: string; isAdmin?: boolean } | null>('user')
 const themeCookie = useCookie('theme', { default: () => 'onedev' })
 const currentTheme = useState<string>('currentTheme', () => themeCookie.value)
 const userSettings = useState<any>('userSettings', () => null)
