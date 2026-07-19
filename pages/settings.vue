@@ -273,6 +273,37 @@ async function confirmDisable2fa() {
 
 const appQrCodeUrl = ref('')
 const isGeneratingAppQr = ref(false)
+const devices = ref<any[]>([])
+
+async function fetchDevices() {
+  try {
+    const response = await fetch('/api/devices', { credentials: 'include' })
+    if (response.ok) {
+      devices.value = await response.json()
+    }
+  } catch (err) {
+    console.error('Error fetching devices:', err)
+  }
+}
+
+async function revokeDevice(id: string) {
+  try {
+    const response = await fetch('/api/devices', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+    if (response.ok) {
+      createNotification('Device connection revoked successfully', NotificationType.INFO)
+      await fetchDevices()
+    } else {
+      const errData = await response.json()
+      createNotification(errData.statusMessage || 'Failed to revoke device connection', NotificationType.ERROR)
+    }
+  } catch (err: any) {
+    createNotification(err.message || 'Failed to revoke device connection', NotificationType.ERROR)
+  }
+}
 
 async function fetchAppQrCode() {
   isGeneratingAppQr.value = true
@@ -280,6 +311,7 @@ async function fetchAppQrCode() {
     const origin = window.location.origin
     const data: any = await $fetch(`/api/user-qr?origin=${encodeURIComponent(origin)}`)
     appQrCodeUrl.value = data.qrCodeUrl
+    await fetchDevices()
   } catch (err: any) {
     createNotification(err.data?.statusMessage || 'Failed to generate App Login QR Code', NotificationType.ERROR)
   } finally {
@@ -328,6 +360,7 @@ onMounted(() => {
   fetchTags()
   fetchUserSettings()
   fetch2faStatus()
+  fetchDevices()
   fetchGenerationStatus() // Check if a task is already running
   fetchThumbnailGenerationStatus() // Check if a task is already running
 })
@@ -869,7 +902,7 @@ async function logout() {
             </div>
           </div>
 
-          <!-- App Connection QR Code -->
+          <!-- App Quick Login -->
           <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
@@ -902,6 +935,36 @@ async function logout() {
                 >
                   Hide QR Code
                 </button>
+              </div>
+            </div>
+
+            <!-- Connected Devices List -->
+            <div v-if="devices.length > 0" class="pt-4 border-t border-base-content/5 space-y-3">
+              <h4 class="text-[10px] font-black uppercase tracking-wider text-base-content/50">Registered Devices</h4>
+              <div class="space-y-2">
+                <div 
+                  v-for="device in devices" 
+                  :key="device.id" 
+                  class="flex items-center justify-between p-3 rounded-xl bg-base-200/50 border border-base-content/5 text-xs animate-in fade-in duration-300"
+                >
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <Icon name="mdi:cellphone" class="w-4 h-4 text-base-content/70" />
+                      <span class="font-bold text-base-content/80">{{ device.model }}</span>
+                    </div>
+                    <div class="text-[9px] text-base-content/40 font-semibold space-x-2">
+                      <span>Added: {{ new Date(device.createdAt).toLocaleDateString() }}</span>
+                      <span>•</span>
+                      <span>Last Active: {{ new Date(device.lastActive).toLocaleDateString() }}</span>
+                    </div>
+                  </div>
+                  <button 
+                    class="btn btn-ghost btn-xs text-error font-bold uppercase tracking-widest text-[9px] hover:bg-error/10 rounded-lg px-2"
+                    @click="revokeDevice(device.id)"
+                  >
+                    Revoke
+                  </button>
+                </div>
               </div>
             </div>
           </div>

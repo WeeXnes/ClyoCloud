@@ -26,8 +26,17 @@ ClyoCloud is a personal, self-hosted cloud storage and media management applicat
 *   **Rich Media Management**: Async thumbnail/preview generation with FFmpeg/FFprobe, tag organization, and custom descriptions.
 *   **Public Sharing**: Generate temporary/permanent unauthenticated public download or preview links.
 *   **Background Utilities**: YouTube/media downloading via `yt-dlp`, MD5-based duplicate file identification, and storage cleanup scanning.
+*   **Mobile App Companion Suite**: Support for Android clients to browse media and synchronise wallpapers securely.
 
 ---
+
+## Mobile Integrations
+
+ClyoCloud connects securely with two Android client applications:
+1. **🌌 [ClyoCloud Android](https://code.weexnes.dev/ClyoCloudAndroid)** ([Repository](https://code.weexnes.dev/ClyoCloudAndroid) | [Docs](https://weexnes.dev/project/ClyoCloudAndroid?path=introduction.md) | [APK Download](https://weexnes.dev/project/ClyoCloudAndroid#artifacts)): Handheld media browser client.
+2. **🖼️ [ClyoWallpaper](https://code.weexnes.dev/ClyoWallpaper)** ([Repository](https://code.weexnes.dev/ClyoWallpaper) | [Docs](https://weexnes.dev/project/ClyoWallpaper?path=introduction.md) | [APK Download](https://weexnes.dev/project/ClyoWallpaper#artifacts)): Wallpapers downloader and cyclic manager.
+
+Client connection setup is handled in Settings via a secure, quick-login QR scan. Scanning registers the device session (e.g. `Pixel 7 Pro`) in `devices.json`, allowing the user to revoke it at any point.
 
 ## Core Design Philosophy: Zero-Database Sidecars
 

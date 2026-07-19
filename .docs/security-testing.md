@@ -70,6 +70,18 @@ ClyoCloud contains a dedicated security regression test suite using Vitest, loca
 *   An invalid or corrupted JWT token cookie returns `401`.
 *   A request for an unknown/random route (not in the whitelist) is blocked by default (`Deny-by-Default`).
 *   Whitelisted public routes (like login/assets/public share links) correctly bypass auth checks and return non-401 responses.
+*   Header-based authentication with case-insensitive `Authorization: Bearer <token>` schemas.
+
+---
+
+## 4. Device Session Revocation (`devices.json`)
+
+To secure companion mobile connections (ClyoCloud Android and ClyoWallpaper), ClyoCloud isolates mobile client logins from standard browser sessions:
+- **Registry**: Mobile connections create a unique JWT linked to a session ID (`deviceId`) tracked in `devices.json`.
+- **Audit Logging**: On the initial connection, the server registers the client device model (e.g. `Google Pixel 7 Pro`) parsed from either the `User-Agent` or the `X-Device-Model` header.
+- **Revocation**: Removing a device from Settings deletes the session ID from `devices.json`. The authorization middleware and verification endpoints inspect the registry for every request; if the session ID is missing, requests are rejected with a `401 Unauthorized` status immediately.
+
+---
 
 ### Running Security Tests
 To execute the security test suite, ensure the ClyoCloud server is running locally (default: `http://localhost:6969`) and execute the following command:

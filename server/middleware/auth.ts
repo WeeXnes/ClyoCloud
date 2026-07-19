@@ -2,6 +2,7 @@ import { defineEventHandler, createError, getCookie, sendRedirect } from 'h3'
 import jwt from 'jsonwebtoken'
 import { consola } from 'consola'
 import fs from 'fs/promises'
+import { updateDeviceActivity, parseDeviceModel } from '../utils/devices'
 
 export default defineEventHandler(async (event) => {
     // Normalize URL: lowercase and collapse multiple slashes
@@ -31,7 +32,14 @@ export default defineEventHandler(async (event) => {
     // Protect all other API, Stream, File, and Page routes
     consola.start(`[Auth] Protecting Route: ${url}`)
     const config = useRuntimeConfig()
-    const token = getCookie(event, 'token') || event.node.req.headers['authorization']?.replace('Bearer ', '')
+    
+    let token = getCookie(event, 'token')
+    const authHeader = event.node.req.headers['authorization']
+    if (!token && authHeader) {
+        if (/^Bearer\s+/i.test(authHeader)) {
+            token = authHeader.replace(/^Bearer\s+/i, '')
+        }
+    }
 
     if (!token) {
         consola.warn(`[Auth] Blocked (No Token): ${url}`)
@@ -45,7 +53,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const decoded = jwt.verify(token, config.jwtSecret) as { user: { name: string }, isPartial?: boolean }
+        const decoded = jwt.verify(token, config.jwtSecret) as { user: { name: string }, isPartial?: boolean, deviceId?: string, isDevice?: boolean }
 
         // If it's a partial token (for 2FA), only allow verify-login (handled above)
         // Any other protected route should be rejected
@@ -55,6 +63,21 @@ export default defineEventHandler(async (event) => {
                 statusCode: 401,
                 statusMessage: 'Unauthorized: 2FA required',
             })
+        }
+
+        // If it's a device token, verify it still exists and update its activity status
+        if (decoded.isDevice && decoded.deviceId) {
+            const ua = event.node.req.headers['user-agent']
+            const customModel = event.node.req.headers['x-device-model'] as string | undefined
+            const model = parseDeviceModel(ua, customModel)
+            const deviceValid = await updateDeviceActivity(decoded.deviceId, model, event)
+            if (!deviceValid) {
+                consola.warn(`[Auth] Blocked (Device revoked): ${url} for device ${decoded.deviceId}`)
+                throw createError({
+                    statusCode: 401,
+                    statusMessage: 'Unauthorized: Device revoked',
+                })
+            }
         }
 
         // Verify that the user still exists in users.json

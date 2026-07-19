@@ -37,6 +37,8 @@ const protectedEndpoints = [
   '/api/verify',
   '/api/videos',
   '/api/wallpapers',
+  '/api/user-qr',
+  '/api/devices',
   '/api/zip',
   '/api/storage-clean-status',
   '/api/storage-duplicates-status',
@@ -132,6 +134,29 @@ describe('Security: Authentication Guard', () => {
     it('blocks a completely random/unknown path', async () => {
       const response = await fetch(`${BASE_URL}/some/hidden/admin/path`, {
         headers: { 'Accept': 'application/json' }
+      })
+      expect(response.status).toBe(401)
+    })
+  })
+
+  describe('Token Authentication Hardening', () => {
+    it('rejects invalid Bearer tokens', async () => {
+      const response = await fetch(`${BASE_URL}/api/verify`, {
+        headers: { 'Authorization': 'Bearer invalid_token' }
+      })
+      expect(response.status).toBe(401)
+    })
+
+    it('handles lowercase/mixed-case bearer prefix', async () => {
+      const response = await fetch(`${BASE_URL}/api/verify`, {
+        headers: { 'Authorization': 'bearer invalid_token' }
+      })
+      expect(response.status).toBe(401)
+    })
+
+    it('rejects empty Bearer headers', async () => {
+      const response = await fetch(`${BASE_URL}/api/verify`, {
+        headers: { 'Authorization': 'Bearer ' }
       })
       expect(response.status).toBe(401)
     })

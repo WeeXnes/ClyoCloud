@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.10.0] - 2026-07-20
+
+### Added
+- Implemented Device-Specific Session Revocation for companion mobile applications. QR code logins now issue distinct JWT tokens linked to a unique device session in `devices.json`.
+- Added support for displaying device models (e.g. Pixel 7 Pro) and audit metrics on the web dashboard settings page.
+- Added `/api/devices` GET and DELETE endpoints to review and revoke mobile client sessions.
+- Integrated `X-Device-Model` client headers in companion applications `ClyoWallpaper` and `ClyoCloudAndroid`.
+
+### Security
+- Hardened token authorization checks in both server middleware and `/api/verify` to ensure active device sessions still exist, automatically blocking revoked tokens.
+- Restructured `/api/verify` token validation to enforce user account existence checks and reject incomplete 2FA login steps (`isPartial` tokens).
+- Upgraded the security middleware and token parser to support case-insensitive HTTP Bearer authentication headers.
+
+---
+
 ## [2.9.0] - 2026-07-19
 
 ### Added

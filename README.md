@@ -30,8 +30,24 @@ ClyoCloud is designed to be a lightweight, privacy-focused alternative to mainst
 *   **🎬 Seamless Video Streaming**: Built-in, range-aware video streaming supporting seamless scrubbing and playback.
 *   **🔗 Public Sharing**: Generate public, unauthenticated links easily to share files without giving out account access.
 *   **📂 Modern File Operations**: Drag-and-drop uploads, context-menu actions, bulk deletion/downloads, folder creation, and on-the-fly zipping.
+*   **📱 Mobile App Integrations**: Scan-to-login connection for Android companion apps to fetch wallpapers or manage cloud files.
 
 ---
+
+## 📱 Mobile Companion Apps
+
+ClyoCloud integrates with two dedicated Android companion apps:
+
+*   **🌌 [ClyoCloud Android](https://code.weexnes.dev/ClyoCloudAndroid)**: Complete files, collections, media explorer, and viewer client for your mobile phone.
+    *   [ClyoCloudAndroid Repository](https://code.weexnes.dev/ClyoCloudAndroid) | [ClyoCloudAndroid Docs](https://weexnes.dev/project/ClyoCloudAndroid?path=introduction.md) | [APK Download](https://weexnes.dev/project/ClyoCloudAndroid#artifacts)
+*   **🖼️ [ClyoWallpaper](https://code.weexnes.dev/ClyoWallpaper)**: Synchronizes with your cloud-curated wallpapers and sets them as your device wallpaper automatically.
+    *   [ClyoWallpaper Repository](https://code.weexnes.dev/ClyoWallpaper) | [ClyoWallpaper Docs](https://weexnes.dev/project/ClyoWallpaper?path=introduction.md) | [APK Download](https://weexnes.dev/project/ClyoWallpaper#artifacts)
+
+### 🔑 Secure Quick Login QR Flow
+Instead of sharing browser session cookies, generating a QR code registers a unique device token (valid for 365 days) in `devices.json` under your settings profile:
+1. Click **Generate Login QR Code** in the settings page.
+2. Scan the code in the companion app login screen. The device model name (e.g. `Pixel 7 Pro`) will be registered on the server.
+3. You can audit and instantly **Revoke** any device session directly from your settings dashboard.
 
 ## 🛠 Tech Stack & Architecture
 
