@@ -14,15 +14,31 @@ interface User {
 }
 
 /**
- * Resolves the JWT secret. If using the default, generates a secure random 32-char secret
- * in-memory that rolls on every server startup.
+ * Resolves the JWT secret. Checks env, jwt.secret file, or runtime config before falling back
+ * to generating a secure random 32-char ephemeral secret in-memory on every startup.
  */
-function getOrGenerateJwtSecret(currentSecret: string): string {
+function getOrGenerateJwtSecret(usersFilePath: string, currentSecret: string): string {
     if (process.env.JWT_SECRET && process.env.JWT_SECRET !== 'jei0ghjesi0ogj8ie0jg8093jg8390') {
         const secretStart = process.env.JWT_SECRET.slice(0, 4)
         console.info(chalk.green(`[SECURITY] Using custom JWT_SECRET from environment (starts with: ${secretStart}...)`))
         return process.env.JWT_SECRET
     }
+
+    const configDir = path.dirname(usersFilePath)
+    const jwtSecretFile = path.join(configDir, 'jwt.secret')
+    try {
+        if (fs.existsSync(jwtSecretFile)) {
+            const fileSecret = fs.readFileSync(jwtSecretFile, 'utf-8').trim()
+            if (fileSecret.length > 0) {
+                const secretStart = fileSecret.slice(0, 4)
+                console.info(chalk.green(`[SECURITY] Using custom JWT secret from file ${jwtSecretFile} (starts with: ${secretStart}...)`))
+                return fileSecret
+            }
+        }
+    } catch (err) {
+        console.error(`Failed to read ${jwtSecretFile}:`, err)
+    }
+
     if (currentSecret && currentSecret !== 'jei0ghjesi0ogj8ie0jg8093jg8390') {
         const secretStart = currentSecret.slice(0, 4)
         console.info(chalk.green(`[SECURITY] Using custom JWT secret from config (starts with: ${secretStart}...)`))
@@ -38,13 +54,19 @@ export default defineNitroPlugin(async (nitroApp) => {
     const config = useRuntimeConfig()
     console.info("Running server init...")
 
-    const isDefaultSecret = config.jwtSecret === 'jei0ghjesi0ogj8ie0jg8093jg8390'
+    const configDir = path.dirname(config.usersFilePath)
+    const jwtSecretFile = path.join(configDir, 'jwt.secret')
+    const hasCustomEnv = !!(process.env.JWT_SECRET && process.env.JWT_SECRET !== 'jei0ghjesi0ogj8ie0jg8093jg8390')
+    const hasFileSecret = fs.existsSync(jwtSecretFile) && fs.readFileSync(jwtSecretFile, 'utf-8').trim().length > 0
+    const hasConfigSecret = config.jwtSecret && config.jwtSecret !== 'jei0ghjesi0ogj8ie0jg8093jg8390'
 
-    // Override the default/unset secret with a secure generated ephemeral secret
-    config.jwtSecret = getOrGenerateJwtSecret(config.jwtSecret)
+    const isEphemeral = !hasCustomEnv && !hasFileSecret && !hasConfigSecret
+
+    // Override default/unset secret with secure generated ephemeral or custom secret
+    config.jwtSecret = getOrGenerateJwtSecret(config.usersFilePath, config.jwtSecret)
 
     // Clear authorized devices database if using a fresh ephemeral key, since all existing tokens are now invalid
-    if (isDefaultSecret) {
+    if (isEphemeral) {
         try {
             if (fs.existsSync(config.devicesFilePath)) {
                 fs.writeFileSync(config.devicesFilePath, '{}', 'utf-8')

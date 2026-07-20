@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.6] - 2026-07-20
+
+### Security
+- **File-Based JWT Secret Support**: Added support for configuring a persistent custom JWT secret via a `jwt.secret` file inside the configuration directory (`~/.clyo/jwt.secret`). If present, the secret is loaded automatically, skipping ephemeral rolling and preserving device session records across server restarts.
+
 ## [2.12.5] - 2026-07-20
 
 ### Security
