@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.2] - 2026-07-20
+
+### Fixed
+- **Mobile Responsive Donut Chart**: Redesigned the Status Code Donut Chart container and legend elements inside the Admin Panel to stack vertically on mobile layouts and line up legend items horizontally, preventing card overflow.
+
 ## [2.12.1] - 2026-07-20
 
 ### Fixed

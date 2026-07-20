@@ -218,17 +218,17 @@
             <h2 class="text-sm font-bold">Status Codes</h2>
             <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Response distribution</p>
           </div>
-          <div class="flex items-center justify-center h-48">
-            <div class="relative">
-              <canvas ref="donutChartCanvas" width="160" height="160"></canvas>
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 min-h-[12rem] py-4 sm:py-0">
+            <div class="relative w-40 h-40 shrink-0">
+              <canvas ref="donutChartCanvas" width="160" height="160" class="w-40 h-40"></canvas>
               <div class="absolute inset-0 flex items-center justify-center flex-col">
                 <span class="text-lg font-bold">{{ data?.traffic?.totalRequests?.toLocaleString() || '0' }}</span>
                 <span class="text-[9px] text-base-content/40 uppercase font-bold">Total</span>
               </div>
             </div>
-            <div class="ml-6 space-y-2">
+            <div class="space-y-1.5 sm:space-y-2 flex flex-row sm:flex-col flex-wrap justify-center gap-x-4 gap-y-1 sm:gap-0">
               <div v-for="(entry, i) in statusCodeEntries" :key="i" class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full" :style="{ background: entry.color }"></span>
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: entry.color }"></span>
                 <span class="text-[10px] font-bold text-base-content/60">{{ entry.label }}</span>
                 <span class="text-[10px] font-mono text-base-content/40">{{ entry.count }}</span>
               </div>
