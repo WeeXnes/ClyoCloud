@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import {Tag} from "~/types/File";
 import chalk from "chalk";
 import readline from "readline";
@@ -12,15 +13,32 @@ interface User {
     password: string;
 }
 
+/**
+ * Resolves the JWT secret. If using the default, generates a secure random 32-char secret
+ * in-memory that rolls on every server startup.
+ */
+function getOrGenerateJwtSecret(currentSecret: string): string {
+    if (process.env.JWT_SECRET && process.env.JWT_SECRET !== 'jei0ghjesi0ogj8ie0jg8093jg8390') {
+        return process.env.JWT_SECRET
+    }
+    if (currentSecret && currentSecret !== 'jei0ghjesi0ogj8ie0jg8093jg8390') {
+        return currentSecret
+    }
+
+    const newSecret = crypto.randomBytes(24).toString('base64')
+    console.info(chalk.green('[SECURITY] Rolled a new secure ephemeral JWT secret for this session.'))
+    return newSecret
+}
+
 export default defineNitroPlugin(async (nitroApp) => {
     const config = useRuntimeConfig()
     console.info("Running server init...")
-    if (config.jwtSecret === 'jei0ghjesi0ogj8ie0jg8093jg8390') {
-        console.warn(chalk.red('[SECURITY WARNING] Using default hardcoded JWT secret! Please set JWT_SECRET environment variable.'));
-    } else {
-        const secretStart = config.jwtSecret ? config.jwtSecret.slice(0, 4) : '';
-        console.info(chalk.green(`[SECURITY] Using custom JWT secret (starts with: ${secretStart}...)`));
-    }
+
+    // Override the default/unset secret with a secure generated ephemeral secret
+    config.jwtSecret = getOrGenerateJwtSecret(config.jwtSecret)
+
+    const secretStart = config.jwtSecret ? config.jwtSecret.slice(0, 4) : '';
+    console.info(chalk.green(`[SECURITY] Active JWT secret (starts with: ${secretStart}...)`));
 
     console.info("Initializing media backend...")
     console.info("Environment: ")

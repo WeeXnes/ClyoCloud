@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.3] - 2026-07-20
+
+### Security
+- **Auto-Generated JWT Secret**: Implemented automatic generation of a secure random 32-character JWT secret in memory if none is set in the environment or config. The secret is rolled fresh on every server startup, ensuring absolute security by default out of the box.
+
 ## [2.12.2] - 2026-07-20
 
 ### Fixed
