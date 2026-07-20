@@ -17,7 +17,7 @@ interface TrafficSnapshot {
     statusCodeDistribution: { [code: string]: number }
     topEndpoints: { path: string; count: number }[]
     topIPs: { ip: string; count: number }[]
-    recentRequests: { timestamp: number; method: string; path: string; statusCode: number; ip: string; userAgent?: string }[]
+    recentRequests: { timestamp: number; method: string; path: string; statusCode: number; ip: string; userAgent?: string; isAuth?: boolean }[]
 }
 
 class TrafficTracker {
@@ -38,7 +38,7 @@ class TrafficTracker {
     private todayRequests = 0
 
     // Recent requests ring buffer (last 100)
-    private recentRequests: { timestamp: number; method: string; path: string; statusCode: number; ip: string; userAgent?: string }[] = []
+    private recentRequests: { timestamp: number; method: string; path: string; statusCode: number; ip: string; userAgent?: string; isAuth?: boolean }[] = []
     private readonly maxRecent = 100
 
     // Cleanup interval
@@ -52,7 +52,7 @@ class TrafficTracker {
     /**
      * Record a completed request.
      */
-    record(method: string, path: string, statusCode: number, ip: string, userAgent?: string): void {
+    record(method: string, path: string, statusCode: number, ip: string, userAgent?: string, isAuth?: boolean): void {
         const now = Date.now()
         this.totalRequests++
 
@@ -87,7 +87,7 @@ class TrafficTracker {
         this.ipCounts.set(ip, (this.ipCounts.get(ip) || 0) + 1)
 
         // Recent requests
-        this.recentRequests.push({ timestamp: now, method, path, statusCode, ip, userAgent })
+        this.recentRequests.push({ timestamp: now, method, path, statusCode, ip, userAgent, isAuth })
         if (this.recentRequests.length > this.maxRecent) {
             this.recentRequests.shift()
         }

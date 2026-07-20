@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.0] - 2026-07-20
+
+### Added
+- **IP Traffic Inspector**: Multi-dimensional inspector sub-page for client IP addresses, showing geolocation, traffic share, block status, and a real-time HTTP request log.
+- **Solid Vector World Map**: Replaced dotted map representation with stylized solid vector continents, dynamic latitude/longitude grids, and pulsating client geolocation markers.
+- **Secure Traffic Indicators**: Implemented `isAuth` indicator logs to highlight authenticated requests inside the IP inspector table with a lock icon.
+
 ## [2.11.0] - 2026-07-20
 
 ### Added

@@ -16,7 +16,8 @@ export default defineEventHandler(async (event) => {
     event.node.res.on('finish', () => {
         const statusCode = event.node.res.statusCode
         const ua = event.node.req.headers['user-agent']
-        trafficTracker.record(method, url, statusCode, clientIP, ua)
+        const isAuth = !!event.context.user
+        trafficTracker.record(method, url, statusCode, clientIP, ua, isAuth)
     })
 
     const publicPaths = [

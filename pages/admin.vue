@@ -59,8 +59,8 @@
           <div>
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-sm font-bold uppercase tracking-wider text-base-content/50">Client Identity</h2>
-              <span v-if="isIpBlocked(selectedIp)" class="badge badge-badge badge-error badge-sm uppercase tracking-wider font-extrabold text-[8px] px-2 py-0.5 rounded">Blocked</span>
-              <span v-else class="badge badge-badge badge-success badge-sm uppercase tracking-wider font-extrabold text-[8px] px-2 py-0.5 rounded">Active</span>
+              <span v-if="isIpBlocked(selectedIp)" class="badge badge-error badge-sm uppercase tracking-wider font-extrabold text-[8px] px-2 py-0.5 rounded border border-error/10">Blocked</span>
+              <span v-else class="badge badge-success badge-sm uppercase tracking-wider font-extrabold text-[8px] px-2 py-0.5 rounded border border-success/10">Active</span>
             </div>
             <div class="space-y-4">
               <div>
@@ -125,7 +125,10 @@
                     {{ req.method }}
                   </span>
                 </td>
-                <td class="py-2 text-[10px] font-bold text-base-content/80 max-w-xs truncate" :title="req.path">{{ req.path }}</td>
+                <td class="py-2 text-[10px] font-bold text-base-content/80 max-w-xs truncate flex items-center gap-1.5" :title="req.path">
+                  <Icon v-if="req.isAuth" name="mdi:lock" class="w-3.5 h-3.5 text-success shrink-0" title="Authenticated request (Auth middleware verified)" />
+                  <span class="truncate">{{ req.path }}</span>
+                </td>
                 <td class="py-2">
                   <span class="px-1.5 py-0.25 rounded text-[9px] font-extrabold font-mono"
                         :class="req.statusCode < 300 ? 'text-success bg-success/10' : req.statusCode < 400 ? 'text-info bg-info/10' : 'text-error bg-error/10'">
@@ -457,21 +460,21 @@ let animationFrameId: any = null
 // Stylized continent polygons in percentage (0-100) coordinates
 const MAP_LANDMASSE_POLYGONS = [
     // North America
-    [[12, 18], [32, 18], [36, 12], [38, 16], [32, 28], [28, 42], [24, 45], [19, 35], [13, 26]],
+    [[10, 16], [12, 12], [22, 10], [30, 9], [34, 15], [37, 20], [33, 23], [30, 31], [27, 34], [25, 41], [23, 41], [21, 33], [14, 25]],
     // Greenland
-    [[33, 8], [38, 8], [36, 14], [31, 14]],
+    [[32, 6], [39, 7], [37, 13], [31, 12]],
     // South America
-    [[22, 46], [29, 46], [32, 52], [28, 65], [22, 80], [20, 80], [19, 58]],
+    [[22, 42], [27, 43], [34, 50], [31, 58], [27, 68], [23, 79], [21, 79], [22, 59], [20, 48]],
     // Africa
-    [[44, 45], [54, 44], [58, 48], [54, 58], [50, 78], [46, 78], [43, 56]],
+    [[41, 44], [49, 42], [57, 48], [55, 54], [51, 65], [49, 76], [46, 76], [44, 60], [40, 52]],
     // Europe & Asia
-    [[40, 22], [82, 18], [85, 25], [82, 45], [75, 52], [68, 45], [58, 45], [50, 36], [42, 36]],
+    [[40, 22], [46, 12], [52, 10], [58, 14], [68, 15], [78, 13], [86, 11], [88, 18], [82, 33], [79, 44], [72, 48], [66, 44], [56, 44], [51, 36], [41, 36]],
     // Australia
-    [[71, 60], [82, 62], [80, 75], [71, 74]],
+    [[73, 62], [82, 63], [81, 74], [73, 73]],
     // Madagascar
-    [[57, 68], [59, 72]],
+    [[55, 68], [57, 72], [55, 74]],
     // Japan
-    [[82, 28], [84, 32]]
+    [[82, 24], [84, 29], [81, 32]]
 ]
 
 function isPointInPolygon(x: number, y: number, polygon: number[][]): boolean {
@@ -718,31 +721,43 @@ function drawWorldMapInternal(canvas: HTMLCanvasElement, singleIpMode: boolean =
   const w = rect.width
   const h = rect.height
 
-  // Draw High-Tech Dotted Continents Grid
-  const spacing = 7
-  for (let x = spacing / 2; x < w; x += spacing) {
-    for (let y = spacing / 2; y < h; y += spacing) {
-      const px = (x / w) * 100
-      const py = (y / h) * 100
+  // Draw Grid Lines (Latitude/Longitude style) for high-tech network appearance
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)'
+  ctx.lineWidth = 0.8
+  const gridSize = 20
+  for (let x = 0; x < w; x += gridSize) {
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, h)
+    ctx.stroke()
+  }
+  for (let y = 0; y < h; y += gridSize) {
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    ctx.lineTo(w, y)
+    ctx.stroke()
+  }
 
-      let isLand = false
-      for (const poly of MAP_LANDMASSE_POLYGONS) {
-        if (isPointInPolygon(px, py, poly)) {
-          isLand = true
-          break
-        }
-      }
+  // Draw Solid Stylized Continents (Highly recognizable vectors)
+  ctx.fillStyle = 'rgba(99, 102, 241, 0.08)' // soft glowing fill
+  ctx.strokeStyle = 'rgba(99, 102, 241, 0.22)' // crisp boundary stroke
+  ctx.lineWidth = 1.2
+  ctx.lineJoin = 'round'
 
-      ctx.beginPath()
-      if (isLand) {
-        ctx.fillStyle = 'rgba(99, 102, 241, 0.16)' // primary glow
-        ctx.arc(x, y, 1.2, 0, Math.PI * 2)
-      } else {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.02)' // faint ocean dot
-        ctx.arc(x, y, 0.8, 0, Math.PI * 2)
-      }
-      ctx.fill()
+  for (const poly of MAP_LANDMASSE_POLYGONS) {
+    if (poly.length === 0) continue
+    ctx.beginPath()
+    const firstX = (poly[0][0] / 100) * w
+    const firstY = (poly[0][1] / 100) * h
+    ctx.moveTo(firstX, firstY)
+    for (let i = 1; i < poly.length; i++) {
+      const px = (poly[i][0] / 100) * w
+      const py = (poly[i][1] / 100) * h
+      ctx.lineTo(px, py)
     }
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
   }
 
   // Draw IP markers
@@ -839,7 +854,6 @@ function formatUptime(ms: number | undefined): string {
   return `${minutes}m`
 }
 
-// Format size helper
 function formatSize(bytes: number | undefined): string {
   if (!bytes) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
