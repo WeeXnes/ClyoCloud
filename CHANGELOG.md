@@ -2,11 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.12.8] - 2026-07-20
-
-### Changed
-- **License**: Replaced GPL-3.0 license with AGPL-3.0 (GNU Affero General Public License v3).
-
 ## [2.12.7] - 2026-07-20
 
 ### Fixed
