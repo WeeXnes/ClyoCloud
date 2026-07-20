@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.7] - 2026-07-20
+
+### Fixed
+- **Nuxt Environment Variable Compatibility**: Added explicit support for `NUXT_JWT_SECRET` alongside `JWT_SECRET` in `init.ts`, preserving complete compatibility with all Nuxt 3 environment variable override conventions.
+
 ## [2.12.6] - 2026-07-20
 
 ### Security

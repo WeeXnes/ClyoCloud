@@ -18,10 +18,11 @@ interface User {
  * to generating a secure random 32-char ephemeral secret in-memory on every startup.
  */
 function getOrGenerateJwtSecret(usersFilePath: string, currentSecret: string): string {
-    if (process.env.JWT_SECRET && process.env.JWT_SECRET !== 'jei0ghjesi0ogj8ie0jg8093jg8390') {
-        const secretStart = process.env.JWT_SECRET.slice(0, 4)
-        console.info(chalk.green(`[SECURITY] Using custom JWT_SECRET from environment (starts with: ${secretStart}...)`))
-        return process.env.JWT_SECRET
+    const envSecret = process.env.JWT_SECRET || process.env.NUXT_JWT_SECRET
+    if (envSecret && envSecret !== 'jei0ghjesi0ogj8ie0jg8093jg8390') {
+        const secretStart = envSecret.slice(0, 4)
+        console.info(chalk.green(`[SECURITY] Using custom JWT secret from environment (starts with: ${secretStart}...)`))
+        return envSecret
     }
 
     const configDir = path.dirname(usersFilePath)
@@ -56,7 +57,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     const configDir = path.dirname(config.usersFilePath)
     const jwtSecretFile = path.join(configDir, 'jwt.secret')
-    const hasCustomEnv = !!(process.env.JWT_SECRET && process.env.JWT_SECRET !== 'jei0ghjesi0ogj8ie0jg8093jg8390')
+    const activeEnv = process.env.JWT_SECRET || process.env.NUXT_JWT_SECRET
+    const hasCustomEnv = !!(activeEnv && activeEnv !== 'jei0ghjesi0ogj8ie0jg8093jg8390')
     const hasFileSecret = fs.existsSync(jwtSecretFile) && fs.readFileSync(jwtSecretFile, 'utf-8').trim().length > 0
     const hasConfigSecret = config.jwtSecret && config.jwtSecret !== 'jei0ghjesi0ogj8ie0jg8093jg8390'
 
