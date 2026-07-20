@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.4] - 2026-07-20
+
+### Added
+- **Security Console Logs**: Improved startup console logging in the init plugin to print distinct status indicators detailing whether a custom JWT secret or a secure randomly generated ephemeral key is being used.
+
 ## [2.12.3] - 2026-07-20
 
 ### Security

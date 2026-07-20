@@ -19,14 +19,18 @@ interface User {
  */
 function getOrGenerateJwtSecret(currentSecret: string): string {
     if (process.env.JWT_SECRET && process.env.JWT_SECRET !== 'jei0ghjesi0ogj8ie0jg8093jg8390') {
+        const secretStart = process.env.JWT_SECRET.slice(0, 4)
+        console.info(chalk.green(`[SECURITY] Using custom JWT_SECRET from environment (starts with: ${secretStart}...)`))
         return process.env.JWT_SECRET
     }
     if (currentSecret && currentSecret !== 'jei0ghjesi0ogj8ie0jg8093jg8390') {
+        const secretStart = currentSecret.slice(0, 4)
+        console.info(chalk.green(`[SECURITY] Using custom JWT secret from config (starts with: ${secretStart}...)`))
         return currentSecret
     }
 
     const newSecret = crypto.randomBytes(24).toString('base64')
-    console.info(chalk.green('[SECURITY] Rolled a new secure ephemeral JWT secret for this session.'))
+    console.info(chalk.cyan('[SECURITY] No JWT_SECRET configured. Automatically generated a secure random ephemeral secret key for this session.'))
     return newSecret
 }
 
@@ -36,9 +40,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     // Override the default/unset secret with a secure generated ephemeral secret
     config.jwtSecret = getOrGenerateJwtSecret(config.jwtSecret)
-
-    const secretStart = config.jwtSecret ? config.jwtSecret.slice(0, 4) : '';
-    console.info(chalk.green(`[SECURITY] Active JWT secret (starts with: ${secretStart}...)`));
 
     console.info("Initializing media backend...")
     console.info("Environment: ")
