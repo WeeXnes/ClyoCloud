@@ -12,9 +12,7 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        const config = useRuntimeConfig()
-        const userStoragePath = path.join(config.storagePath, event.context.user.name)
-        const activityFilePath = path.join(userStoragePath, '.activity.json')
+        const activityFilePath = getActivityFilePath(event.context.user.name)
 
         try {
             const data = await fs.readFile(activityFilePath, 'utf-8')

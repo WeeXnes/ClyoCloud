@@ -15,6 +15,16 @@ export interface ActivityEntry {
     metadata?: Record<string, any>
 }
 
+/**
+ * Resolves the path to the user's activity log file, placing it
+ * in the parent configuration directory to prevent deletion by media sync tools.
+ */
+export function getActivityFilePath(username: string): string {
+    const config = useRuntimeConfig()
+    const parentDir = path.dirname(config.usersFilePath)
+    return path.join(parentDir, `activity_${username}.json`)
+}
+
 export async function logActivity(
     username: string, 
     action: string, 
@@ -24,9 +34,7 @@ export async function logActivity(
     metadata?: Record<string, any>
 ) {
     try {
-        const config = useRuntimeConfig()
-        const userStoragePath = path.join(config.storagePath, username)
-        const activityFilePath = path.join(userStoragePath, '.activity.json')
+        const activityFilePath = getActivityFilePath(username)
 
         let activity: ActivityEntry[] = []
         try {

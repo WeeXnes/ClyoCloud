@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
 
         for (const user of users) {
             try {
-                const activityFilePath = path.join(config.storagePath, user.name, '.activity.json')
+                const activityFilePath = getActivityFilePath(user.name)
                 const data = await fs.readFile(activityFilePath, 'utf-8')
                 const activities: ActivityEntry[] = JSON.parse(data)
 

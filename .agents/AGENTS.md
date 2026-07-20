@@ -10,4 +10,6 @@ Whenever you make noteworthy changes to the codebase:
    - Proactively run `npm run build` and tests to ensure no compilation/test regression has occurred with the new version and package files.
 4. **Security & Test Verification**:
    - When making changes, always check if security checks/tests need any updates to keep everything tested and safe.
+5. **Git Commit**:
+   - Automatically run `git add .` and `git commit -m "<version>"` (using the new version number, e.g. `2.12.1`) once the changes, version bump, and changelog updates are completed.
 

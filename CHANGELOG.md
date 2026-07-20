@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.1] - 2026-07-20
+
+### Fixed
+- **Activity Log Persistence**: Relocated user activity log storage path from user media storage folders (`.clyo/data/<username>/.activity.json`) to the central configuration directory (`.clyo/activity_<username>.json`). This prevents logs from being wiped by external media sync tools, cron cleanups, or backup scripts that target and clean up hidden files.
+
 ## [2.12.0] - 2026-07-20
 
 ### Added
