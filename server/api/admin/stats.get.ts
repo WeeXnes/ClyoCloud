@@ -4,6 +4,7 @@ import si from 'systeminformation'
 import { trafficTracker } from '../../utils/trafficTracker'
 import { getAllRateLimitStatus } from '../../utils/rateLimiter'
 import { readDevicesData } from '../../utils/devices'
+import { geolocateIP } from '../../utils/geolocator'
 
 export default defineEventHandler(async (event) => {
     if (!event.context.user) {
@@ -51,6 +52,18 @@ export default defineEventHandler(async (event) => {
 
         // Traffic metrics
         const traffic = trafficTracker.getSnapshot()
+
+        // Geolocate top client IPs
+        const geolocatedTopIPs = await Promise.all(
+            traffic.topIPs.map(async (ipData) => {
+                const geo = await geolocateIP(ipData.ip)
+                return {
+                    ...ipData,
+                    geo
+                }
+            })
+        )
+        traffic.topIPs = geolocatedTopIPs
 
         // Rate limit status
         const rateLimits = getAllRateLimitStatus()

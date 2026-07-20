@@ -8,12 +8,19 @@
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div class="flex items-center gap-2">
+              <button v-if="selectedIp" @click="selectedIp = null" class="btn btn-ghost btn-circle btn-xs mr-1">
+                <Icon name="mdi:arrow-left" class="w-4 h-4" />
+              </button>
               <div class="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center border border-error/20">
                 <Icon name="mdi:shield-crown" class="text-error w-5 h-5" />
               </div>
               <div>
-                <h1 class="text-base font-extrabold tracking-tight">Admin Dashboard</h1>
-                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">System Administration</p>
+                <h1 class="text-base font-extrabold tracking-tight">
+                  {{ selectedIp ? `IP Inspector: ${selectedIp}` : 'Admin Dashboard' }}
+                </h1>
+                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">
+                  {{ selectedIp ? 'Client Traffic Analysis' : 'System Administration' }}
+                </p>
               </div>
             </div>
           </div>
@@ -42,8 +49,113 @@
       <span class="loading loading-spinner loading-lg text-primary"></span>
     </div>
 
-    <!-- Dashboard Content -->
+    <!-- IP Traffic Inspector Sub-Page -->
+    <main v-else-if="selectedIp" class="flex-1 w-full max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+      
+      <!-- Back button and IP Info Card -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Geolocation & Limit Info -->
+        <div class="lg:col-span-4 card-panel flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-sm font-bold uppercase tracking-wider text-base-content/50">Client Identity</h2>
+              <span v-if="isIpBlocked(selectedIp)" class="badge badge-badge badge-error badge-sm uppercase tracking-wider font-extrabold text-[8px] px-2 py-0.5 rounded">Blocked</span>
+              <span v-else class="badge badge-badge badge-success badge-sm uppercase tracking-wider font-extrabold text-[8px] px-2 py-0.5 rounded">Active</span>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-wider">IP Address</p>
+                <p class="text-lg font-mono font-extrabold text-primary">{{ selectedIp }}</p>
+              </div>
+              <div>
+                <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-wider">Location</p>
+                <p class="text-sm font-bold">{{ selectedIpGeo?.city || 'Local' }}, {{ selectedIpGeo?.country || 'Intranet' }}</p>
+                <p class="text-[10px] text-base-content/30 font-mono mt-0.5">Coords: {{ selectedIpGeo?.lat?.toFixed(4) || '0' }}, {{ selectedIpGeo?.lon?.toFixed(4) || '0' }}</p>
+              </div>
+              <div>
+                <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-wider">Total Requests</p>
+                <p class="text-sm font-bold">{{ getIpRequestCount(selectedIp) }} requests ({{ getIpTrafficShare(selectedIp) }}% of total)</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-6 border-t border-base-content/5 mt-6 flex gap-2">
+            <button @click="selectedIp = null" class="btn btn-sm rounded-xl flex-1 font-bold">
+              <Icon name="mdi:arrow-left" class="w-4 h-4 mr-1" /> Close Inspector
+            </button>
+          </div>
+        </div>
+
+        <!-- IP Map Location -->
+        <div class="lg:col-span-8 card-panel relative overflow-hidden flex flex-col justify-center min-h-[250px]">
+          <div class="absolute inset-0 bg-base-300/20 z-0"></div>
+          <div class="relative z-10 w-full h-[220px]">
+            <canvas ref="selectedWorldMapCanvas" class="w-full h-full rounded-xl"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log Table for Selected IP -->
+      <div class="card-panel">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-sm font-bold">Recent Request Logs</h2>
+            <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Real-time HTTP requests from this address</p>
+          </div>
+          <span class="text-[10px] font-mono text-base-content/40">Showing last {{ filteredRequests.length }} entries</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="table table-xs w-full text-left font-mono">
+            <thead>
+              <tr class="border-b border-base-content/10 text-base-content/40 uppercase tracking-widest text-[9px] font-bold">
+                <th class="py-2.5">Time</th>
+                <th class="py-2.5">Method</th>
+                <th class="py-2.5">Path</th>
+                <th class="py-2.5">Status</th>
+                <th class="py-2.5">User Agent</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(req, i) in filteredRequests" :key="i" class="border-b border-base-content/5 hover:bg-base-200/50">
+                <td class="py-2 text-[10px] text-base-content/50">{{ formatTime(req.timestamp) }}</td>
+                <td class="py-2">
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide"
+                        :class="req.method === 'POST' ? 'bg-primary/10 text-primary' : 'bg-success/10 text-success'">
+                    {{ req.method }}
+                  </span>
+                </td>
+                <td class="py-2 text-[10px] font-bold text-base-content/80 max-w-xs truncate" :title="req.path">{{ req.path }}</td>
+                <td class="py-2">
+                  <span class="px-1.5 py-0.25 rounded text-[9px] font-extrabold font-mono"
+                        :class="req.statusCode < 300 ? 'text-success bg-success/10' : req.statusCode < 400 ? 'text-info bg-info/10' : 'text-error bg-error/10'">
+                    {{ req.statusCode }}
+                  </span>
+                </td>
+                <td class="py-2 text-[9px] text-base-content/40 max-w-sm truncate" :title="req.userAgent">{{ req.userAgent || '-' }}</td>
+              </tr>
+              <tr v-if="!filteredRequests.length">
+                <td colspan="5" class="py-8 text-center text-xs text-base-content/30 font-bold">No recent requests recorded for this IP</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Main Dashboard Page -->
     <main v-else class="flex-1 w-full max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500">
+
+      <!-- World Map Card -->
+      <div class="card-panel">
+        <div class="mb-4">
+          <h2 class="text-sm font-bold">Connection Map</h2>
+          <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Geographic mapping of incoming client connections (click markers to inspect)</p>
+        </div>
+        <div class="relative w-full h-[300px] rounded-xl overflow-hidden bg-base-200/20 border border-base-content/5">
+          <canvas ref="worldMapCanvas" @click="handleMapClick" class="w-full h-full cursor-pointer"></canvas>
+        </div>
+      </div>
 
       <!-- Overview Cards Row -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -147,7 +259,7 @@
               <!-- Blocked IPs -->
               <div v-if="limiter.blockedIPs.length > 0" class="mt-2 space-y-1">
                 <div v-for="blocked in limiter.blockedIPs" :key="blocked.ip" class="flex items-center justify-between px-2 py-1 rounded-lg bg-error/5 border border-error/10 text-[10px]">
-                  <span class="font-mono text-error">{{ blocked.ip }}</span>
+                  <span class="font-mono text-error hover:underline cursor-pointer font-bold" @click="selectedIp = blocked.ip">{{ blocked.ip }}</span>
                   <span class="text-error/60">{{ Math.ceil(blocked.remainingMs / 1000) }}s remaining</span>
                 </div>
               </div>
@@ -298,12 +410,20 @@
       <div class="card-panel">
         <div class="mb-4">
           <h2 class="text-sm font-bold">Top Client IPs</h2>
-          <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Most active connections</p>
+          <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Most active connections (click to inspect)</p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div v-for="(ip, i) in (data?.traffic?.topIPs || []).slice(0, 8)" :key="i" class="flex items-center justify-between p-2 rounded-lg bg-base-200/50 border border-base-content/5">
-            <span class="text-[11px] font-mono font-bold text-base-content/60 truncate">{{ ip.ip }}</span>
-            <span class="text-[10px] font-mono text-base-content/40 ml-2 shrink-0 tabular-nums">{{ ip.count }} req</span>
+          <div v-for="(ip, i) in (data?.traffic?.topIPs || []).slice(0, 8)" :key="i"
+               @click="selectedIp = ip.ip"
+               class="flex items-center justify-between p-2.5 rounded-lg bg-base-200/50 border border-base-content/5 hover:border-primary/40 hover:bg-base-200 transition-all duration-200 cursor-pointer group">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+              <span class="text-[11px] font-mono font-bold text-base-content/60 group-hover:text-base-content truncate">{{ ip.ip }}</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 font-mono text-[10px]">
+              <span class="badge badge-sm bg-base-300 border-none text-base-content/40 group-hover:text-primary transition-colors font-bold">{{ ip.count }} req</span>
+              <span v-if="ip.geo?.countryCode" class="text-[9px] font-extrabold uppercase text-base-content/30" :title="ip.geo.country">{{ ip.geo.countryCode }}</span>
+            </div>
           </div>
         </div>
         <div v-if="!data?.traffic?.topIPs?.length" class="text-[10px] text-base-content/30 py-4 text-center">No data yet</div>
@@ -324,10 +444,79 @@ const securityEvents = ref<any[]>([])
 const isLoading = ref(true)
 const accessDenied = ref(false)
 
+const selectedIp = ref<string | null>(null)
+
 const trafficChartCanvas = ref<HTMLCanvasElement | null>(null)
 const donutChartCanvas = ref<HTMLCanvasElement | null>(null)
+const worldMapCanvas = ref<HTMLCanvasElement | null>(null)
+const selectedWorldMapCanvas = ref<HTMLCanvasElement | null>(null)
 
 let pollingInterval: any = null
+let animationFrameId: any = null
+
+// Stylized continent polygons in percentage (0-100) coordinates
+const MAP_LANDMASSE_POLYGONS = [
+    // North America
+    [[12, 18], [32, 18], [36, 12], [38, 16], [32, 28], [28, 42], [24, 45], [19, 35], [13, 26]],
+    // Greenland
+    [[33, 8], [38, 8], [36, 14], [31, 14]],
+    // South America
+    [[22, 46], [29, 46], [32, 52], [28, 65], [22, 80], [20, 80], [19, 58]],
+    // Africa
+    [[44, 45], [54, 44], [58, 48], [54, 58], [50, 78], [46, 78], [43, 56]],
+    // Europe & Asia
+    [[40, 22], [82, 18], [85, 25], [82, 45], [75, 52], [68, 45], [58, 45], [50, 36], [42, 36]],
+    // Australia
+    [[71, 60], [82, 62], [80, 75], [71, 74]],
+    // Madagascar
+    [[57, 68], [59, 72]],
+    // Japan
+    [[82, 28], [84, 32]]
+]
+
+function isPointInPolygon(x: number, y: number, polygon: number[][]): boolean {
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0], yi = polygon[i][1]
+    const xj = polygon[j][0], yj = polygon[j][1]
+    const intersect = ((yi > y) !== (yj > y))
+      && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+    if (intersect) inside = !inside
+  }
+  return inside
+}
+
+// IP Inspector computed states
+const selectedIpGeo = computed(() => {
+  if (!selectedIp.value || !data.value?.traffic?.topIPs) return null
+  const ipData = data.value.traffic.topIPs.find((item: any) => item.ip === selectedIp.value)
+  return ipData?.geo || null
+})
+
+const filteredRequests = computed(() => {
+  if (!selectedIp.value || !data.value?.traffic?.recentRequests) return []
+  return data.value.traffic.recentRequests.filter((r: any) => r.ip === selectedIp.value)
+})
+
+function getIpRequestCount(ip: string): number {
+  if (!data.value?.traffic?.topIPs) return 0
+  const ipData = data.value.traffic.topIPs.find((item: any) => item.ip === ip)
+  return ipData?.count || 0
+}
+
+function getIpTrafficShare(ip: string): string {
+  const total = data.value?.traffic?.totalRequests || 0
+  if (total === 0) return '0'
+  const count = getIpRequestCount(ip)
+  return ((count / total) * 100).toFixed(1)
+}
+
+function isIpBlocked(ip: string): boolean {
+  if (!data.value?.rateLimits?.limiters) return false
+  return data.value.rateLimits.limiters.some((limiter: any) => {
+    return limiter.blockedIPs.some((b: any) => b.ip === ip)
+  })
+}
 
 const totalBlockedIPs = computed(() => {
   if (!data.value?.rateLimits?.limiters) return 0
@@ -515,6 +704,130 @@ function drawDonutChart() {
   }
 }
 
+function drawWorldMapInternal(canvas: HTMLCanvasElement, singleIpMode: boolean = false) {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const dpr = window.devicePixelRatio || 1
+  const rect = canvas.getBoundingClientRect()
+  canvas.width = rect.width * dpr
+  canvas.height = rect.height * dpr
+  ctx.scale(dpr, dpr)
+  ctx.clearRect(0, 0, rect.width, rect.height)
+
+  const w = rect.width
+  const h = rect.height
+
+  // Draw High-Tech Dotted Continents Grid
+  const spacing = 7
+  for (let x = spacing / 2; x < w; x += spacing) {
+    for (let y = spacing / 2; y < h; y += spacing) {
+      const px = (x / w) * 100
+      const py = (y / h) * 100
+
+      let isLand = false
+      for (const poly of MAP_LANDMASSE_POLYGONS) {
+        if (isPointInPolygon(px, py, poly)) {
+          isLand = true
+          break
+        }
+      }
+
+      ctx.beginPath()
+      if (isLand) {
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.16)' // primary glow
+        ctx.arc(x, y, 1.2, 0, Math.PI * 2)
+      } else {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.02)' // faint ocean dot
+        ctx.arc(x, y, 0.8, 0, Math.PI * 2)
+      }
+      ctx.fill()
+    }
+  }
+
+  // Draw IP markers
+  const list = data.value?.traffic?.topIPs || []
+  const time = Date.now() / 1000
+
+  for (const item of list) {
+    if (!item.geo || (item.geo.lat === 0 && item.geo.lon === 0)) continue
+    
+    // In single IP inspector mode, only draw the selected IP marker
+    if (singleIpMode && item.ip !== selectedIp.value) continue
+
+    const lon = item.geo.lon
+    const lat = item.geo.lat
+
+    // Equirectangular mapping coordinates
+    const px = ((lon + 180) / 360) * w
+    const py = ((90 - lat) / 180) * h
+
+    const isSelected = selectedIp.value === item.ip
+    const pulseRad = 5 + Math.sin(time * 5 + (isSelected ? 2 : 0)) * (isSelected ? 4 : 2)
+
+    // Pulse Ring
+    ctx.beginPath()
+    ctx.arc(px, py, pulseRad, 0, Math.PI * 2)
+    ctx.strokeStyle = isSelected ? 'rgba(239, 68, 68, 0.5)' : 'rgba(245, 158, 11, 0.4)'
+    ctx.lineWidth = 1.5
+    ctx.stroke()
+
+    // Core Dot
+    ctx.beginPath()
+    ctx.arc(px, py, isSelected ? 4.5 : 3, 0, Math.PI * 2)
+    ctx.fillStyle = isSelected ? '#ef4444' : '#f59e0b'
+    ctx.fill()
+
+    // Draw active city tag label
+    if (isSelected || (!singleIpMode && list.length <= 3)) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'
+      ctx.beginPath()
+      const label = `${item.geo.city || 'Local'}, ${item.geo.countryCode || 'LCL'}`
+      ctx.font = 'bold 8px monospace'
+      const textW = ctx.measureText(label).width
+      ctx.roundRect(px - textW/2 - 4, py - 18, textW + 8, 11, 3)
+      ctx.fill()
+
+      ctx.fillStyle = '#ffffff'
+      ctx.textAlign = 'center'
+      ctx.fillText(label, px, py - 10)
+    }
+  }
+}
+
+function handleMapClick(e: MouseEvent) {
+  const canvas = worldMapCanvas.value
+  if (!canvas) return
+  const rect = canvas.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+
+  const w = rect.width
+  const h = rect.height
+  const list = data.value?.traffic?.topIPs || []
+
+  for (const item of list) {
+    if (!item.geo) continue
+    const px = ((item.geo.lon + 180) / 360) * w
+    const py = ((90 - item.geo.lat) / 180) * h
+
+    const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2)
+    if (dist < 12) {
+      selectedIp.value = item.ip
+      return
+    }
+  }
+}
+
+function animateMap() {
+  if (selectedIp.value && selectedWorldMapCanvas.value) {
+    drawWorldMapInternal(selectedWorldMapCanvas.value, true)
+  } else if (worldMapCanvas.value) {
+    drawWorldMapInternal(worldMapCanvas.value, false)
+  }
+  animationFrameId = requestAnimationFrame(animateMap)
+}
+
 function formatUptime(ms: number | undefined): string {
   if (!ms) return '-'
   const seconds = Math.floor(ms / 1000)
@@ -526,6 +839,7 @@ function formatUptime(ms: number | undefined): string {
   return `${minutes}m`
 }
 
+// Format size helper
 function formatSize(bytes: number | undefined): string {
   if (!bytes) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -543,7 +857,8 @@ function formatTime(timestamp: number): string {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    second: '2-digit'
   })
 }
 
@@ -577,10 +892,12 @@ function getEventIcon(action: string): string {
 onMounted(() => {
   fetchData()
   pollingInterval = setInterval(fetchData, 10000) // Refresh every 10s
+  animateMap()
 })
 
 onUnmounted(() => {
   if (pollingInterval) clearInterval(pollingInterval)
+  if (animationFrameId) cancelAnimationFrame(animationFrameId)
 })
 </script>
 

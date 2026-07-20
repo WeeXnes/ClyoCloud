@@ -159,14 +159,6 @@ export const loginLimiter = new RateLimiter({
     blockDurationMs: 15 * 60 * 1000 // 15 minutes
 })
 
-/** QR Code generation: 10 attempts per 5 minutes, block for 5 minutes */
-export const qrLimiter = new RateLimiter({
-    name: 'QR',
-    windowMs: 5 * 60 * 1000,       // 5 minutes
-    maxAttempts: 10,
-    blockDurationMs: 5 * 60 * 1000  // 5 minutes
-})
-
 /** General API: 1000 requests per minute, block for 1 minute */
 export const apiLimiter = new RateLimiter({
     name: 'API',
@@ -189,7 +181,6 @@ export function getAllRateLimitStatus() {
     return {
         limiters: [
             loginLimiter.getStatus(),
-            qrLimiter.getStatus(),
             apiLimiter.getStatus()
         ]
     }
