@@ -5,6 +5,7 @@ import {Tag} from "~/types/File";
 import chalk from "chalk";
 import readline from "readline";
 import bcrypt from "bcryptjs";
+import { setJwtSecret } from "~/server/utils/jwtConfig";
 
 const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
@@ -64,8 +65,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     const isEphemeral = !hasCustomEnv && !hasFileSecret && !hasConfigSecret
 
-    // Override default/unset secret with secure generated ephemeral or custom secret
-    config.jwtSecret = getOrGenerateJwtSecret(config.usersFilePath, config.jwtSecret)
+    // Store the resolved secret in a module-level singleton.
+    // We cannot write to config.jwtSecret because Nuxt 3's runtimeConfig
+    // is a read-only (frozen) proxy in the production bundle.
+    setJwtSecret(getOrGenerateJwtSecret(config.usersFilePath, config.jwtSecret))
 
     // Clear authorized devices database if using a fresh ephemeral key, since all existing tokens are now invalid
     if (isEphemeral) {

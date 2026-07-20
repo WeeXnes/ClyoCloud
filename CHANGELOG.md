@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.9] - 2026-07-20
+
+### Fixed
+- **JWT Secret Read-Only Config Error**: Resolved an `unhandledRejection TypeError: Cannot assign to read only property 'jwtSecret'` crash on every startup. Nuxt 3's `useRuntimeConfig()` returns a frozen (read-only) proxy in production builds, so the resolved JWT secret can no longer be written back to `config.jwtSecret`. Introduced `server/utils/jwtConfig.ts` — a module-level singleton with `setJwtSecret` / `getJwtSecret`. The `init.ts` plugin calls `setJwtSecret()` during startup, and all auth consumers (`auth.ts` middleware, `login.post.ts`, `verify.get.ts`, `user-qr.get.ts`, `2fa/verify-login.post.ts`) now call `getJwtSecret()` instead.
+
 ## [2.12.7] - 2026-07-20
 
 ### Fixed

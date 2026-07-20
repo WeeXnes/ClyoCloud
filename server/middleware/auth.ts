@@ -5,6 +5,7 @@ import fs from 'fs/promises'
 import { updateDeviceActivity, parseDeviceModel } from '../utils/devices'
 import { trafficTracker } from '../utils/trafficTracker'
 import { apiLimiter, getClientIP } from '../utils/rateLimiter'
+import { getJwtSecret } from '../utils/jwtConfig'
 
 export default defineEventHandler(async (event) => {
     // Normalize URL: lowercase and collapse multiple slashes
@@ -55,7 +56,7 @@ export default defineEventHandler(async (event) => {
 
     if (token) {
         try {
-            const decoded = jwt.verify(token, config.jwtSecret) as { user: { name: string }, isPartial?: boolean, deviceId?: string, isDevice?: boolean }
+            const decoded = jwt.verify(token, getJwtSecret()) as { user: { name: string }, isPartial?: boolean, deviceId?: string, isDevice?: boolean }
 
             if (!decoded.isPartial) {
                 // If it's a device token, verify it still exists

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import jwt from 'jsonwebtoken'
 import { addDevice } from '../utils/devices'
 import { logActivity } from '../utils/activityLogger'
+import { getJwtSecret } from '../utils/jwtConfig'
 
 const require = createRequire(import.meta.url)
 const QRCode = require('qrcode')
@@ -28,7 +29,7 @@ export default defineEventHandler(async (event) => {
             deviceId: deviceId,
             isDevice: true
         }, 
-        config.jwtSecret, 
+        getJwtSecret(), 
         { expiresIn: '365d' } // Device tokens valid for 365 days
     )
 

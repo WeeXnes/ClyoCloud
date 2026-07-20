@@ -3,6 +3,7 @@ import { defineEventHandler, getCookie, createError } from 'h3'
 import jwt from 'jsonwebtoken'
 import fs from 'fs/promises'
 import { updateDeviceActivity, parseDeviceModel } from '../utils/devices'
+import { getJwtSecret } from '../utils/jwtConfig'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -23,7 +24,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const decoded = jwt.verify(token, config.jwtSecret) as { user: { name: string }, isPartial?: boolean, deviceId?: string, isDevice?: boolean }
+        const decoded = jwt.verify(token, getJwtSecret()) as { user: { name: string }, isPartial?: boolean, deviceId?: string, isDevice?: boolean }
 
         // If it's a partial token (for 2FA), block it
         if (decoded.isPartial) {

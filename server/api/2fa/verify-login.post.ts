@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { createRequire } from 'module'
 import { logActivity } from '../../utils/activityLogger'
 import { loginLimiter, getClientIP } from '../../utils/rateLimiter'
+import { getJwtSecret } from '../../utils/jwtConfig'
 
 const require = createRequire(import.meta.url)
 const otplib = require('otplib')
@@ -35,7 +36,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const decoded = jwt.verify(tempToken, config.jwtSecret) as any
+        const decoded = jwt.verify(tempToken, getJwtSecret()) as any
         if (!decoded.isPartial) {
             throw createError({ statusCode: 400, statusMessage: 'Invalid token type' })
         }
@@ -86,7 +87,7 @@ export default defineEventHandler(async (event) => {
         console.log(`[2FA] ACCEPTED: Code ${cleanCode} is valid for user ${username}`)
         await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful 2FA verification', event)
 
-        const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
+        const token = jwt.sign({ user: { name: username } }, getJwtSecret(), {
             expiresIn: '30d',
         })
 

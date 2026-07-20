@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { logActivity } from '../utils/activityLogger'
 import { loginLimiter, getClientIP } from '../utils/rateLimiter'
+import { getJwtSecret } from '../utils/jwtConfig'
 
 interface User {
     name: string
@@ -74,7 +75,7 @@ export default defineEventHandler(async (event) => {
             const tempToken = jwt.sign({ 
                 user: { name: username },
                 isPartial: true 
-            }, config.jwtSecret, {
+            }, getJwtSecret(), {
                 expiresIn: '5m',
             })
             return { requires2fa: true, tempToken }
@@ -86,7 +87,7 @@ export default defineEventHandler(async (event) => {
             console.error('Failed to log login success:', logError)
         }
 
-        const token = jwt.sign({ user: { name: username } }, config.jwtSecret, {
+        const token = jwt.sign({ user: { name: username } }, getJwtSecret(), {
             expiresIn: '30d',
         })
 
