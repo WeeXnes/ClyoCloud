@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.5] - 2026-07-20
+
+### Security
+- **Device Database Cleanup**: Automatically clears the authorized devices database (`devices.json`) on server startup whenever a fresh ephemeral JWT secret is rolled. Since rolling a new secret invalidates all existing user/device tokens, clearing this file avoids leaving orphaned, inactive device session records.
+
 ## [2.12.4] - 2026-07-20
 
 ### Added

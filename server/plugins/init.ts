@@ -38,8 +38,22 @@ export default defineNitroPlugin(async (nitroApp) => {
     const config = useRuntimeConfig()
     console.info("Running server init...")
 
+    const isDefaultSecret = config.jwtSecret === 'jei0ghjesi0ogj8ie0jg8093jg8390'
+
     // Override the default/unset secret with a secure generated ephemeral secret
     config.jwtSecret = getOrGenerateJwtSecret(config.jwtSecret)
+
+    // Clear authorized devices database if using a fresh ephemeral key, since all existing tokens are now invalid
+    if (isDefaultSecret) {
+        try {
+            if (fs.existsSync(config.devicesFilePath)) {
+                fs.writeFileSync(config.devicesFilePath, '{}', 'utf-8')
+                console.info(chalk.yellow('[SECURITY] Wiped devices.json database because a new ephemeral JWT secret was generated.'))
+            }
+        } catch (err) {
+            console.error('Failed to wipe devices.json on ephemeral key generation:', err)
+        }
+    }
 
     console.info("Initializing media backend...")
     console.info("Environment: ")
