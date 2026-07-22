@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.13.0] - 2026-07-22
+
+### Added
+- **Exported Wallpapers Management View**: Added dedicated `/wallpapers` view allowing users to instantly view all exported wallpapers across their cloud storage with real-time searching and direct removal of wallpaper export status without deleting original image files.
+- **Navigation Update**: Added "Wallpapers" quick link in the sidebar under Library section.
+
 ## [2.12.9] - 2026-07-20
 
 ### Fixed

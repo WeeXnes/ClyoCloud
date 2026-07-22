@@ -51,6 +51,12 @@
                   </NuxtLink>
                 </li>
                 <li>
+                  <NuxtLink to="/wallpapers" :class="['nav-link', { active: isLinkActive('/wallpapers') }]">
+                    <Icon name="mdi:wallpaper" class="w-5 h-5" />
+                    <span>Wallpapers</span>
+                  </NuxtLink>
+                </li>
+                <li>
                   <NuxtLink to="/favorites" :class="['nav-link', { active: isLinkActive('/favorites') }]">
                     <Icon name="mdi:star" class="w-5 h-5" />
                     <span>Favorites</span>

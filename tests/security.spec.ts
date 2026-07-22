@@ -71,6 +71,7 @@ const protectedEndpoints = [
   '/logs',
   '/favorites',
   '/shared',
+  '/wallpapers',
   '/duplicates',
   '/downloader',
   '/shorts',
