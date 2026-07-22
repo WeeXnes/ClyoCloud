@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.13.1] - 2026-07-22
+
+### Changed
+- **Mobile Responsive Wallpapers Layout & UI Refinements**:
+  - Restructured `/wallpapers` header for seamless responsiveness on mobile screens (`flex-col md:flex-row`), avoiding squishing of search and control buttons.
+  - Replaced the remove wallpaper icon badge with a clean `X` symbol (`mdi:close`).
+  - Removed image viewer modal, allowing direct single-click navigation to the file's parent directory in My Files while retaining the open folder shortcut button.
+
 ## [2.13.0] - 2026-07-22
 
 ### Added
