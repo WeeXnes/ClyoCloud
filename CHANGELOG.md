@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.13.2] - 2026-08-16
+
+### Fixed
+- **Dashboard Initial Load & Responsiveness**:
+  - Fixed syntax issue in template closing tags on the dashboard page (`pages/index.vue`).
+  - Switched dashboard initial and background data retrieval (`/api/stats`, `/api/activity`, `/api/storage-map`) to resilient asynchronous resolution via `Promise.allSettled()`, preventing any delayed or failing sub-request from hanging or blocking UI interactivity and tab switching.
+
 ## [2.13.1] - 2026-07-22
 
 ### Changed

@@ -379,7 +379,7 @@
        <span class="text-[8px] font-bold uppercase tracking-[0.4em] text-base-content/20">ClyoCloud - v{{ useRuntimeConfig().public.version }}</span>
     </footer>
   </div>
-</template>e>
+</template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
@@ -430,15 +430,15 @@ let pollingInterval: any = null
 
 async function fetchData() {
   try {
-    const [statsRes, activityRes, storageRes] = await Promise.all([
-      fetch('/api/stats', { credentials: 'include' }),
-      fetch('/api/activity', { credentials: 'include' }),
-      fetch('/api/storage-map', { credentials: 'include' })
+    const [statsRes, activityRes, storageRes] = await Promise.allSettled([
+      fetch('/api/stats', { credentials: 'include' }).then(async r => r.ok ? await r.json() : null),
+      fetch('/api/activity', { credentials: 'include' }).then(async r => r.ok ? await r.json() : []),
+      fetch('/api/storage-map', { credentials: 'include' }).then(async r => r.ok ? await r.json() : null)
     ])
     
-    if (statsRes.ok) stats.value = await statsRes.json()
-    if (activityRes.ok) activities.value = await activityRes.json()
-    if (storageRes.ok) storageMapData.value = await storageRes.json()
+    if (statsRes.status === 'fulfilled' && statsRes.value) stats.value = statsRes.value
+    if (activityRes.status === 'fulfilled' && activityRes.value) activities.value = activityRes.value
+    if (storageRes.status === 'fulfilled' && storageRes.value) storageMapData.value = storageRes.value
   } catch (err) {
     console.error('Dashboard fetch error:', err)
   } finally {
