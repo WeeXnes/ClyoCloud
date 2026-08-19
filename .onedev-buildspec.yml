@@ -1,6 +1,7 @@
-version: 43
+version: 53
 jobs:
 - name: Build & Test
+  jobExecutor: Builder
   steps:
   - type: CheckoutStep
     name: checkout code
@@ -14,10 +15,12 @@ jobs:
     name: NPM Install
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PosixInterpreter
+      shell: sh
       commands: |
         echo "Installing dependencies..."
         npm install
+    runAs: 0:0
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -25,10 +28,12 @@ jobs:
     name: Build Server
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PosixInterpreter
+      shell: sh
       commands: |
         echo "Building project..."
         npm run build
+    runAs: 0:0
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -36,12 +41,14 @@ jobs:
     name: Start PM2
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PosixInterpreter
+      shell: sh
       commands: |
         echo "Starting application with PM2..."
         pm2 start ecosystem.config.js
         echo "Waiting for server to initialize..."
         sleep 10
+    runAs: 0:0
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -49,10 +56,12 @@ jobs:
     name: Run Tests
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PosixInterpreter
+      shell: sh
       commands: |
         echo "Running security tests..."
         npm run test:security
+    runAs: 0:0
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -60,11 +69,13 @@ jobs:
     name: Stop PM2
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PosixInterpreter
+      shell: sh
       commands: |
         echo "Stopping and cleaning up PM2..."
         pm2 stop all
         pm2 delete all
+    runAs: 0:0
     useTTY: true
     condition: ALWAYS
     optional: false
@@ -72,7 +83,8 @@ jobs:
     name: get version
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PosixInterpreter
+      shell: sh
       commands: |
         echo "Extracting version from package.json..."
         grep -oP '"version":\s*"\K[^"]+' package.json > version.txt
@@ -80,6 +92,7 @@ jobs:
         echo "Version extracted: $version"
         echo "Extracting version description from CHANGELOG.md..."
         awk -v ver="$version" '$0 ~ "^## \\[" ver "\\]" { started = 1; print; next } started { if ($0 ~ "^(---|## )") exit; print }' CHANGELOG.md > changelog_tag_msg.txt
+    runAs: 0:0
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -87,7 +100,8 @@ jobs:
     name: Update Cutting Edge AUR Package
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PosixInterpreter
+      shell: sh
       commands: |
         repo_url="ssh://aur@@aur.archlinux.org/clyocloud-git.git"
         repo_dir="clyocloud-git"
@@ -113,6 +127,7 @@ jobs:
           git commit -m "Automatically updated version to @commit_hash@"
           git push
         )
+    runAs: 0:0
     useTTY: true
     condition: SUCCESSFUL
     optional: true
@@ -120,7 +135,8 @@ jobs:
     name: check if tag exists
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PosixInterpreter
+      shell: sh
       commands: |
         version=$(cat version.txt)
         echo "Checking if tag '$version' exists on origin..."
@@ -137,6 +153,7 @@ jobs:
             echo "Tag '$version' does not exist. Proceeding with original version."
             exit 0
         fi
+    runAs: 0:0
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -151,7 +168,6 @@ jobs:
     tagMessage: '@file:changelog_tag_msg.txt@'
     condition: SUCCESSFUL
     optional: false
-  jobExecutor: Builder
   triggers:
   - type: BranchUpdateTrigger
     userMatch: anyone
@@ -159,9 +175,39 @@ jobs:
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
+  includeUpstreamWhenRebuild: false
+  includeDownstreamWhenRebuild: false
   timeout: 14400
-
+- name: Deploy to Server
+  jobExecutor: ClyoCloud
+  steps:
+  - type: CommandStep
+    name: Deploy ClyoCloud
+    runInContainer: false
+    interpreter:
+      type: PosixInterpreter
+      shell: sh
+      commands: |
+        cd ~/ClyoCloud
+        git pull
+        npm run build
+        pm2 restart all
+    runAs: 0:0
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  triggers:
+  - type: TagCreateTrigger
+    branches: master
+    projects: ClyoCloud
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  includeUpstreamWhenRebuild: false
+  includeDownstreamWhenRebuild: false
+  timeout: 14400
 - name: Release Stable AUR
+  jobExecutor: Builder
   steps:
   - type: CheckoutStep
     name: checkout code
@@ -180,7 +226,8 @@ jobs:
     name: Update Stable AUR Package
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PosixInterpreter
+      shell: sh
       commands: |
         repo_url="ssh://aur@@aur.archlinux.org/clyocloud.git"
         repo_dir="clyocloud"
@@ -198,10 +245,10 @@ jobs:
           git commit -m "Automatically updated version to ${version}"
           git push
         )
+    runAs: 0:0
     useTTY: true
     condition: SUCCESSFUL
     optional: false
-  jobExecutor: Builder
   triggers:
   - type: TagCreateTrigger
     branches: master
@@ -209,4 +256,6 @@ jobs:
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
+  includeUpstreamWhenRebuild: false
+  includeDownstreamWhenRebuild: false
   timeout: 14400
