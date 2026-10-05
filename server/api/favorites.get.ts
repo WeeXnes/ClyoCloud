@@ -38,6 +38,8 @@ export default defineEventHandler(async (event): Promise<File[]> => {
             const fullPath = path.join(userStoragePath, entry.path)
             if (!isPathWithin(userStoragePath, fullPath)) return
 
+            const baseName = path.basename(fullPath)
+            const dirName = path.dirname(fullPath)
             let cloudInfoPath = `${fullPath}.cloudinfo`
 
             try {

@@ -6,6 +6,7 @@ import path, { join, resolve } from 'path'
 import { runFfmpeg, runFfprobe } from '~/server/utils/ffmpeg'
 
 import { isPathWithin } from '~/server/utils/fileUtils'
+import { handleHttpCache } from '~/server/utils/httpCache'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -48,6 +49,9 @@ export default defineEventHandler(async (event) => {
         try {
             const thumbnailStats = await stat(requestedThumbnail)
             if (thumbnailStats.isFile()) {
+                if (handleHttpCache(event, thumbnailStats as any, false)) {
+                    return
+                }
                 setHeader(event, 'Content-Type', 'image/jpeg')
                 setHeader(event, 'Content-Length', thumbnailStats.size)
                 setHeader(event, 'Content-Disposition', 'inline')
@@ -82,6 +86,9 @@ export default defineEventHandler(async (event) => {
             }
 
             if (!needsResize) {
+                if (handleHttpCache(event, fileStats as any, false)) {
+                    return
+                }
                 setHeader(event, 'Content-Type', contentType)
                 setHeader(event, 'Content-Length', fileStats.size)
                 setHeader(event, 'Content-Disposition', 'inline')
@@ -164,6 +171,9 @@ export default defineEventHandler(async (event) => {
             })
         }
 
+        if (handleHttpCache(event, thumbnailStats as any, false)) {
+            return
+        }
         setHeader(event, 'Content-Type', 'image/jpeg')
         setHeader(event, 'Content-Length', thumbnailStats.size)
         setHeader(event, 'Content-Disposition', 'inline')

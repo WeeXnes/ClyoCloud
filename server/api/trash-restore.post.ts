@@ -13,21 +13,30 @@ export default defineEventHandler(async (event) => {
 
     try {
         const body = await readBody(event)
-        const { id } = body || {}
+        const { id, ids } = body || {}
 
-        if (!id) {
+        const targetIds = ids && Array.isArray(ids) ? ids : (id ? [id] : [])
+        if (targetIds.length === 0) {
             throw createError({
                 statusCode: 400,
-                statusMessage: 'Trash item ID is required',
+                statusMessage: 'Trash item ID(s) required',
             })
         }
 
-        const result = await restoreFromTrash(event.context.user.name, id)
+        const restoredPaths: string[] = []
+        for (const targetId of targetIds) {
+            try {
+                const result = await restoreFromTrash(event.context.user.name, targetId)
+                restoredPaths.push(result.restoredPath)
+            } catch (err: any) {
+                console.warn(`[TRASH] Failed to restore item ${targetId}:`, err)
+            }
+        }
+
         clearUserCache(event.context.user.name)
+        await logActivity(event.context.user.name, 'RESTORE', 'Trash', `Restored ${restoredPaths.length} item(s) from trash`, event)
 
-        await logActivity(event.context.user.name, 'RESTORE', result.restoredPath, 'Restored file from trash', event)
-
-        return { success: true, restoredPath: result.restoredPath }
+        return { success: true, restoredPaths, count: restoredPaths.length }
     } catch (error: any) {
         console.error('Error restoring from trash:', error)
         throw createError({

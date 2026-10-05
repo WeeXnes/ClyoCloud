@@ -111,6 +111,12 @@
                     <span>Duplicates</span>
                   </NuxtLink>
                 </li>
+                <li>
+                  <NuxtLink to="/trash" :class="['nav-link', { active: isLinkActive('/trash') }]">
+                    <Icon name="mdi:trash-can-outline" class="w-5 h-5" />
+                    <span>Recycle Bin</span>
+                  </NuxtLink>
+                </li>
               </ul>
             </div>
 

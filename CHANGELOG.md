@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.15.0] - 2026-10-05
+
+### Added
+- **Recycle Bin Web UI & Batch Management**:
+  - Added dedicated `/trash` route (`pages/trash.vue`) featuring live search, multi-select, batch restoration, batch permanent deletion, and empty trash confirmation modal.
+  - Added direct sidebar navigation link to the Recycle Bin under Storage Management in `app.vue`.
+  - Updated backend endpoints (`/api/trash.delete.ts`, `/api/trash-restore.post.ts`) to seamlessly support array-based batch operations as well as single-item IDs.
+- **HTTP Caching for Thumbnails & Animated Video Previews**:
+  - Implemented centralized `handleHttpCache()` utility (`server/utils/httpCache.ts`) generating `ETag` (from file size and mtime) and `Last-Modified` timestamps.
+  - Configured conditional `304 Not Modified` responses with `Cache-Control: public, max-age=86400, stale-while-revalidate=604800` across authenticated and public thumbnail/preview routes (`server/routes/thumbnail/[...path].ts`, `server/routes/preview/[...path].ts`, `server/routes/p/thumbnail/[username]/[...path].ts`, `server/routes/p/preview/[username]/[...path].ts`).
+- **Photo Widgets Endpoint & Metadata Integration**:
+  - Added `server/api/photo-widgets.get.ts` endpoint enabling native wallpaper/widget retrieval.
+  - Extended `types/File.ts` and `server/api/file-meta.post.ts` to support reading and persisting `isPhotoWidget` metadata.
+
+### Fixed
+- **Variable Scoping in Wallpapers & Favorites APIs**:
+  - Resolved `ReferenceError: baseName is not defined` and `dirName is not defined` in `server/api/wallpapers.get.ts` and `server/api/favorites.get.ts`.
+
+### Security
+- **Protected Endpoints Expansion**:
+  - Added `/trash`, `/api/trash`, `/api/trash-restore`, and `/api/photo-widgets` to the automated endpoint security protection suite (`tests/security.spec.ts`).
+
 ## [2.14.0] - 2026-10-05
 
 ### Security

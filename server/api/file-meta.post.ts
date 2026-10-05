@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
         const config = useRuntimeConfig()
         const userStoragePath = path.resolve(path.join(config.storagePath, event.context.user.name))
         const body = await readBody(event)
-        const { fullPath, description, tags, isPublic, isFavourite, previewImage, isWallpaper } = body
+        const { fullPath, description, tags, isPublic, isFavourite, previewImage, isWallpaper, isPhotoWidget } = body
 
         if (!fullPath) {
             throw createError({
@@ -83,6 +83,10 @@ export default defineEventHandler(async (event) => {
             } else {
                 await removeFromWallpapers(event.context.user.name, fullPath)
             }
+        }
+        if (isPhotoWidget !== undefined) {
+            meta.isPhotoWidget = isPhotoWidget
+            await logActivity(event.context.user.name, 'PHOTO_WIDGET', fullPath, isPhotoWidget ? 'Added to photo widgets' : 'Removed from photo widgets', event)
         }
 
         await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')

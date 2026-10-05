@@ -6,6 +6,7 @@ import path, { join, resolve } from 'path'
 import { runFfmpeg, runFfprobe } from '~/server/utils/ffmpeg'
 
 import { isPathWithin } from '~/server/utils/fileUtils'
+import { handleHttpCache } from '~/server/utils/httpCache'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -45,6 +46,9 @@ export default defineEventHandler(async (event) => {
         try {
             const previewStats = await stat(requestedPreview)
             if (previewStats.isFile()) {
+                if (handleHttpCache(event, previewStats as any, false)) {
+                    return
+                }
                 setHeader(event, 'Content-Type', 'image/gif')
                 setHeader(event, 'Content-Length', previewStats.size)
                 setHeader(event, 'Content-Disposition', 'inline')
@@ -108,6 +112,9 @@ export default defineEventHandler(async (event) => {
         }
 
         const previewStats = await stat(requestedPreview)
+        if (handleHttpCache(event, previewStats as any, false)) {
+            return
+        }
         setHeader(event, 'Content-Type', 'image/gif')
         setHeader(event, 'Content-Length', previewStats.size)
         setHeader(event, 'Content-Disposition', 'inline')

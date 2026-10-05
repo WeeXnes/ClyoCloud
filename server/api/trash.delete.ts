@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
 
     try {
         const body = await readBody(event).catch(() => ({}))
-        const { id, emptyAll } = body || {}
+        const { id, ids, emptyAll } = body || {}
 
         if (emptyAll === true) {
             const count = await emptyTrash(event.context.user.name)
@@ -20,17 +20,20 @@ export default defineEventHandler(async (event) => {
             return { success: true, count }
         }
 
-        if (!id) {
+        const targetIds = ids && Array.isArray(ids) ? ids : (id ? [id] : [])
+        if (targetIds.length === 0) {
             throw createError({
                 statusCode: 400,
-                statusMessage: 'Trash item ID or emptyAll flag is required',
+                statusMessage: 'Trash item ID(s) or emptyAll flag is required',
             })
         }
 
-        await permanentlyDeleteFromTrash(event.context.user.name, id)
-        await logActivity(event.context.user.name, 'PERMANENT_DELETE', id, 'Deleted permanently from trash', event)
+        for (const targetId of targetIds) {
+            await permanentlyDeleteFromTrash(event.context.user.name, targetId)
+        }
+        await logActivity(event.context.user.name, 'PERMANENT_DELETE', 'Trash', `Deleted ${targetIds.length} item(s) permanently`, event)
 
-        return { success: true }
+        return { success: true, count: targetIds.length }
     } catch (error: any) {
         console.error('Error deleting from trash:', error)
         throw createError({

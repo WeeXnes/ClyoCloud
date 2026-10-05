@@ -51,4 +51,54 @@ describe('Cache and Invalidation Utilities', () => {
         clearUserCache(username)
         expect(storageMapCache.has(username)).toBe(false)
     })
+
+    it('sets caching headers and handles 304 Not Modified', async () => {
+        const { handleHttpCache } = await import('../server/utils/httpCache')
+        const mockStats = {
+            size: 1024,
+            mtime: new Date('2026-10-01T12:00:00Z')
+        } as any
+
+        const headers: Record<string, string> = {}
+        let responseStatus = 200
+        const mockEvent = {
+            node: {
+                req: {
+                    headers: {}
+                },
+                res: {
+                    setHeader: (name: string, value: string) => {
+                        headers[name.toLowerCase()] = value
+                    },
+                    statusCode: 200
+                }
+            }
+        } as any
+
+        // Test fresh request (no cache headers from client)
+        const handled1 = handleHttpCache(mockEvent, mockStats, false)
+        expect(handled1).toBe(false)
+        expect(headers['etag']).toBeDefined()
+        expect(headers['cache-control']).toBe('private, max-age=604800, stale-while-revalidate=86400')
+        expect(headers['last-modified']).toBe(mockStats.mtime.toUTCString())
+
+        // Test public caching header
+        handleHttpCache(mockEvent, mockStats, true)
+        expect(headers['cache-control']).toBe('public, max-age=604800, stale-while-revalidate=86400')
+
+        // Test matching If-None-Match ETag
+        mockEvent.node.req.headers['if-none-match'] = headers['etag']
+        const handled2 = handleHttpCache(mockEvent, mockStats, false)
+        expect(handled2).toBe(true)
+        expect(mockEvent.node.res.statusCode).toBe(304)
+
+        // Test matching If-Modified-Since
+        delete mockEvent.node.req.headers['if-none-match']
+        mockEvent.node.req.headers['if-modified-since'] = mockStats.mtime.toUTCString()
+        mockEvent.node.res.statusCode = 200
+        const handled3 = handleHttpCache(mockEvent, mockStats, false)
+        expect(handled3).toBe(true)
+        expect(mockEvent.node.res.statusCode).toBe(304)
+    })
 })
+

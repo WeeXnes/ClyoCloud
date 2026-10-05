@@ -1,6 +1,6 @@
 {
   "name": "clyocloud",
-  "version": "2.14.0",
+  "version": "2.15.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "user-manager": "node .usermanager/index.js",
+    "test": "vitest run",
     "test:security": "vitest run tests/security.spec.ts"
   },
   "dependencies": {

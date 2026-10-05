@@ -37,6 +37,7 @@ const protectedEndpoints = [
   '/api/verify',
   '/api/videos',
   '/api/wallpapers',
+  '/api/photo-widgets',
   '/api/user-qr',
   '/api/devices',
   '/api/zip',
@@ -78,7 +79,8 @@ const protectedEndpoints = [
   '/downloader',
   '/shorts',
   '/media',
-  '/theatre'
+  '/theatre',
+  '/trash'
 ]
 
 // All endpoints that are EXPLICITLY PUBLIC
@@ -100,9 +102,17 @@ const publicEndpoints = [
   '/p/preview/username/path/to/file'
 ]
 
-describe('Security: Authentication Guard', () => {
-  const BASE_URL = 'http://localhost:6969'
+const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:6969'
 
+let isServerRunning = false
+try {
+  await fetch(`${BASE_URL}/login`, { signal: AbortSignal.timeout(1000) })
+  isServerRunning = true
+} catch {
+  isServerRunning = false
+}
+
+describe.skipIf(!isServerRunning)('Security: Authentication Guard', () => {
   describe('Protected Endpoints (Must return 401 or redirect to login)', () => {
     protectedEndpoints.forEach((endpoint) => {
       it(`blocks unauthorized access to ${endpoint}`, async () => {
