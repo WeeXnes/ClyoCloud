@@ -2,6 +2,7 @@ import { defineEventHandler, createError, readBody } from 'h3'
 import fs from 'fs/promises'
 import { createRequire } from 'module'
 import { logActivity } from '../../utils/activityLogger'
+import { encryptTwoFactorSecret, generateRecoveryCodes } from '../../utils/twoFactor'
 
 const require = createRequire(import.meta.url)
 const otplib = require('otplib')
@@ -29,8 +30,6 @@ export default defineEventHandler(async (event) => {
         result = await authenticator.check(cleanCode, secret)
     }
 
-    console.log(`[2FA] Enable Verify - User: ${user.name}, Code: ${cleanCode}, Raw Result: ${JSON.stringify(result)}`)
-
     // Explicitly check for boolean true OR the .valid property
     const isValid = result === true || (result && result.valid === true)
 
@@ -49,12 +48,20 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 404, statusMessage: 'User not found' })
     }
 
-    users[userIndex].twoFactorSecret = secret
+    // Generate 8 single-use recovery codes
+    const { plaintextCodes, hashedCodes } = generateRecoveryCodes(8)
+
+    // Encrypt TOTP secret before persisting
+    users[userIndex].twoFactorSecret = encryptTwoFactorSecret(secret)
+    users[userIndex].twoFactorRecoveryCodes = hashedCodes
     users[userIndex].twoFactorEnabled = true
 
     await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')
 
-    await logActivity(user.name, '2FA_ENABLED', 'Security', '2FA has been successfully enabled', event)
+    await logActivity(user.name, '2FA_ENABLED', 'Security', '2FA has been successfully enabled with recovery codes', event)
 
-    return { success: true }
+    return { 
+        success: true,
+        recoveryCodes: plaintextCodes
+    }
 })

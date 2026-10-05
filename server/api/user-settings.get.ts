@@ -42,6 +42,7 @@ export default defineEventHandler(async (event) => {
             selectedShortsPaths: userData.selectedShortsPaths || [],
             excludedMediaPaths: userData.excludedMediaPaths || [],
             maxDuplicateResults: userData.maxDuplicateResults || 50,
+            storageQuota: userData.storageQuota || null,
             cpuCores: CPU_CORES,
             serverMaxConcurrency: SERVER_MAX_CONCURRENCY
         }

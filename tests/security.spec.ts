@@ -47,6 +47,8 @@ const protectedEndpoints = [
   '/api/theatre/metadata',
   '/api/thumbnails-generate',
   '/api/thumbnails-status',
+  '/api/trash',
+  '/api/trash-restore',
   
   // 2FA Management
   '/api/2fa/disable',

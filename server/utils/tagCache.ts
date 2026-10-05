@@ -57,8 +57,7 @@ async function scanDir(currentPath: string, userStoragePath: string, userMap: Ma
             } else if (entry.isFile()) {
                 if (entry.name.endsWith('.cloudinfo') || entry.name.startsWith('.')) continue;
 
-                const cloudInfoFileName = `${entry.name.substring(0, 100)}.cloudinfo`;
-                const cloudInfoPath = path.join(currentPath, cloudInfoFileName);
+                const cloudInfoPath = `${fullPath}.cloudinfo`;
                 await processMeta(fullPath, cloudInfoPath, userStoragePath, userMap, false);
             }
         }
@@ -178,7 +177,7 @@ export function moveFileInCache(username: string, oldRelativePath: string, newRe
                 return { ...f, name: newNorm };
             }
             if (fName.startsWith(oldNorm + '/')) {
-                return { ...f, name: fName.replace(oldNorm, newNorm) };
+                return { ...f, name: newNorm + fName.slice(oldNorm.length) };
             }
             return f;
         }));

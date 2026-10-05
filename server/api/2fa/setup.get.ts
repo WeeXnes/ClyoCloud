@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
 
     const qrCodeUrl = await QRCode.toDataURL(otpauth)
 
-    console.log(`[2FA] Setup - User: ${username}, Secret Generated: ${secret}`)
+    console.log(`[2FA] Setup initiated for user: ${username}`)
 
     return {
         secret,

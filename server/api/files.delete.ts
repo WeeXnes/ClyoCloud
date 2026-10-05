@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { removeFromFavorites } from '~/server/utils/favorites'
 import { removeFromWallpapers } from '~/server/utils/wallpapers'
+import { moveToTrash } from '~/server/utils/trash'
 
 import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
 
@@ -41,15 +42,29 @@ export default defineEventHandler(async (event) => {
     }
 
     const cloudInfoPath = `${fullPath}.cloudinfo`
+    const isPermanent = body.permanent === true
 
-    const stats = await fs.stat(fullPath)
-    if (stats.isDirectory()) {
-      await fs.rm(fullPath, { recursive: true, force: true })
+    if (isPermanent) {
+      const stats = await fs.stat(fullPath)
+      if (stats.isDirectory()) {
+        await fs.rm(fullPath, { recursive: true, force: true })
+      } else {
+        await fs.unlink(fullPath)
+      }
+
+      // Also delete .cloudinfo file if it exists
+      try {
+        await fs.access(cloudInfoPath)
+        await fs.unlink(cloudInfoPath)
+      } catch (e) {
+        // Ignore if .cloudinfo doesn't exist
+      }
+      await logActivity(event.context.user.name, 'PERMANENT_DELETE', safeSubPath, undefined, event)
     } else {
-      await fs.unlink(fullPath)
+      // Soft-delete to user .trash directory
+      await moveToTrash(event.context.user.name, safeSubPath)
+      await logActivity(event.context.user.name, 'TRASH', safeSubPath, 'Moved to trash', event)
     }
-
-    await logActivity(event.context.user.name, 'DELETE', safeSubPath, undefined, event)
 
     // Update tag cache
     removeFileFromCache(event.context.user.name, safeSubPath)
@@ -58,17 +73,9 @@ export default defineEventHandler(async (event) => {
     await removeFromFavorites(event.context.user.name, safeSubPath)
     await removeFromWallpapers(event.context.user.name, safeSubPath)
 
-    // Also delete .cloudinfo file if it exists
-    try {
-      await fs.access(cloudInfoPath)
-      await fs.unlink(cloudInfoPath)
-    } catch (e) {
-      // Ignore if .cloudinfo doesn't exist
-    }
-
     clearUserCache(event.context.user.name)
 
-    return { success: true }
+    return { success: true, trashed: !isPermanent }
   } catch (error) {
     console.error('Error deleting file:', error)
     if (error.code === 'ENOENT') {

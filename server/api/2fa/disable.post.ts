@@ -2,6 +2,7 @@ import { defineEventHandler, createError, readBody } from 'h3'
 import fs from 'fs/promises'
 import { createRequire } from 'module'
 import { logActivity } from '../../utils/activityLogger'
+import { decryptTwoFactorSecret, verifyAndConsumeRecoveryCode } from '../../utils/twoFactor'
 
 const require = createRequire(import.meta.url)
 const otplib = require('otplib')
@@ -33,24 +34,29 @@ export default defineEventHandler(async (event) => {
     
     if (user.twoFactorEnabled) {
         const cleanCode = code.toString().replace(/\s/g, '')
+        const plainSecret = decryptTwoFactorSecret(user.twoFactorSecret)
         
         let isValid = false
         if (typeof authenticator.verify === 'function') {
-            isValid = await authenticator.verify({ token: cleanCode, secret: user.twoFactorSecret })
+            isValid = await authenticator.verify({ token: cleanCode, secret: plainSecret })
         } else if (typeof authenticator.check === 'function') {
-            isValid = await authenticator.check(cleanCode, user.twoFactorSecret)
+            isValid = await authenticator.check(cleanCode, plainSecret)
         }
 
-        // Handle result object {valid: true/false}
-        const finalValid = isValid === true || (isValid && isValid.valid === true)
+        const finalValid = isValid === true || (isValid && (isValid as any).valid === true)
 
         if (!finalValid) {
-            await logActivity(user.name, '2FA_DISABLE_FAIL', 'Security', 'Failed attempt to disable 2FA (invalid code)', event)
-            throw createError({ statusCode: 400, statusMessage: 'Invalid 2FA code' })
+            // Check recovery codes
+            const recoveryCheck = verifyAndConsumeRecoveryCode(code.toString(), user.twoFactorRecoveryCodes)
+            if (!recoveryCheck.valid) {
+                await logActivity(user.name, '2FA_DISABLE_FAIL', 'Security', 'Failed attempt to disable 2FA (invalid code)', event)
+                throw createError({ statusCode: 400, statusMessage: 'Invalid 2FA or recovery code' })
+            }
         }
     }
 
     users[userIndex].twoFactorSecret = null
+    users[userIndex].twoFactorRecoveryCodes = []
     users[userIndex].twoFactorEnabled = false
 
     await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')

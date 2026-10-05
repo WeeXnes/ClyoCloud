@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { startDownloadJob, getActiveJob, dismissJob } from '../utils/downloadManager';
+import { checkDiskHeadroom, checkUserQuota } from '../utils/storageQuota';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -48,6 +49,24 @@ export default defineEventHandler(async (event) => {
 
   const userPath = path.join(config.storagePath, user.name, userDownloadSubPath);
   
+  // Headroom check
+  const headroom = await checkDiskHeadroom(userPath, 50 * 1024 * 1024)
+  if (!headroom.hasSpace) {
+    throw createError({
+      statusCode: 507,
+      message: 'Host storage volume is nearly full. Download rejected.',
+    })
+  }
+
+  // Quota check
+  const quotaCheck = await checkUserQuota(user.name, 10 * 1024 * 1024)
+  if (!quotaCheck.allowed) {
+    throw createError({
+      statusCode: 413,
+      message: quotaCheck.error || 'User storage quota exceeded',
+    })
+  }
+
   await logActivity(user.name, 'REMOTE_DOWNLOAD_START', url, `Starting remote download to ${userDownloadSubPath || 'root'}`, event)
 
   const job = await startDownloadJob(user.name, url, userPath);

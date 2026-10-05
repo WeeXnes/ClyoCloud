@@ -5,7 +5,7 @@ import { logActivity } from '../utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { newPassword } = body
+    const { currentPassword, newPassword } = body
     const config = useRuntimeConfig()
     const user = event.context.user
 
@@ -13,6 +13,13 @@ export default defineEventHandler(async (event) => {
         throw createError({
             statusCode: 401,
             statusMessage: 'Unauthorized',
+        })
+    }
+
+    if (!currentPassword) {
+        throw createError({
+            statusCode: 400,
+            statusMessage: 'Current password is required',
         })
     }
 
@@ -33,6 +40,15 @@ export default defineEventHandler(async (event) => {
             throw createError({
                 statusCode: 404,
                 statusMessage: 'User not found',
+            })
+        }
+
+        const isCurrentValid = await bcrypt.compare(currentPassword, users[userIndex].password)
+        if (!isCurrentValid) {
+            await logActivity(user.name, 'PASSWORD_CHANGE_FAIL', 'Security', 'Failed password change attempt (incorrect current password)', event)
+            throw createError({
+                statusCode: 403,
+                statusMessage: 'Incorrect current password',
             })
         }
 

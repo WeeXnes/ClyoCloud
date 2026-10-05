@@ -37,16 +37,21 @@ export default defineEventHandler(async (event): Promise<File[]> => {
             const fullPath = path.join(userStoragePath, entry.path)
             if (!isPathWithin(userStoragePath, fullPath)) return
 
-            const baseName = path.basename(fullPath)
-            const dirName = path.dirname(fullPath)
-            const cloudInfoFileName = `${baseName.substring(0, 100)}.cloudinfo`
-            const cloudInfoPath = path.join(dirName, cloudInfoFileName)
+            let cloudInfoPath = `${fullPath}.cloudinfo`
 
             try {
-                const [stats, cloudInfoContent] = await Promise.all([
-                    fs.stat(fullPath),
-                    fs.readFile(cloudInfoPath, 'utf-8')
-                ])
+                const stats = await fs.stat(fullPath)
+                let cloudInfoContent = ''
+                try {
+                    cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8')
+                } catch (readErr) {
+                    if (baseName.length > 100) {
+                        const legacyPath = path.join(dirName, `${baseName.substring(0, 100)}.cloudinfo`)
+                        cloudInfoContent = await fs.readFile(legacyPath, 'utf-8')
+                    } else {
+                        throw readErr
+                    }
+                }
                 
                 const meta = JSON.parse(cloudInfoContent) as FileMeta
                 

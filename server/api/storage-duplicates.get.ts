@@ -1,5 +1,6 @@
 import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
+import { createReadStream } from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import { getDuplicateTaskStatus, updateDuplicateTaskStatus } from '~/server/utils/duplicateTask'
@@ -73,7 +74,7 @@ async function performScan(username: string, event: any) {
 
         await scanDir(userStoragePath)
 
-        // Step 2: For sizes with multiple files, perform quick hash
+        // Step 2: For sizes with multiple files, perform quick hash followed by full SHA-256 verification
         updateDuplicateTaskStatus(username, { phase: 'hashing' })
         const duplicateGroups: any[] = []
         let processedFiles = 0
@@ -82,7 +83,13 @@ async function performScan(username: string, event: any) {
         const totalCandidates = candidates.reduce((acc, [_, paths]) => acc + paths.length, 0)
 
         for (const [size, paths] of candidates) {
-            const hashGroups = new Map<string, any[]>()
+            const hashGroups = new Map<string, Array<{
+                name: string
+                fullPath: string
+                realPath: string
+                size: number
+                lastModified: number
+            }>>()
 
             for (const filePath of paths) {
                 try {
@@ -91,18 +98,20 @@ async function performScan(username: string, event: any) {
                     await fd.read(buffer, 0, buffer.length, 0)
                     await fd.close()
 
-                    const hash = crypto.createHash('md5').update(buffer).digest('hex')
+                    // Use SHA-256 for quick candidate hashing
+                    const quickHash = crypto.createHash('sha256').update(buffer).digest('hex')
                     
-                    if (!hashGroups.has(hash)) {
-                        hashGroups.set(hash, [])
+                    if (!hashGroups.has(quickHash)) {
+                        hashGroups.set(quickHash, [])
                     }
                     
                     const stats = await fs.stat(filePath)
                     const relativePath = path.relative(userStoragePath, filePath).replace(/\\/g, '/')
                     
-                    hashGroups.get(hash)!.push({
+                    hashGroups.get(quickHash)!.push({
                         name: path.basename(filePath),
                         fullPath: relativePath,
+                        realPath: filePath,
                         size: stats.size,
                         lastModified: stats.mtime.getTime()
                     })
@@ -117,13 +126,59 @@ async function performScan(username: string, event: any) {
                 }
             }
 
-            for (const group of hashGroups.values()) {
-                if (group.length > 1) {
+            // Phase 2: For candidate groups with >= 2 files, perform full-stream SHA-256 verification
+            for (const candidateGroup of hashGroups.values()) {
+                if (candidateGroup.length < 2) continue
+
+                // If file size is within QUICK_HASH_SIZE, the quick hash already covered the entire file
+                if (size <= QUICK_HASH_SIZE) {
+                    const files = candidateGroup.map(({ name, fullPath, size, lastModified }) => ({
+                        name,
+                        fullPath,
+                        size,
+                        lastModified
+                    }))
                     duplicateGroups.push({
                         size,
-                        files: group,
-                        redundantSize: size * (group.length - 1)
+                        files,
+                        redundantSize: size * (files.length - 1)
                     })
+                    continue
+                }
+
+                // If file is larger than QUICK_HASH_SIZE, verify exact match via full-file SHA-256 streaming
+                const fullHashGroups = new Map<string, Array<{
+                    name: string
+                    fullPath: string
+                    size: number
+                    lastModified: number
+                }>>()
+
+                for (const candidate of candidateGroup) {
+                    try {
+                        const fullHash = await computeFullSha256(candidate.realPath)
+                        if (!fullHashGroups.has(fullHash)) {
+                            fullHashGroups.set(fullHash, [])
+                        }
+                        fullHashGroups.get(fullHash)!.push({
+                            name: candidate.name,
+                            fullPath: candidate.fullPath,
+                            size: candidate.size,
+                            lastModified: candidate.lastModified
+                        })
+                    } catch (err) {
+                        console.error(`Error computing full hash for ${candidate.realPath}:`, err)
+                    }
+                }
+
+                for (const confirmedGroup of fullHashGroups.values()) {
+                    if (confirmedGroup.length > 1) {
+                        duplicateGroups.push({
+                            size,
+                            files: confirmedGroup,
+                            redundantSize: size * (confirmedGroup.length - 1)
+                        })
+                    }
                 }
             }
         }
@@ -160,4 +215,14 @@ async function performScan(username: string, event: any) {
             phase: 'idle'
         })
     }
+}
+
+async function computeFullSha256(filePath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256')
+        const stream = createReadStream(filePath)
+        stream.on('data', (chunk) => hash.update(chunk))
+        stream.on('end', () => resolve(hash.digest('hex')))
+        stream.on('error', (err) => reject(err))
+    })
 }

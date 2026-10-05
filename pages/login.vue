@@ -90,20 +90,29 @@
             <form v-else @submit.prevent="verify2fa" class="space-y-5">
               <!-- TOTP Code -->
               <div class="form-control">
-                <label class="label mb-1">
-                  <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">6-Digit Code</span>
+                <label class="label mb-1 flex justify-between items-center">
+                  <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">
+                    {{ isRecoveryMode ? 'Emergency Recovery Code' : '6-Digit Code' }}
+                  </span>
+                  <button 
+                    type="button" 
+                    class="text-[9px] font-bold uppercase tracking-wider text-primary hover:underline transition-colors"
+                    @click="isRecoveryMode = !isRecoveryMode; totpCode = ''; error = ''"
+                  >
+                    {{ isRecoveryMode ? 'Use Authenticator App' : 'Use Recovery Code' }}
+                  </button>
                 </label>
                 <div class="relative group">
                   <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-base-content/30 group-focus-within:text-primary transition-colors">
-                    <Icon name="mdi:numeric" class="w-5 h-5" />
+                    <Icon :name="isRecoveryMode ? 'mdi:key-outline' : 'mdi:numeric'" class="w-5 h-5" />
                   </div>
                   <input
                     v-model="totpCode"
                     type="text"
-                    placeholder="000 000"
-                    class="input input-bordered w-full pl-12 h-12 bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.4em] rounded-lg border-base-content/10"
+                    :placeholder="isRecoveryMode ? 'XXXX-XXXX' : '000 000'"
+                    class="input input-bordered w-full pl-12 h-12 bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-lg tracking-[0.2em] font-mono rounded-lg border-base-content/10"
                     required
-                    maxlength="6"
+                    :maxlength="isRecoveryMode ? 12 : 6"
                     autofocus
                   />
                 </div>
@@ -176,6 +185,7 @@ const error = ref('')
 const isLoading = ref(false)
 const requires2fa = ref(false)
 const tempToken = ref('')
+const isRecoveryMode = ref(false)
 const router = useRouter()
 
 const login = async () => {

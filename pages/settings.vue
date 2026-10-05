@@ -49,6 +49,7 @@ function getCategorySubtitle(cat: string | null) {
   }
 }
 
+const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const isChangingPassword = ref(false)
@@ -203,6 +204,8 @@ const totpCode = ref('')
 const isVerifying2fa = ref(false)
 const showDisableConfirm = ref(false)
 const disableCode = ref('')
+const recoveryCodes = ref<string[]>([])
+const showRecoveryModal = ref(false)
 
 const user = useState<{ name: string } | null>('user')
 
@@ -233,19 +236,28 @@ async function enable2fa() {
   if (!totpCode.value) return
   isVerifying2fa.value = true
   try {
-    await $fetch('/api/2fa/enable', {
+    const res: any = await $fetch('/api/2fa/enable', {
       method: 'POST',
       body: { secret: totpSecret.value, code: totpCode.value }
     })
     is2faEnabled.value = true
     show2faSetup.value = false
     totpCode.value = ''
+    if (res.recoveryCodes && res.recoveryCodes.length > 0) {
+      recoveryCodes.value = res.recoveryCodes
+      showRecoveryModal.value = true
+    }
     createNotification('2FA enabled successfully', NotificationType.SUCCESS)
   } catch (err: any) {
     createNotification(err.data?.statusMessage || 'Invalid 2FA code', NotificationType.ERROR)
   } finally {
     isVerifying2fa.value = false
   }
+}
+
+function copyRecoveryCodes() {
+  navigator.clipboard.writeText(recoveryCodes.value.join('\n'))
+  createNotification('Recovery codes copied to clipboard', NotificationType.SUCCESS)
 }
 
 async function disable2fa() {
@@ -401,6 +413,10 @@ async function saveUserSettings() {
 }
 
 async function changePassword() {
+  if (!currentPassword.value) {
+    createNotification('Current password is required', NotificationType.WARNING)
+    return
+  }
   if (newPassword.value !== confirmPassword.value) {
     createNotification('Passwords do not match', NotificationType.WARNING)
     return
@@ -415,16 +431,23 @@ async function changePassword() {
     const response = await fetch('/api/change-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newPassword: newPassword.value }),
+      body: JSON.stringify({ 
+        currentPassword: currentPassword.value,
+        newPassword: newPassword.value 
+      }),
     })
 
-    if (!response.ok) throw new Error('Failed to change password')
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}))
+      throw new Error(errData.statusMessage || 'Failed to change password')
+    }
 
     createNotification('Password updated successfully', NotificationType.SUCCESS)
+    currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
-  } catch (err) {
-    createNotification('Failed to update password', NotificationType.ERROR)
+  } catch (err: any) {
+    createNotification(err.message || 'Failed to update password', NotificationType.ERROR)
   } finally {
     isChangingPassword.value = false
   }
@@ -756,7 +779,18 @@ async function logout() {
               <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Update Credentials</h3>
             </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div class="form-control">
+                <label class="label py-1">
+                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Current Password</span>
+                </label>
+                <input 
+                  v-model="currentPassword" 
+                  type="password" 
+                  placeholder="Current password" 
+                  class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-10 rounded-xl border-base-content/5 focus:outline-none focus:ring-1 focus:ring-primary/20" 
+                />
+              </div>
               <div class="form-control">
                 <label class="label py-1">
                   <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">New Secret Key</span>
@@ -898,6 +932,40 @@ async function logout() {
                     Confirm disable
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2FA Recovery Codes Modal -->
+          <div v-if="showRecoveryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div class="bg-base-100 border border-base-content/10 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-warning/15 flex items-center justify-center text-warning border border-warning/20">
+                  <Icon name="mdi:shield-key-outline" class="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 class="text-sm font-black uppercase tracking-wider text-base-content/80">Save Your Recovery Codes</h3>
+                  <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-widest">One-time emergency access</p>
+                </div>
+              </div>
+
+              <div class="p-3 bg-warning/10 border border-warning/20 rounded-xl text-[11px] font-bold text-warning-content leading-relaxed">
+                If you lose your authenticator device, each recovery code can be used once to access your account. Store them in a secure password manager.
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 bg-base-200/50 p-4 rounded-xl border border-base-content/5">
+                <code v-for="(code, idx) in recoveryCodes" :key="idx" class="font-mono text-xs font-black tracking-wider text-center py-1.5 px-2 bg-base-100 rounded-lg border border-base-content/5 text-primary">
+                  {{ code }}
+                </code>
+              </div>
+
+              <div class="flex gap-2 pt-2">
+                <button class="btn btn-outline btn-sm rounded-xl flex-1 font-bold text-[10px] uppercase tracking-wider" @click="copyRecoveryCodes">
+                  <Icon name="mdi:content-copy" class="w-4 h-4 mr-1" /> Copy All
+                </button>
+                <button class="btn btn-primary btn-sm rounded-xl flex-1 font-bold text-[10px] uppercase tracking-wider" @click="showRecoveryModal = false">
+                  I Saved Them
+                </button>
               </div>
             </div>
           </div>

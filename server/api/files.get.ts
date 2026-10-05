@@ -37,17 +37,21 @@ export default defineEventHandler(async (event): Promise<File[]> => {
                 // Folder size calculation is extremely expensive and removed for performance
                 let size = stats.size
 
-                const cloudInfoFileName = `${name.substring(0, 100)}.cloudinfo`
-                const cloudInfoPath = path.join(fullPath, cloudInfoFileName)
-
+                const cloudInfoPath = `${filePath}.cloudinfo`
                 let meta: FileMeta = { tags: [] }
 
                 try {
                     const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8')
                     meta = JSON.parse(cloudInfoContent) as FileMeta
                 } catch {
-                    // Skip automatic creation of .cloudinfo files to reduce I/O
-                    // It will be created when meta is actually set (e.g. by tagging)
+                    // Fallback to legacy truncated cloudinfo if present
+                    if (name.length > 100) {
+                        try {
+                            const legacyPath = path.join(fullPath, `${name.substring(0, 100)}.cloudinfo`)
+                            const cloudInfoContent = await fs.readFile(legacyPath, 'utf-8')
+                            meta = JSON.parse(cloudInfoContent) as FileMeta
+                        } catch {}
+                    }
                 }
 
                 return {

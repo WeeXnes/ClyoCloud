@@ -5,6 +5,7 @@ import { createRequire } from 'module'
 import { logActivity } from '../../utils/activityLogger'
 import { loginLimiter, getClientIP } from '../../utils/rateLimiter'
 import { getJwtSecret } from '../../utils/jwtConfig'
+import { decryptTwoFactorSecret, verifyAndConsumeRecoveryCode } from '../../utils/twoFactor'
 
 const require = createRequire(import.meta.url)
 const otplib = require('otplib')
@@ -46,46 +47,63 @@ export default defineEventHandler(async (event) => {
         const usersData = await fs.readFile(usersFilePath, 'utf-8')
         const users = JSON.parse(usersData)
 
-        const user = users.find((u: any) => u.name === username)
+        const userIndex = users.findIndex((u: any) => u.name === username)
+        if (userIndex === -1) {
+            throw createError({ statusCode: 404, statusMessage: 'User not found' })
+        }
+        const user = users[userIndex]
         if (!user || !user.twoFactorEnabled) {
             throw createError({ statusCode: 400, statusMessage: '2FA not enabled for this user' })
         }
 
         const cleanCode = code.toString().replace(/\s/g, '')
-        const secret = user.twoFactorSecret
+        const rawSecret = user.twoFactorSecret
 
-        if (!secret) {
+        if (!rawSecret) {
             throw createError({ statusCode: 500, statusMessage: '2FA Secret missing' })
         }
 
-        let result: any = false
-        
-        // Try verification and capture raw result
-        if (typeof authenticator.verify === 'function') {
-            result = await authenticator.verify({ token: cleanCode, secret })
-        } else if (typeof authenticator.check === 'function') {
-            result = await authenticator.check(cleanCode, secret)
+        const plainSecret = decryptTwoFactorSecret(rawSecret)
+
+        let isValid = false
+        let usedRecovery = false
+
+        // 1. Try TOTP code
+        if (cleanCode.length === 6) {
+            let result: any = false
+            if (typeof authenticator.verify === 'function') {
+                result = await authenticator.verify({ token: cleanCode, secret: plainSecret })
+            } else if (typeof authenticator.check === 'function') {
+                result = await authenticator.check(cleanCode, plainSecret)
+            }
+            isValid = result === true || (result && result.valid === true)
         }
 
-        console.log(`[2FA] Login Verify - User: ${username}, Code: ${cleanCode}, Raw Result: ${JSON.stringify(result)}`)
-
-        // Explicitly check for boolean true OR the .valid property
-        const isValid = result === true || (result && result.valid === true)
+        // 2. If not valid TOTP, try recovery code
+        if (!isValid) {
+            const recoveryCheck = verifyAndConsumeRecoveryCode(code.toString(), user.twoFactorRecoveryCodes)
+            if (recoveryCheck.valid && recoveryCheck.updatedCodes) {
+                isValid = true
+                usedRecovery = true
+                users[userIndex].twoFactorRecoveryCodes = recoveryCheck.updatedCodes
+                await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')
+            }
+        }
 
         if (!isValid) {
-            console.warn(`[2FA] REJECTED: Code ${cleanCode} is NOT valid for user ${username}`)
-            await logActivity(username, '2FA_FAIL', 'Security', `Invalid 2FA code attempt: ${cleanCode}`, event)
+            console.warn(`[2FA] REJECTED: Invalid code attempt for user ${username}`)
+            await logActivity(username, '2FA_FAIL', 'Security', 'Invalid 2FA / recovery code attempt', event)
             throw createError({
                 statusCode: 401,
-                statusMessage: 'Invalid 2FA code',
+                statusMessage: 'Invalid 2FA or recovery code',
             })
         }
 
         // Successful 2FA — reset rate limiter
         loginLimiter.reset(clientIP)
 
-        console.log(`[2FA] ACCEPTED: Code ${cleanCode} is valid for user ${username}`)
-        await logActivity(username, 'LOGIN_SUCCESS', 'Login', 'Successful 2FA verification', event)
+        console.log(`[2FA] ACCEPTED: User ${username} verified (recoveryCode: ${usedRecovery})`)
+        await logActivity(username, 'LOGIN_SUCCESS', 'Login', usedRecovery ? 'Successful 2FA recovery code verification' : 'Successful 2FA verification', event)
 
         const token = jwt.sign({ user: { name: username } }, getJwtSecret(), {
             expiresIn: '30d',

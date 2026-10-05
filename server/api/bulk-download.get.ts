@@ -6,7 +6,24 @@ import { isPathWithin } from '~/server/utils/fileUtils';
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const query = getQuery(event);
-  const fileNames = query.files ? decodeURIComponent(query.files as string).split(',') : [];
+  let fileNames: string[] = [];
+
+  if (query.file) {
+    fileNames = Array.isArray(query.file) ? (query.file as string[]) : [query.file as string];
+  } else if (query.files) {
+    const rawFiles = typeof query.files === 'string' ? decodeURIComponent(query.files as string) : '';
+    try {
+      const parsed = JSON.parse(rawFiles);
+      if (Array.isArray(parsed)) {
+        fileNames = parsed.map(f => String(f));
+      } else {
+        fileNames = rawFiles.split(',').filter(Boolean);
+      }
+    } catch {
+      fileNames = rawFiles.split(',').filter(Boolean);
+    }
+  }
+
   const folderPath = query.path ? decodeURIComponent(query.path as string) : '';
   const userStoragePath = path.resolve(config.storagePath, event.context.user.name);
   const fullPath = path.resolve(userStoragePath, folderPath);

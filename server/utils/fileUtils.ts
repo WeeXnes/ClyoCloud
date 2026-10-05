@@ -118,15 +118,24 @@ export async function scanFilesByTag(directoryPath: string, userStoragePath: str
                 } else if (entry.isFile()) {
                     if (entry.name.endsWith('.cloudinfo') || entry.name.startsWith('.')) continue;
 
-                    const cloudInfoFileName = `${entry.name.substring(0, 100)}.cloudinfo`;
-                    const cloudInfoPath = path.join(currentPath, cloudInfoFileName);
+                    const cloudInfoPath = `${fullPath}.cloudinfo`;
                     
                     let meta: FileMeta = { tags: [] };
                     try {
                         const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8');
                         meta = JSON.parse(cloudInfoContent) as FileMeta;
                     } catch {
-                        continue; // No cloudinfo, no tags
+                        if (entry.name.length > 100) {
+                            try {
+                                const legacyPath = path.join(currentPath, `${entry.name.substring(0, 100)}.cloudinfo`);
+                                const cloudInfoContent = await fs.readFile(legacyPath, 'utf-8');
+                                meta = JSON.parse(cloudInfoContent) as FileMeta;
+                            } catch {
+                                continue;
+                            }
+                        } else {
+                            continue; // No cloudinfo, no tags
+                        }
                     }
 
                     if (meta.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {

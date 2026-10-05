@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.14.0] - 2026-10-05
+
+### Security
+- **Two-Phase Duplicate File Verification**:
+  - Replaced single-pass 64 KB MD5 checksums in duplicate scanner (`server/api/storage-duplicates.get.ts`) with a two-phase check: 64 KB quick-hash candidate filtering followed by full streaming SHA-256 verification of whole file contents, preventing false positives and data loss from files sharing identical headers or MD5 collisions.
+- **Current Password Verification on Password Change**:
+  - Updated `server/api/change-password.post.ts` to require and verify `currentPassword` against `bcrypt.compare()` before updating account passwords, preventing account takeover via active sessions. Added current password confirmation field to `pages/settings.vue`.
+- **At-Rest 2FA Secret Encryption & Emergency Recovery Codes**:
+  - Implemented AES-256-GCM encryption for TOTP secrets stored in `users.json` with backward-compatible legacy decryption (`server/utils/twoFactor.ts`).
+  - Added generation and SHA-256 hashed storage of 8 single-use recovery scratch codes upon 2FA enrollment.
+  - Added support for verifying and consuming recovery codes in `server/api/2fa/verify-login.post.ts` and `server/api/2fa/disable.post.ts`.
+  - Added emergency recovery code login workflow to `pages/login.vue` and recovery codes copy modal in `pages/settings.vue`.
+  - Removed plaintext secret logging from `server/api/2fa/setup.get.ts`.
+- **Host Disk Headroom & Per-User Storage Quota Enforcement**:
+  - Introduced `server/utils/storageQuota.ts` with host disk headroom checks via `fs.statfs()` and per-user storage quota enforcement.
+  - Integrated headroom and quota verification into upload handling (`server/api/upload.post.ts`) and remote downloads (`server/api/download.post.ts`), preventing host disk exhaustion and system denial of service.
+
+### Added
+- **Recycle Bin & Soft-Delete Trash Mechanism**:
+  - Implemented soft-delete mechanism in `server/utils/trash.ts` and `server/api/files.delete.ts`, safely moving deleted files and their `.cloudinfo` sidecars into `.trash/` with JSON metadata receipts.
+  - Added `/api/trash` and `/api/trash-restore` endpoints for inspecting, restoring, permanently deleting, and emptying trash.
+  - Added automatic background purging of trashed items older than 30 days.
+
+### Fixed
+- **.cloudinfo Filename Truncation Inconsistency**:
+  - Standardized `.cloudinfo` lookup across reading endpoints (`files.get.ts`, `tagCache.ts`, `fileUtils.ts`, `favorites.get.ts`, `wallpapers.get.ts`) to use full file paths instead of truncating at 100 characters, preventing metadata loss and orphaned files for long filenames, while retaining legacy fallback.
+- **Path Corruption Bug via Substring `.replace()`**:
+  - Fixed path manipulation in `favorites.ts`, `wallpapers.ts`, and `tagCache.ts` to use exact prefix slicing (`newPath + path.slice(oldPath.length)`) instead of naive string `.replace()`, preventing corruption of folders that share names with parent directories.
+- **Bulk Download Handling on Filenames Containing Commas**:
+  - Updated `server/api/bulk-download.get.ts` to support JSON-encoded file lists and repeated query parameters with comma-split fallback.
+  - Updated `pages/files/[...path].vue` to pass selected filenames as JSON arrays, preventing comma-containing filenames from being split into invalid fragments.
+
 ## [2.13.2] - 2026-08-16
 
 ### Fixed

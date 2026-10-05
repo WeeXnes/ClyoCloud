@@ -236,7 +236,8 @@ const bulkDownload = () => {
   const route = useRoute()
   const pathParam = route.params.path
   const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : ''
-  const filesQuery = Array.from(selectedFiles.value).join(',')
+  const filesArray = Array.from(selectedFiles.value)
+  const filesQuery = JSON.stringify(filesArray)
   window.location.href = `/api/bulk-download?files=${encodeURIComponent(filesQuery)}&path=${encodeURIComponent(folderPath)}`
 }
 

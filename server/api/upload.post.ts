@@ -4,6 +4,7 @@ import { defineEventHandler, createError } from 'h3'
 import { IncomingForm, Fields, Files } from 'formidable'
 import path, { join, resolve } from 'path'
 import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
+import { checkDiskHeadroom, checkUserQuota } from '~/server/utils/storageQuota'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -46,6 +47,29 @@ export default defineEventHandler(async (event) => {
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied: Path outside user directory',
+            })
+        }
+
+        // Calculate total incoming size
+        const totalUploadSize = uploadedFiles.reduce((acc, f) => acc + (f.size || 0), 0)
+
+        // 1. Host volume disk headroom check (prevent disk exhaustion DOS)
+        const headroom = await checkDiskHeadroom(userStoragePath, totalUploadSize)
+        if (!headroom.hasSpace) {
+            console.error(`[STORAGE] Upload rejected: Insufficient disk headroom. Free: ${headroom.available}, Incoming: ${totalUploadSize}`)
+            throw createError({
+                statusCode: 507,
+                statusMessage: 'Host storage volume is nearly full. Upload rejected to prevent disk exhaustion.',
+            })
+        }
+
+        // 2. Per-user quota check
+        const quotaCheck = await checkUserQuota(event.context.user.name, totalUploadSize)
+        if (!quotaCheck.allowed) {
+            console.error(`[STORAGE] Upload rejected: Quota exceeded for ${event.context.user.name}`)
+            throw createError({
+                statusCode: 413,
+                statusMessage: quotaCheck.error || 'User storage quota exceeded',
             })
         }
 

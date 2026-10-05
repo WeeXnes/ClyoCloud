@@ -57,7 +57,7 @@ export async function renameInWallpapers(username: string, oldPath: string, newP
         // If it's a folder, update children paths
         if (f.path.startsWith(oldPath + '/')) {
             changed = true
-            return { ...f, path: f.path.replace(oldPath, newPath) }
+            return { ...f, path: newPath + f.path.slice(oldPath.length) }
         }
         return f
     })
@@ -77,7 +77,7 @@ export async function moveInWallpapers(username: string, oldPaths: string[], des
             changed = true
             const fileName = matchingPath.split('/').pop()!
             const newBase = destination ? `${destination}/${fileName}` : fileName
-            return { ...f, path: f.path.replace(matchingPath, newBase) }
+            return { ...f, path: newBase + f.path.slice(matchingPath.length) }
         }
         return f
     })
