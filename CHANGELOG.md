@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.19.0] - 2026-10-19
+
+### Changed
+- **Version Bump & Streamlined Architecture**:
+  - Version bump to `2.19.0` due to removal of previous experimental features (such as Advanced Image Search and OPLNova PS2 Game Manager).
+  - Raised version number to ensure repository workflows and downstream package maintainers (including AUR packages) receive an updated higher release.
+  - Streamlined the architecture to the clean, performant, and hardened baseline with complete Recycle Bin management, two-phase SHA-256 duplicate verification, and full security protections intact.
+
 ## [2.15.0] - 2026-10-05
 
 ### Added
