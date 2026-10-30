@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.19.1] - 2026-10-30
+
+### Security
+- **Downloader**: Only `http` and `https` URLs are accepted, and the URL is always passed to `yt-dlp` after `--` so it can't be read as an option.
+- **Download Path**: `downloadPath` must stay inside the user's storage, both when saved and when used.
+- **Trash**: Receipts in `.trash/metadata.json` are validated on load, so stored names can't point outside the trash. The general file APIs can no longer write into `.trash`.
+- **Rate Limiting**: `X-Forwarded-For` is only honored from trusted proxies (loopback, plus the new `TRUSTED_PROXIES` setting) and read from the right. Loopback is no longer exempt.
+- **Login Limits**: Added per-account limits for password and 2FA attempts. A successful login no longer clears earlier failures from the same IP.
+- **Default Admin Removed**: Removed the example `users.json`. First start now creates an admin with a random password, printed once. The server warns if an account still uses the old example password.
+- **Corrupt Users File**: The server now refuses to start on a damaged `users.json` instead of replacing it, which deleted every account.
+- **CI**: Builds only run on `master` (pull request and other branch builds are disabled), dependencies install with `npm ci` from a committed `package-lock.json`, and `vue` and `vue-router` are pinned.
+
+### Fixed
+- **Atomic Writes**: `users.json` and `devices.json` are written atomically and updated under a per-file lock, preventing corruption and lost updates.
+- **Recovery Codes**: A recovery code can no longer be used twice by concurrent requests.
+- **Change Password**: A wrong current password now returns 403 instead of 500.
+
+### Changed
+- `npm test` now runs in CI instead of only the security suite, and added `tests/hardening.spec.ts`.
+
 ## [2.19.0] - 2026-10-19
 
 ### Changed

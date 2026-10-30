@@ -1,8 +1,9 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { consola } from 'consola'
-import { getRequestIP, getHeader, type H3Event } from 'h3'
+import { getHeader, type H3Event } from 'h3'
 import { v4 as uuidv4 } from 'uuid'
+import { getClientIP } from './rateLimiter'
 
 export interface ActivityEntry {
     id: string
@@ -54,7 +55,7 @@ export async function logActivity(
         }
 
         if (event) {
-            newEntry.ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
+            newEntry.ip = getClientIP(event)
             newEntry.userAgent = getHeader(event, 'user-agent')
         }
 

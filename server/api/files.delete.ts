@@ -5,7 +5,7 @@ import { removeFromFavorites } from '~/server/utils/favorites'
 import { removeFromWallpapers } from '~/server/utils/wallpapers'
 import { moveToTrash } from '~/server/utils/trash'
 
-import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
+import { isPathWithin, isTrashPath, clearUserCache } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
     const fullPath = path.resolve(path.join(userStoragePath, safeSubPath))
 
     // Ensure path is within user's directory
-    if (!isPathWithin(userStoragePath, fullPath)) {
+    if (!isPathWithin(userStoragePath, fullPath) || isTrashPath(userStoragePath, fullPath)) {
       console.error(`Access denied: Resolved path ${fullPath} is outside user directory ${userStoragePath}`)
       throw createError({
         statusCode: 403,

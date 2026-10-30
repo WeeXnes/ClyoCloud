@@ -1,6 +1,6 @@
 {
   "name": "clyocloud",
-  "version": "2.19.0",
+  "version": "2.19.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -30,8 +30,8 @@
     "qrcode": "^1.5.4",
     "systeminformation": "^5.31.5",
     "uuid": "^11.0.5",
-    "vue": "latest",
-    "vue-router": "latest"
+    "vue": "3.5.44",
+    "vue-router": "4.6.4"
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",

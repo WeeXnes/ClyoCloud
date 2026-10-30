@@ -4,7 +4,7 @@ import path from 'path'
 import { moveInFavorites } from '~/server/utils/favorites'
 import { moveInWallpapers } from '~/server/utils/wallpapers'
 
-import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
+import { isPathWithin, isTrashPath, clearUserCache } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
         const destinationFullPath = path.resolve(path.join(userStoragePath, destinationPath))
 
         // Security check for destination
-        if (!isPathWithin(userStoragePath, destinationFullPath)) {
+        if (!isPathWithin(userStoragePath, destinationFullPath) || isTrashPath(userStoragePath, destinationFullPath)) {
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied: Destination outside user directory',
@@ -59,7 +59,8 @@ export default defineEventHandler(async (event) => {
             const newFullPath = path.resolve(path.join(destinationFullPath, itemName))
 
             // Security check for each item
-            if (!isPathWithin(userStoragePath, oldFullPath) || !isPathWithin(userStoragePath, newFullPath)) {
+            if (!isPathWithin(userStoragePath, oldFullPath) || !isPathWithin(userStoragePath, newFullPath)
+                || isTrashPath(userStoragePath, oldFullPath)) {
                 console.warn(`[SECURITY] Blocked move attempt: ${oldFullPath} -> ${newFullPath}`)
                 continue
             }

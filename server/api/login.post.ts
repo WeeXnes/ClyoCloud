@@ -4,7 +4,7 @@ import path from 'path'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { logActivity } from '../utils/activityLogger'
-import { loginLimiter, getClientIP } from '../utils/rateLimiter'
+import { loginLimiter, accountLimiter, getClientIP } from '../utils/rateLimiter'
 import { getJwtSecret } from '../utils/jwtConfig'
 
 interface User {
@@ -17,16 +17,20 @@ export default defineEventHandler(async (event) => {
     const { username, password } = body
     const config = useRuntimeConfig()
 
-    if (!username || !password) {
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
         throw createError({
             statusCode: 400,
             statusMessage: 'Username and password are required',
         })
     }
 
-    // Rate limiting check
+    // Rate limiting check, per IP and per account
     const clientIP = getClientIP(event)
-    const rateLimitResult = loginLimiter.check(clientIP)
+    const accountKey = `pw:${username}`
+    let rateLimitResult = loginLimiter.check(clientIP)
+    if (rateLimitResult.allowed) {
+        rateLimitResult = accountLimiter.check(accountKey)
+    }
     if (!rateLimitResult.allowed) {
         console.warn(`[SECURITY] Rate limited login attempt from IP: ${clientIP}`)
         throw createError({
@@ -62,8 +66,10 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        // Successful password verification — reset rate limiter for this IP
-        loginLimiter.reset(clientIP)
+        // Correct password: don't count this attempt, but keep earlier failures so that
+        // logging in with one account can't clear the counter for guesses against another
+        loginLimiter.forgive(clientIP)
+        accountLimiter.forgive(accountKey)
 
         if (user.twoFactorEnabled) {
             try {

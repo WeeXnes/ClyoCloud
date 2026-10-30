@@ -54,7 +54,10 @@ program
       });
 
       // Save file
-      await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8');
+      const tempPath = `${usersFilePath}.${process.pid}.tmp`;
+      const mode = await fs.stat(usersFilePath).then(s => s.mode & 0o777, () => 0o600);
+      await fs.writeFile(tempPath, JSON.stringify(users, null, 2), { encoding: 'utf-8', mode });
+      await fs.rename(tempPath, usersFilePath);
       console.log(`Successfully added user: ${username}`);
       
     } catch (error) {

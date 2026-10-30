@@ -24,6 +24,19 @@ const getFormattedTime = () => {
   return now.toLocaleTimeString('de-DE', { hour12: false });
 };
 
+/**
+ * Returns the normalized URL if it is a well-formed http(s) URL, otherwise null.
+ */
+export const parseDownloadUrl = (input: unknown): string | null => {
+  if (typeof input !== 'string') return null;
+  try {
+    const parsed = new URL(input);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null;
+  } catch {
+    return null;
+  }
+};
+
 export const getActiveJob = (username: string) => activeJobs.get(username);
 
 export const stopActiveJob = (username: string) => {
@@ -88,8 +101,9 @@ export const startDownloadJob = async (username: string, url: string, userPath: 
     '--add-header', 'Sec-Fetch-User: ?1',
     '--add-header', 'Upgrade-Insecure-Requests: 1',
     '-P', userPath,
+    '--',
     url
-  ], { 
+  ], {
     detached: true,
     stdio: ['ignore', 'pipe', 'pipe']
   });

@@ -9,6 +9,9 @@ import { setJwtSecret } from "~/server/utils/jwtConfig";
 
 const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
+// Hash from the example users.json shipped in versions before 2.19.1
+const LEGACY_DEFAULT_ADMIN_HASH = "$2a$12$8qYzByro8Ws1De5fZdDMW.heSdErztjUzGm1E3lq9HYCTP9h/k2Y6";
+
 interface User {
     name: string;
     password: string;
@@ -117,37 +120,39 @@ function createDirIfNotExists(path: string) {
     }
 }
 
-export function checkUserFile(filePath: string) {
-    const config = useRuntimeConfig();
+/**
+ * First run only: creates an admin with a random password, printed once to the console.
+ */
+function createInitialAdmin(filePath: string) {
+    const password = crypto.randomBytes(18).toString("base64url");
+    const users = [{ name: "admin", password: bcrypt.hashSync(password, 12), isAdmin: true }];
 
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(users, null, 2), { encoding: "utf-8", mode: 0o600, flag: "wx" });
+
+    console.info(chalk.yellow(`[SECURITY] Created ${filePath} with an initial admin account.`));
+    console.info(chalk.yellow(`[SECURITY] Username: admin  Password: ${password}`));
+    console.info(chalk.yellow(`[SECURITY] This password is only shown once. Change it after your first login.`));
+}
+
+export function checkUserFile(filePath: string) {
     try {
         if (!fs.existsSync(filePath)) {
-            console.info(`Users file not found, copying example file...`);
-            copyExampleFile("users.json", config.usersFilePath);
+            createInitialAdmin(filePath);
         }
 
-        if (!fs.existsSync(filePath)) {
-            console.error(`Fatal: Users file could not be initialized at ${filePath}`);
+        // Never overwrite a damaged users file: that would delete every account
+        let users: { name: string; password: string }[];
+        try {
+            users = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+        } catch (err) {
+            console.error(`Fatal: Users file at ${filePath} is not valid JSON. Restore it from a backup or fix it by hand.`);
             process.exit(1);
         }
 
-        let data = fs.readFileSync(filePath, "utf-8");
-        let users: { name: string; password: string }[];
-
-        try {
-            users = JSON.parse(data);
-        } catch (err) {
-            console.warn(`Users file is invalid. Resetting...`);
-            copyExampleFile("users.json", config.usersFilePath);
-            data = fs.readFileSync(filePath, "utf-8");
-            users = JSON.parse(data);
-        }
-
         if (!Array.isArray(users)) {
-            console.warn(`Users file is not an array. Resetting...`);
-            copyExampleFile("users.json", config.usersFilePath);
-            data = fs.readFileSync(filePath, "utf-8");
-            users = JSON.parse(data);
+            console.error(`Fatal: Users file at ${filePath} is not an array. Restore it from a backup or fix it by hand.`);
+            process.exit(1);
         }
 
         const invalidUsers = users.filter(u => {
@@ -155,10 +160,12 @@ export function checkUserFile(filePath: string) {
         });
 
         if (invalidUsers.length > 0) {
-            console.warn(`Found ${invalidUsers.length} user(s) with invalid password hashes. Resetting...`);
-            copyExampleFile("users.json", config.usersFilePath);
-            data = fs.readFileSync(filePath, "utf-8");
-            users = JSON.parse(data);
+            console.error(`Fatal: Users file at ${filePath} has ${invalidUsers.length} user(s) with invalid password hashes. Restore it from a backup or fix it by hand.`);
+            process.exit(1);
+        }
+
+        if (users.some(u => u.password === LEGACY_DEFAULT_ADMIN_HASH)) {
+            console.warn(chalk.red(`[SECURITY] A user still has the password from the old example users.json, whose hash is public. Change it now.`));
         }
 
         const usernames = users.map(u => u.name);

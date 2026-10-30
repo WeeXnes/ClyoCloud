@@ -5,7 +5,7 @@ import type { FileMeta } from '~/types/File'
 import { addToFavorites, removeFromFavorites } from '~/server/utils/favorites'
 import { addToWallpapers, removeFromWallpapers } from '~/server/utils/wallpapers'
 
-import { isPathWithin } from '~/server/utils/fileUtils'
+import { isPathWithin, isTrashPath } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
         }
 
         const filePath = path.resolve(path.join(userStoragePath, fullPath))
-        if (!isPathWithin(userStoragePath, filePath)) {
+        if (!isPathWithin(userStoragePath, filePath) || isTrashPath(userStoragePath, filePath)) {
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied',

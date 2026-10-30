@@ -18,6 +18,18 @@ export interface TrashItem {
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 
 /**
+ * A stored name must be a single path segment, so it can only ever point directly inside .trash.
+ */
+export function isSafeTrashName(name: unknown): name is string {
+    return typeof name === 'string'
+        && name.length > 0
+        && name !== '.'
+        && name !== '..'
+        && !name.includes('\0')
+        && !/[\\/]/.test(name)
+}
+
+/**
  * Get and ensure user .trash directory
  */
 export async function getTrashDir(username: string): Promise<string> {
@@ -39,7 +51,10 @@ export async function loadTrashMetadata(username: string): Promise<TrashItem[]> 
     const metaFile = path.join(trashDir, 'metadata.json')
     try {
         const raw = await fs.readFile(metaFile, 'utf-8')
-        return JSON.parse(raw) as TrashItem[]
+        const items = JSON.parse(raw)
+        if (!Array.isArray(items)) return []
+        // Never trust receipts read from disk: every trash operation builds paths from storedName
+        return items.filter((item) => isSafeTrashName(item?.storedName)) as TrashItem[]
     } catch {
         return []
     }

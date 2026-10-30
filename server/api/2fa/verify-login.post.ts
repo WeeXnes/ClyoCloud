@@ -3,7 +3,8 @@ import fs from 'fs/promises'
 import jwt from 'jsonwebtoken'
 import { createRequire } from 'module'
 import { logActivity } from '../../utils/activityLogger'
-import { loginLimiter, getClientIP } from '../../utils/rateLimiter'
+import { loginLimiter, accountLimiter, getClientIP } from '../../utils/rateLimiter'
+import { withFileLock, writeFileAtomic } from '../../utils/jsonStore'
 import { getJwtSecret } from '../../utils/jwtConfig'
 import { decryptTwoFactorSecret, verifyAndConsumeRecoveryCode } from '../../utils/twoFactor'
 
@@ -43,6 +44,18 @@ export default defineEventHandler(async (event) => {
         }
 
         const username = decoded.user.name
+
+        // Per-account limit: a fresh password login must not grant more code guesses
+        const accountKey = `2fa:${username}`
+        const accountRateLimit = accountLimiter.check(accountKey)
+        if (!accountRateLimit.allowed) {
+            console.warn(`[SECURITY] Rate limited 2FA attempt for user: ${username}`)
+            throw createError({
+                statusCode: 429,
+                statusMessage: `Too many attempts. Try again in ${Math.ceil(accountRateLimit.retryAfterMs / 1000)} seconds.`,
+            })
+        }
+
         const usersFilePath = config.usersFilePath
         const usersData = await fs.readFile(usersFilePath, 'utf-8')
         const users = JSON.parse(usersData)
@@ -81,13 +94,19 @@ export default defineEventHandler(async (event) => {
 
         // 2. If not valid TOTP, try recovery code
         if (!isValid) {
-            const recoveryCheck = verifyAndConsumeRecoveryCode(code.toString(), user.twoFactorRecoveryCodes)
-            if (recoveryCheck.valid && recoveryCheck.updatedCodes) {
-                isValid = true
-                usedRecovery = true
-                users[userIndex].twoFactorRecoveryCodes = recoveryCheck.updatedCodes
-                await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8')
-            }
+            // Re-read under the lock so a code can't be used twice by concurrent requests
+            usedRecovery = await withFileLock(usersFilePath, async () => {
+                const freshUsers = JSON.parse(await fs.readFile(usersFilePath, 'utf-8'))
+                const freshUser = freshUsers.find((u: any) => u.name === username)
+                const recoveryCheck = verifyAndConsumeRecoveryCode(code.toString(), freshUser?.twoFactorRecoveryCodes)
+                if (!recoveryCheck.valid || !recoveryCheck.updatedCodes) {
+                    return false
+                }
+                freshUser.twoFactorRecoveryCodes = recoveryCheck.updatedCodes
+                await writeFileAtomic(usersFilePath, JSON.stringify(freshUsers, null, 2))
+                return true
+            })
+            isValid = usedRecovery
         }
 
         if (!isValid) {
@@ -99,8 +118,9 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        // Successful 2FA — reset rate limiter
-        loginLimiter.reset(clientIP)
+        // Login fully complete: don't count this attempt, and clear this account's code counter
+        loginLimiter.forgive(clientIP)
+        accountLimiter.reset(accountKey)
 
         console.log(`[2FA] ACCEPTED: User ${username} verified (recoveryCode: ${usedRecovery})`)
         await logActivity(username, 'LOGIN_SUCCESS', 'Login', usedRecovery ? 'Successful 2FA recovery code verification' : 'Successful 2FA verification', event)

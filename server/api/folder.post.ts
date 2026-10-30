@@ -2,7 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 
-import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
+import { isPathWithin, isTrashPath, clearUserCache } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     const fullPath = path.join(userStoragePath, safeSubPath, folderName)
 
     // Ensure path is within user's directory
-    if (!isPathWithin(userStoragePath, fullPath)) {
+    if (!isPathWithin(userStoragePath, fullPath) || isTrashPath(userStoragePath, fullPath)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Access denied: Path outside user directory',

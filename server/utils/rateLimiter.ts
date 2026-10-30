@@ -1,4 +1,5 @@
-import { getRequestIP, type H3Event } from 'h3'
+import { BlockList, isIP } from 'net'
+import { getRequestHeader, getRequestIP, type H3Event } from 'h3'
 import { consola } from 'consola'
 
 interface RateLimitEntry {
@@ -28,8 +29,8 @@ class RateLimiter {
      * Check if a request should be allowed. Returns true if allowed, false if rate-limited.
      */
     check(ip: string): { allowed: boolean; remaining: number; retryAfterMs: number } {
-        // Bypass rate limiting for internal loopback and unknown client IPs (local SSR Nitro calls)
-        if (ip === 'unknown' || ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') {
+        // Bypass rate limiting only for internal Nitro SSR calls, which have no socket peer
+        if (ip === 'unknown') {
             return { allowed: true, remaining: 9999, retryAfterMs: 0 }
         }
 
@@ -71,10 +72,17 @@ class RateLimiter {
     }
 
     /**
-     * Reset the limiter for a specific IP (e.g., after successful login).
+     * Reset the limiter for a specific key.
      */
     reset(ip: string): void {
         this.entries.delete(ip)
+    }
+
+    /**
+     * Stop counting the most recent attempt (it succeeded) while keeping earlier failures.
+     */
+    forgive(ip: string): void {
+        this.entries.get(ip)?.timestamps.pop()
     }
 
     /**
@@ -159,6 +167,14 @@ export const loginLimiter = new RateLimiter({
     blockDurationMs: 15 * 60 * 1000 // 15 minutes
 })
 
+/** Per-account login and 2FA attempts from any IP: 10 attempts per 15 minutes, block for 15 minutes */
+export const accountLimiter = new RateLimiter({
+    name: 'Account',
+    windowMs: 15 * 60 * 1000,      // 15 minutes
+    maxAttempts: 10,
+    blockDurationMs: 15 * 60 * 1000 // 15 minutes
+})
+
 /** General API: 1000 requests per minute, block for 1 minute */
 export const apiLimiter = new RateLimiter({
     name: 'API',
@@ -167,11 +183,72 @@ export const apiLimiter = new RateLimiter({
     blockDurationMs: 60 * 1000     // 1 minute
 })
 
+let trustedProxies: BlockList | null = null
+
+/**
+ * Proxies allowed to set X-Forwarded-For: loopback, plus the comma-separated
+ * IPs and CIDR ranges in TRUSTED_PROXIES (e.g. "10.0.0.5,172.16.0.0/12").
+ */
+function getTrustedProxies(): BlockList {
+    if (trustedProxies) return trustedProxies
+
+    const list = new BlockList()
+    list.addSubnet('127.0.0.0', 8, 'ipv4')
+    list.addAddress('::1', 'ipv6')
+
+    for (const entry of (process.env.TRUSTED_PROXIES || '').split(',').map(e => e.trim()).filter(Boolean)) {
+        const [address, prefix] = entry.split('/')
+        const version = isIP(address)
+        if (!version) {
+            consola.warn(`[RateLimit] Ignoring invalid TRUSTED_PROXIES entry: ${entry}`)
+            continue
+        }
+        const type = version === 4 ? 'ipv4' : 'ipv6'
+        if (prefix !== undefined) {
+            list.addSubnet(address, Number(prefix), type)
+        } else {
+            list.addAddress(address, type)
+        }
+    }
+
+    trustedProxies = list
+    return list
+}
+
+function normalizeIP(ip: string): string {
+    return ip.trim().replace(/^::ffff:/i, '')
+}
+
+function isTrustedProxy(ip: string): boolean {
+    const version = isIP(ip)
+    return version !== 0 && getTrustedProxies().check(ip, version === 4 ? 'ipv4' : 'ipv6')
+}
+
+/**
+ * Resolves the real client from the socket peer and X-Forwarded-For.
+ * The header is ignored unless the peer is a trusted proxy. It is then read right to left,
+ * because only the entries appended by trusted proxies are reliable; anything further left
+ * can be supplied by the client.
+ */
+export function resolveClientIP(peer: string | undefined, forwardedFor: string | undefined): string {
+    if (!peer) return 'unknown'
+
+    let client = normalizeIP(peer)
+    if (!isTrustedProxy(client) || !forwardedFor) return client
+
+    for (const hop of forwardedFor.split(',').reverse().map(normalizeIP)) {
+        if (!isIP(hop)) break
+        client = hop
+        if (!isTrustedProxy(hop)) break
+    }
+    return client
+}
+
 /**
  * Helper to extract client IP from an H3 event.
  */
 export function getClientIP(event: H3Event): string {
-    return getRequestIP(event, { xForwardedFor: true }) || 'unknown'
+    return resolveClientIP(getRequestIP(event), getRequestHeader(event, 'x-forwarded-for'))
 }
 
 /**
@@ -181,6 +258,7 @@ export function getAllRateLimitStatus() {
     return {
         limiters: [
             loginLimiter.getStatus(),
+            accountLimiter.getStatus(),
             apiLimiter.getStatus()
         ]
     }

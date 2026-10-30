@@ -172,3 +172,22 @@ export function isPathWithin(parentPath: string, childPath: string): boolean {
     return !relative.startsWith('..') && !path.isAbsolute(relative)
 }
 
+/**
+ * True if the path is the user's .trash directory or anything inside it.
+ * The trash is only managed through server/utils/trash.ts, never by the general file APIs.
+ */
+export function isTrashPath(userStoragePath: string, targetPath: string): boolean {
+    const relative = path.relative(path.resolve(userStoragePath), path.resolve(targetPath))
+    return relative.split(/[\\/]/)[0] === '.trash'
+}
+
+/**
+ * Validates a user-configured download sub-folder.
+ * It must stay inside the user's storage and outside the trash.
+ */
+export function isValidDownloadPath(userStoragePath: string, downloadPath: unknown): boolean {
+    if (typeof downloadPath !== 'string') return false
+    const resolved = path.resolve(path.join(userStoragePath, downloadPath))
+    return isPathWithin(userStoragePath, resolved) && !isTrashPath(userStoragePath, resolved)
+}
+

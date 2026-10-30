@@ -3,6 +3,7 @@ import { existsSync } from 'fs'
 import path from 'path'
 import type { H3Event } from 'h3'
 import { logActivity } from './activityLogger'
+import { withFileLock, writeFileAtomic } from './jsonStore'
 
 export interface Device {
     id: string;          // UUID
@@ -42,66 +43,76 @@ export async function writeDevicesData(data: DevicesData): Promise<void> {
     const devicesFilePath = config.devicesFilePath
     try {
         await fs.mkdir(path.dirname(devicesFilePath), { recursive: true })
-        await fs.writeFile(devicesFilePath, JSON.stringify(data, null, 2), 'utf-8')
+        await writeFileAtomic(devicesFilePath, JSON.stringify(data, null, 2))
     } catch (err) {
         console.error('Error writing devices file:', err)
     }
 }
 
+function withDevicesLock<T>(task: () => Promise<T>): Promise<T> {
+    return withFileLock(useRuntimeConfig().devicesFilePath, task)
+}
+
 export async function addDevice(deviceId: string, username: string, model: string): Promise<void> {
-    const data = await readDevicesData()
-    if (!data[username]) {
-        data[username] = []
-    }
-    const newDevice: Device = {
-        id: deviceId,
-        model,
-        createdAt: Date.now(),
-        lastActive: Date.now()
-    }
-    data[username].push(newDevice)
-    await writeDevicesData(data)
+    await withDevicesLock(async () => {
+        const data = await readDevicesData()
+        if (!data[username]) {
+            data[username] = []
+        }
+        const newDevice: Device = {
+            id: deviceId,
+            model,
+            createdAt: Date.now(),
+            lastActive: Date.now()
+        }
+        data[username].push(newDevice)
+        await writeDevicesData(data)
+    })
 }
 
 export async function updateDeviceActivity(deviceId: string, model?: string, event?: H3Event): Promise<boolean> {
-    const data = await readDevicesData()
-    let found = false
-    for (const username in data) {
-        const devices = data[username]
-        const deviceIndex = devices.findIndex(d => d.id === deviceId)
-        if (deviceIndex !== -1) {
-            devices[deviceIndex].lastActive = Date.now()
-            if (model && (devices[deviceIndex].model === 'Pending Connection...' || devices[deviceIndex].model === 'Unknown Device')) {
-                devices[deviceIndex].model = model
-                // Log registration
-                try {
-                    await logActivity(username, 'DEVICE_REGISTER', model, `Device successfully registered via QR Code: ${model}`, event)
-                } catch (err) {
-                    console.error('Failed to log device registration:', err)
+    return withDevicesLock(async () => {
+        const data = await readDevicesData()
+        let found = false
+        for (const username in data) {
+            const devices = data[username]
+            const deviceIndex = devices.findIndex(d => d.id === deviceId)
+            if (deviceIndex !== -1) {
+                devices[deviceIndex].lastActive = Date.now()
+                if (model && (devices[deviceIndex].model === 'Pending Connection...' || devices[deviceIndex].model === 'Unknown Device')) {
+                    devices[deviceIndex].model = model
+                    // Log registration
+                    try {
+                        await logActivity(username, 'DEVICE_REGISTER', model, `Device successfully registered via QR Code: ${model}`, event)
+                    } catch (err) {
+                        console.error('Failed to log device registration:', err)
+                    }
                 }
+                found = true
+                break
             }
-            found = true
-            break
         }
-    }
-    if (found) {
-        await writeDevicesData(data)
-    }
-    return found
+        if (found) {
+            await writeDevicesData(data)
+        }
+        return found
+    })
 }
 
 export async function revokeDevice(deviceId: string, username: string): Promise<boolean> {
-    const data = await readDevicesData()
-    if (!data[username]) {
-        return false
-    }
-    const originalLength = data[username].length
-    data[username] = data[username].filter(d => d.id !== deviceId)
-    if (data[username].length === originalLength) {
-        return false
-    }
-    await writeDevicesData(data)
-    return true
+    return withDevicesLock(async () => {
+        const data = await readDevicesData()
+        if (!data[username]) {
+            return false
+        }
+        const originalLength = data[username].length
+        data[username] = data[username].filter(d => d.id !== deviceId)
+        if (data[username].length === originalLength) {
+            return false
+        }
+        await writeDevicesData(data)
+        return true
+    })
 }
 
 export async function getDevicesForUser(username: string): Promise<Device[]> {

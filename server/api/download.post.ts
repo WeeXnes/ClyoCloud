@@ -1,8 +1,9 @@
 import { defineEventHandler, readBody, createError } from 'h3';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { startDownloadJob, getActiveJob, dismissJob } from '../utils/downloadManager';
+import { startDownloadJob, getActiveJob, dismissJob, parseDownloadUrl } from '../utils/downloadManager';
 import { checkDiskHeadroom, checkUserQuota } from '../utils/storageQuota';
+import { isValidDownloadPath } from '../utils/fileUtils';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -30,8 +31,9 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  if (!url || typeof url !== 'string') {
-    throw createError({ statusCode: 400, message: 'Invalid URL provided' });
+  const downloadUrl = parseDownloadUrl(url);
+  if (!downloadUrl) {
+    throw createError({ statusCode: 400, message: 'Invalid URL provided. Only http and https URLs are allowed.' });
   }
 
   // Get user specific download path
@@ -47,8 +49,14 @@ export default defineEventHandler(async (event) => {
     console.error('Error reading user settings for download path:', e);
   }
 
-  const userPath = path.join(config.storagePath, user.name, userDownloadSubPath);
-  
+  const userStoragePath = path.join(config.storagePath, user.name);
+  // Also covers values saved before user-settings validated this field
+  if (!isValidDownloadPath(userStoragePath, userDownloadSubPath)) {
+    throw createError({ statusCode: 400, message: 'Invalid download path. Update it in your settings.' });
+  }
+
+  const userPath = path.join(userStoragePath, userDownloadSubPath);
+
   // Headroom check
   const headroom = await checkDiskHeadroom(userPath, 50 * 1024 * 1024)
   if (!headroom.hasSpace) {
@@ -67,9 +75,9 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  await logActivity(user.name, 'REMOTE_DOWNLOAD_START', url, `Starting remote download to ${userDownloadSubPath || 'root'}`, event)
+  await logActivity(user.name, 'REMOTE_DOWNLOAD_START', downloadUrl, `Starting remote download to ${userDownloadSubPath || 'root'}`, event)
 
-  const job = await startDownloadJob(user.name, url, userPath);
+  const job = await startDownloadJob(user.name, downloadUrl, userPath);
 
   return {
     status: job.status,

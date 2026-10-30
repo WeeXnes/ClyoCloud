@@ -4,7 +4,7 @@ import path from 'path'
 import { renameInFavorites } from '~/server/utils/favorites'
 import { renameInWallpapers } from '~/server/utils/wallpapers'
 
-import { isPathWithin, clearUserCache } from '~/server/utils/fileUtils'
+import { isPathWithin, isTrashPath, clearUserCache } from '~/server/utils/fileUtils'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -32,7 +32,8 @@ export default defineEventHandler(async (event) => {
         const newFullPath = path.resolve(path.join(directory, newName))
 
         // Security check
-        if (!isPathWithin(userStoragePath, oldFullPath) || !isPathWithin(userStoragePath, newFullPath)) {
+        if (!isPathWithin(userStoragePath, oldFullPath) || !isPathWithin(userStoragePath, newFullPath)
+            || isTrashPath(userStoragePath, oldFullPath) || isTrashPath(userStoragePath, newFullPath)) {
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied',

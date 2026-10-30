@@ -87,7 +87,8 @@ The variables map directly to the Nitro runtime configuration inside [nuxt.confi
 | `PREVIEW_PATH` | `~/.clyo/previews` | Location where larger previews are generated. |
 | `USERS_FILE_PATH`| `~/.clyo/users.json` | Path to the JSON configuration containing hashed user credentials. |
 | `TAGS_FILE_PATH` | `~/.clyo/tags.json` | Path to the JSON file managing available tags and their colors. |
-| `JWT_SECRET` | `jei0ghjesi0ogj8ie0jg8093jg8390` | Key used to sign JWT session cookies. (Change this for production!). |
+| `JWT_SECRET` | Random, regenerated on every start | Key used to sign JWT session cookies. Set it to keep sessions and devices valid across restarts. |
+| `TRUSTED_PROXIES` | Loopback only | Comma-separated IPs or CIDR ranges of reverse proxies allowed to set `X-Forwarded-For`. Set this if your proxy isn't on the same host (e.g. Docker: `172.16.0.0/12`), otherwise all clients share one rate limit. |
 
 > [!IMPORTANT]
 > The folders defined in `STORAGE_PATH` and `THUMBNAIL_PATH` must be writeable by the process running ClyoCloud. On server startup, ClyoCloud will attempt to create these directories automatically if they do not exist.
@@ -97,6 +98,8 @@ The variables map directly to the Nitro runtime configuration inside [nuxt.confi
 ## CLI User Manager
 
 Because ClyoCloud operates without a centralized SQL database, users are registered and managed via a JSON file (`users.json`). The project contains a CLI script to manage these accounts.
+
+If `users.json` doesn't exist on first start, ClyoCloud creates an `admin` account with a random password and prints it once to the console. Change it after your first login. If the file exists but is damaged, the server refuses to start rather than overwriting it, so restore it from a backup or fix it by hand.
 
 ### Location
 The script is located under [.usermanager/index.js](file:///home/weexnes/CurClyo/.usermanager/index.js).
