@@ -89,7 +89,7 @@ export default defineEventHandler(async (event) => {
         await renameInFavorites(event.context.user.name, oldPath, normalizedNewPath)
         await renameInWallpapers(event.context.user.name, oldPath, normalizedNewPath)
 
-        clearUserCache(event.context.user.name)
+        clearUserCache(event.context.user.name, [oldFullPath, newFullPath])
 
         return { success: true }
     } catch (error: any) {

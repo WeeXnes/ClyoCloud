@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getDirSize, clearUserCache, storageMapCache } from '../server/utils/fileUtils'
+import { getDirSize, clearUserCache, resetSizeCacheForTests, getUserCacheEpoch } from '../server/utils/fileUtils'
 import fs from 'fs/promises'
 
 vi.mock('fs/promises', () => ({
@@ -16,7 +16,7 @@ vi.stubGlobal('useRuntimeConfig', () => ({
 describe('Cache and Invalidation Utilities', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        storageMapCache.clear()
+        resetSizeCacheForTests()
     })
 
     it('caches directory size and invalidates correctly', async () => {
@@ -41,15 +41,12 @@ describe('Cache and Invalidation Utilities', () => {
         expect(readdirMock).toHaveBeenCalledTimes(2)
     })
 
-    it('manages storage map cache correctly', () => {
-        const username = 'testuser'
-        const mockMapData = { name: 'root', size: 100, children: [] }
-
-        storageMapCache.set(username, { data: mockMapData, timestamp: Date.now() })
-        expect(storageMapCache.has(username)).toBe(true)
-
-        clearUserCache(username)
-        expect(storageMapCache.has(username)).toBe(false)
+    it('bumps the user epoch so storage summaries are recomputed', () => {
+        const before = getUserCacheEpoch('testuser')
+        const other = getUserCacheEpoch('otheruser')
+        clearUserCache('testuser')
+        expect(getUserCacheEpoch('testuser')).toBe(before + 1)
+        expect(getUserCacheEpoch('otheruser')).toBe(other)
     })
 
     it('sets caching headers and handles 304 Not Modified', async () => {
@@ -79,12 +76,12 @@ describe('Cache and Invalidation Utilities', () => {
         const handled1 = handleHttpCache(mockEvent, mockStats, false)
         expect(handled1).toBe(false)
         expect(headers['etag']).toBeDefined()
-        expect(headers['cache-control']).toBe('private, max-age=604800, stale-while-revalidate=86400')
+        expect(headers['cache-control']).toBe('private, max-age=60, stale-while-revalidate=604800')
         expect(headers['last-modified']).toBe(mockStats.mtime.toUTCString())
 
         // Test public caching header
         handleHttpCache(mockEvent, mockStats, true)
-        expect(headers['cache-control']).toBe('public, max-age=604800, stale-while-revalidate=86400')
+        expect(headers['cache-control']).toBe('public, max-age=60, stale-while-revalidate=604800')
 
         // Test matching If-None-Match ETag
         mockEvent.node.req.headers['if-none-match'] = headers['etag']

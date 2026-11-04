@@ -1,62 +1,69 @@
 import { defineEventHandler, createError } from 'h3'
-import fs from 'fs/promises'
 import path from 'path'
 import si from 'systeminformation'
-import { getDirSize } from '~/server/utils/fileUtils'
+import { getUserUsage } from '~/server/utils/storageStats'
 
-// Static CPU info cache
-let cachedCpuInfo: any = null
-async function getCpuInfo() {
-    if (!cachedCpuInfo) {
-        cachedCpuInfo = await si.cpu()
+/**
+ * Caches a slow systeminformation probe. Once a value exists, requests get it straight away
+ * and a stale one is refreshed in the background. The first call waits at most `timeoutMs`
+ * (df can hang on a dead network mount), answering null if the probe is slower.
+ */
+function cachedProbe<T>(probe: () => Promise<T>, ttlMs: number, timeoutMs: number) {
+    let value: T | null = null
+    let fetchedAt = 0
+    let running: Promise<T | null> | null = null
+
+    function refresh() {
+        if (!running) {
+            running = probe()
+                .then((result) => {
+                    value = result
+                    fetchedAt = Date.now()
+                    return result
+                })
+                .catch((err) => {
+                    console.error('[STATS] System probe failed:', err)
+                    return value
+                })
+                .finally(() => {
+                    running = null
+                })
+        }
+        return running
     }
-    return cachedCpuInfo
+
+    return async function get(): Promise<T | null> {
+        if (value !== null) {
+            if (Date.now() - fetchedAt > ttlMs) refresh()
+            return value
+        }
+        let timer: ReturnType<typeof setTimeout> | undefined
+        const result = await Promise.race([
+            refresh(),
+            new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), timeoutMs) }),
+        ])
+        clearTimeout(timer)
+        return result
+    }
 }
 
-// Memory cache
-let cachedMemory: any = null
-let lastMemoryFetch = 0
-const MEM_CACHE_TTL = 5000 // 5 seconds
-async function getMemory() {
-    const now = Date.now()
-    if (!cachedMemory || now - lastMemoryFetch > MEM_CACHE_TTL) {
-        cachedMemory = await si.mem()
-        lastMemoryFetch = now
-    }
-    return cachedMemory
-}
-
-// Load cache
-let cachedLoad: any = null
-let lastLoadFetch = 0
-const LOAD_CACHE_TTL = 5000 // 5 seconds
-async function getLoad() {
-    const now = Date.now()
-    if (!cachedLoad || now - lastLoadFetch > LOAD_CACHE_TTL) {
-        cachedLoad = await si.currentLoad()
-        lastLoadFetch = now
-    }
-    return cachedLoad
-}
-
-// FS size cache
-let cachedFsStats: any = null
-let lastFsStatsFetch = 0
-const FS_CACHE_TTL = 30000 // 30 seconds
-async function getFsStats() {
-    const now = Date.now()
-    if (!cachedFsStats || now - lastFsStatsFetch > FS_CACHE_TTL) {
-        cachedFsStats = await si.fsSize()
-        lastFsStatsFetch = now
-    }
-    return cachedFsStats
-}
+const getCpuInfo = cachedProbe(() => si.cpu(), Infinity, 3000)
+const getMemory = cachedProbe(() => si.mem(), 5000, 2000)
+const getLoad = cachedProbe(() => si.currentLoad(), 5000, 2000)
+const getFsStats = cachedProbe(() => si.fsSize(), 30000, 3000)
 
 // Warm up caches asynchronously on boot
-getCpuInfo().catch((err) => console.error('Failed to warm CPU cache:', err))
+getCpuInfo().catch(() => {})
 getMemory().catch(() => {})
 getLoad().catch(() => {})
 getFsStats().catch(() => {})
+
+const VIRTUAL_FS_TYPES = ['tmpfs', 'devtmpfs', 'overlay', 'squashfs', 'efivarfs']
+
+function isUnder(mount: string, target: string) {
+    const relative = path.relative(mount, target)
+    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+}
 
 export default defineEventHandler(async (event) => {
     if (!event.context.user) {
@@ -68,59 +75,57 @@ export default defineEventHandler(async (event) => {
 
     try {
         const config = useRuntimeConfig()
-        const userStoragePath = path.join(config.storagePath, event.context.user.name)
-        
-        let dynamicStats = 0
-        try {
-            await fs.access(userStoragePath)
-            dynamicStats = await getDirSize(userStoragePath)
-        } catch {
-            // Directory doesn't exist, size is 0
-        }
+        const storagePath = path.resolve(config.storagePath)
 
-        // Parallelize system calls using the cached/warmed methods
-        const [memory, cpuInfo, load, fsStats] = await Promise.all([
+        // Usage is a full tree scan on a cold cache: wait briefly, then answer with the last
+        // known value (or none) and let the client poll while the scan finishes in the background.
+        const [usage, memory, cpuInfo, load, fsStats] = await Promise.all([
+            getUserUsage(event.context.user.name, 1000),
             getMemory(),
             getCpuInfo(),
             getLoad(),
-            getFsStats()
+            getFsStats(),
         ])
 
         // Filter out virtual and system file systems
-        const relevantDrives = fsStats.filter(f => 
-            f.size > 0 && 
-            !f.mount.startsWith('/sys') && 
-            !f.mount.startsWith('/proc') && 
-            !f.mount.startsWith('/dev') && 
+        const relevantDrives = (fsStats || []).filter(f =>
+            f.size > 0 &&
+            !f.mount.startsWith('/sys') &&
+            !f.mount.startsWith('/proc') &&
+            !f.mount.startsWith('/dev') &&
             !f.mount.startsWith('/run') &&
-            !['tmpfs', 'devtmpfs', 'overlay', 'squashfs', 'efivarfs'].includes(f.type)
+            !VIRTUAL_FS_TYPES.includes(f.type)
         )
 
-        // Find the correct partition for storagePath
-        const storageDisk = relevantDrives.find(f => config.storagePath.startsWith(f.mount)) || relevantDrives[0] || fsStats[0]
+        // The partition holding storagePath is the most specific mount containing it
+        // ("/" contains everything, so the longest match wins)
+        const storageDisk = relevantDrives
+            .filter(f => isUnder(f.mount, storagePath))
+            .sort((a, b) => b.mount.length - a.mount.length)[0] || relevantDrives[0] || fsStats?.[0]
 
         return {
-            used: dynamicStats,
-            total: storageDisk?.size,
-            free: storageDisk?.available,
-            drives: relevantDrives.map(f => ({
+            used: usage.value ?? null,
+            usedPending: usage.pending,
+            total: storageDisk?.size ?? null,
+            free: storageDisk?.available ?? null,
+            drives: fsStats ? relevantDrives.map(f => ({
                 mount: f.mount,
                 label: f.fs,
                 total: f.size,
                 used: f.used,
                 available: f.available,
                 use: f.use
-            })),
-            ram: {
+            })) : null,
+            ram: memory ? {
                 total: memory.total,
                 used: memory.active, // Active memory is a better representation of "used"
                 free: memory.available
-            },
-            cpu: {
-                model: `${cpuInfo.manufacturer} ${cpuInfo.brand}`,
-                cores: cpuInfo.cores,
-                load: load.currentLoad // This is already a 0-100 percentage
-            },
+            } : null,
+            cpu: cpuInfo || load ? {
+                model: cpuInfo ? `${cpuInfo.manufacturer} ${cpuInfo.brand}` : '',
+                cores: cpuInfo?.cores ?? 0,
+                load: load?.currentLoad ?? null // already a 0-100 percentage
+            } : null,
             username: event.context.user.name
         }
     } catch (error) {

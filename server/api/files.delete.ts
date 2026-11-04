@@ -73,7 +73,7 @@ export default defineEventHandler(async (event) => {
     await removeFromFavorites(event.context.user.name, safeSubPath)
     await removeFromWallpapers(event.context.user.name, safeSubPath)
 
-    clearUserCache(event.context.user.name)
+    clearUserCache(event.context.user.name, [fullPath, path.join(userStoragePath, '.trash')])
 
     return { success: true, trashed: !isPermanent }
   } catch (error) {

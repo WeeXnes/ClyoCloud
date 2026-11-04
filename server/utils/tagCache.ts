@@ -4,14 +4,37 @@ import type { File, FileMeta } from '~/types/File'
 
 // Cache structure: Map<Username, Map<TagName, File[]>>
 const tagCache = new Map<string, Map<string, File[]>>();
-let isInitializing = false;
+let rebuildPromise: Promise<void> | null = null;
+// Bumped on every single-file update, so a rebuild can tell it raced with one
+const userUpdateCounters = new Map<string, number>();
 
 /**
- * Recursively scans all user storage and builds the tag cache
+ * Normalizes a user-relative path the way the cache stores it: forward slashes,
+ * no leading "./" or "/", no trailing "/". Clients send all of these variants.
  */
-export async function rebuildTagCache() {
-    if (isInitializing) return;
-    isInitializing = true;
+export function normalizeCachePath(relativePath: string): string {
+    const normalized = path.posix.normalize(relativePath.replace(/\\/g, '/')).replace(/^(\.\/)+/, '').replace(/^\/+|\/+$/g, '');
+    return normalized === '.' ? '' : normalized;
+}
+
+function markUpdated(username: string) {
+    userUpdateCounters.set(username, (userUpdateCounters.get(username) ?? 0) + 1);
+}
+
+/**
+ * Recursively scans all user storage and builds the tag cache.
+ * Concurrent callers wait for the rebuild already running.
+ */
+export function rebuildTagCache(): Promise<void> {
+    if (!rebuildPromise) {
+        rebuildPromise = runRebuild().finally(() => {
+            rebuildPromise = null;
+        });
+    }
+    return rebuildPromise;
+}
+
+async function runRebuild() {
     console.info('Rebuilding tag cache...');
     const startTime = Date.now();
 
@@ -26,19 +49,26 @@ export async function rebuildTagCache() {
 
         for (const username of users) {
             const userStoragePath = path.join(storagePath, username);
-            const stats = await fs.stat(userStoragePath);
-            if (!stats.isDirectory()) continue;
+            try {
+                const stats = await fs.stat(userStoragePath);
+                if (!stats.isDirectory()) continue;
+            } catch {
+                continue;
+            }
 
-            const userMap = new Map<string, File[]>();
-            await scanDir(userStoragePath, userStoragePath, userMap);
-            tagCache.set(username, userMap);
+            // An update that lands mid-scan may be missing from the scan, so scan again (a few times at most)
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const before = userUpdateCounters.get(username) ?? 0;
+                const userMap = new Map<string, File[]>();
+                await scanDir(userStoragePath, userStoragePath, userMap);
+                tagCache.set(username, userMap);
+                if ((userUpdateCounters.get(username) ?? 0) === before) break;
+            }
         }
 
         console.info(`Tag cache rebuilt in ${Date.now() - startTime}ms`);
     } catch (error) {
         console.error('Error rebuilding tag cache:', error);
-    } finally {
-        isInitializing = false;
     }
 }
 
@@ -50,6 +80,8 @@ async function scanDir(currentPath: string, userStoragePath: string, userMap: Ma
             const fullPath = path.join(currentPath, entry.name);
             
             if (entry.isDirectory()) {
+                // .trash and other hidden folders are not part of the user's files
+                if (entry.name.startsWith('.')) continue;
                 // Check folder meta
                 const cloudInfoPath = `${fullPath}.cloudinfo`;
                 await processMeta(fullPath, cloudInfoPath, userStoragePath, userMap, true);
@@ -108,9 +140,15 @@ export function getFilesByTagFromCache(username: string, tagName: string): File[
 /**
  * Updates a single file's entry in the cache
  */
-export async function updateFileInCache(username: string, relativePath: string, meta: FileMeta) {
-    const userMap = tagCache.get(username);
-    if (!userMap) return;
+export async function updateFileInCache(username: string, rawRelativePath: string, meta: FileMeta) {
+    markUpdated(username);
+    const relativePath = normalizeCachePath(rawRelativePath);
+    let userMap = tagCache.get(username);
+    if (!userMap) {
+        // A user created after startup has no map yet; their storage started empty
+        userMap = new Map<string, File[]>();
+        tagCache.set(username, userMap);
+    }
 
     // Remove file from all tag lists it was in
     for (const [tagName, files] of userMap.entries()) {
@@ -147,10 +185,12 @@ export async function updateFileInCache(username: string, relativePath: string, 
  * Removes a file or folder (and its children if folder) from the cache
  */
 export function removeFileFromCache(username: string, relativePath: string) {
+    markUpdated(username);
     const userMap = tagCache.get(username);
     if (!userMap) return;
 
-    const normalizedPath = relativePath.replace(/\\/g, '/');
+    const normalizedPath = normalizeCachePath(relativePath);
+    if (!normalizedPath) return;
 
     for (const [tagName, files] of userMap.entries()) {
         userMap.set(tagName, files.filter(f => {
@@ -164,11 +204,13 @@ export function removeFileFromCache(username: string, relativePath: string) {
  * Updates cache when a file/folder is renamed or moved
  */
 export function moveFileInCache(username: string, oldRelativePath: string, newRelativePath: string) {
+    markUpdated(username);
     const userMap = tagCache.get(username);
     if (!userMap) return;
 
-    const oldNorm = oldRelativePath.replace(/\\/g, '/');
-    const newNorm = newRelativePath.replace(/\\/g, '/');
+    const oldNorm = normalizeCachePath(oldRelativePath);
+    const newNorm = normalizeCachePath(newRelativePath);
+    if (!oldNorm) return;
 
     for (const [tagName, files] of userMap.entries()) {
         userMap.set(tagName, files.map(f => {
@@ -182,4 +224,38 @@ export function moveFileInCache(username: string, oldRelativePath: string, newRe
             return f;
         }));
     }
+}
+
+/**
+ * Re-reads the tags of a file or folder tree that appeared on disk (for example a trash restore).
+ */
+export async function addTreeToCache(username: string, relativePath: string) {
+    const normalizedPath = normalizeCachePath(relativePath);
+    if (!normalizedPath) return;
+    removeFileFromCache(username, normalizedPath);
+
+    let userMap = tagCache.get(username);
+    if (!userMap) {
+        userMap = new Map<string, File[]>();
+        tagCache.set(username, userMap);
+    }
+
+    const config = useRuntimeConfig();
+    const userStoragePath = path.join(config.storagePath, username);
+    const fullPath = path.join(userStoragePath, normalizedPath);
+    try {
+        const stats = await fs.stat(fullPath);
+        await processMeta(fullPath, `${fullPath}.cloudinfo`, userStoragePath, userMap, stats.isDirectory());
+        if (stats.isDirectory()) {
+            await scanDir(fullPath, userStoragePath, userMap);
+        }
+    } catch (error) {
+        console.error(`Error re-indexing tags for ${normalizedPath}:`, error);
+    }
+}
+
+/** Test helper */
+export function resetTagCacheForTests() {
+    tagCache.clear();
+    userUpdateCounters.clear();
 }

@@ -2,7 +2,8 @@ import fs from 'fs/promises'
 import fsSync from 'fs'
 import path from 'path'
 import crypto from 'crypto'
-import { isPathWithin } from './fileUtils'
+import { isPathWithin, clearUserCache } from './fileUtils'
+import { withFileLock, writeFileAtomic } from './jsonStore'
 
 export interface TrashItem {
     id: string
@@ -66,13 +67,26 @@ export async function loadTrashMetadata(username: string): Promise<TrashItem[]> 
 export async function saveTrashMetadata(username: string, items: TrashItem[]): Promise<void> {
     const trashDir = await getTrashDir(username)
     const metaFile = path.join(trashDir, 'metadata.json')
-    await fs.writeFile(metaFile, JSON.stringify(items, null, 2), 'utf-8')
+    await writeFileAtomic(metaFile, JSON.stringify(items, null, 2))
+}
+
+/**
+ * Serializes every trash operation of one user. Each one reads, changes and writes
+ * metadata.json, so running two at once (a bulk delete sends many requests) would drop receipts.
+ * Not reentrant: never call a locked trash function from inside another.
+ */
+function withTrashLock<T>(username: string, task: () => Promise<T>): Promise<T> {
+    return withFileLock(`trash:${username}`, task)
 }
 
 /**
  * Auto-purge items in trash older than 30 days
  */
-export async function purgeOldTrash(username: string, maxAgeMs = THIRTY_DAYS_MS): Promise<number> {
+export function purgeOldTrash(username: string, maxAgeMs = THIRTY_DAYS_MS): Promise<number> {
+    return withTrashLock(username, () => purgeOldTrashUnlocked(username, maxAgeMs))
+}
+
+async function purgeOldTrashUnlocked(username: string, maxAgeMs = THIRTY_DAYS_MS): Promise<number> {
     const trashDir = await getTrashDir(username)
     const items = await loadTrashMetadata(username)
     const now = Date.now()
@@ -108,6 +122,7 @@ export async function purgeOldTrash(username: string, maxAgeMs = THIRTY_DAYS_MS)
 
     if (purgedCount > 0) {
         await saveTrashMetadata(username, remaining)
+        clearUserCache(username)
         console.log(`[TRASH] Auto-purged ${purgedCount} expired trash items for user ${username}`)
     }
 
@@ -117,7 +132,11 @@ export async function purgeOldTrash(username: string, maxAgeMs = THIRTY_DAYS_MS)
 /**
  * Move a file or folder into .trash with receipt
  */
-export async function moveToTrash(username: string, relativePath: string): Promise<TrashItem> {
+export function moveToTrash(username: string, relativePath: string): Promise<TrashItem> {
+    return withTrashLock(username, () => moveToTrashUnlocked(username, relativePath))
+}
+
+async function moveToTrashUnlocked(username: string, relativePath: string): Promise<TrashItem> {
     const config = useRuntimeConfig()
     const userStoragePath = path.resolve(config.storagePath, username)
     const fullPath = path.resolve(userStoragePath, relativePath)
@@ -176,7 +195,11 @@ export async function moveToTrash(username: string, relativePath: string): Promi
 /**
  * Restore an item from trash back to user's storage
  */
-export async function restoreFromTrash(username: string, id: string): Promise<{ success: boolean; restoredPath: string }> {
+export function restoreFromTrash(username: string, id: string): Promise<{ success: boolean; restoredPath: string }> {
+    return withTrashLock(username, () => restoreFromTrashUnlocked(username, id))
+}
+
+async function restoreFromTrashUnlocked(username: string, id: string): Promise<{ success: boolean; restoredPath: string }> {
     const config = useRuntimeConfig()
     const userStoragePath = path.resolve(config.storagePath, username)
     const trashDir = await getTrashDir(username)
@@ -230,6 +253,7 @@ export async function restoreFromTrash(username: string, id: string): Promise<{ 
     // Remove from metadata
     items.splice(itemIndex, 1)
     await saveTrashMetadata(username, items)
+    clearUserCache(username)
 
     const finalRelative = path.relative(userStoragePath, targetPath).replace(/\\/g, '/')
     return { success: true, restoredPath: finalRelative }
@@ -238,7 +262,11 @@ export async function restoreFromTrash(username: string, id: string): Promise<{ 
 /**
  * Permanently delete a single item from trash
  */
-export async function permanentlyDeleteFromTrash(username: string, id: string): Promise<void> {
+export function permanentlyDeleteFromTrash(username: string, id: string): Promise<void> {
+    return withTrashLock(username, () => permanentlyDeleteFromTrashUnlocked(username, id))
+}
+
+async function permanentlyDeleteFromTrashUnlocked(username: string, id: string): Promise<void> {
     const trashDir = await getTrashDir(username)
     const items = await loadTrashMetadata(username)
 
@@ -265,12 +293,17 @@ export async function permanentlyDeleteFromTrash(username: string, id: string): 
 
     items.splice(itemIndex, 1)
     await saveTrashMetadata(username, items)
+    clearUserCache(username)
 }
 
 /**
  * Empty entire trash for user
  */
-export async function emptyTrash(username: string): Promise<number> {
+export function emptyTrash(username: string): Promise<number> {
+    return withTrashLock(username, () => emptyTrashUnlocked(username))
+}
+
+async function emptyTrashUnlocked(username: string): Promise<number> {
     const trashDir = await getTrashDir(username)
     const items = await loadTrashMetadata(username)
     const count = items.length
@@ -291,6 +324,7 @@ export async function emptyTrash(username: string): Promise<number> {
     }
 
     await saveTrashMetadata(username, [])
+    clearUserCache(username)
     return count
 }
 

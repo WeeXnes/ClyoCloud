@@ -108,7 +108,7 @@ export default defineEventHandler(async (event) => {
             await logActivity(event.context.user.name, 'UPLOAD', relativePath, undefined, event)
         }
 
-        clearUserCache(event.context.user.name)
+        clearUserCache(event.context.user.name, [resolvedDir])
 
         return { message: 'Files uploaded successfully' }
     } catch (error: any) {

@@ -2,7 +2,7 @@ import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
 import type { File, FileMeta } from '~/types/File'
-import { getFavoritesIndex, saveFavoritesIndex, type FavoriteEntry } from '~/server/utils/favorites'
+import { readFavoritesIndex, saveFavoritesIndex, type FavoriteEntry } from '~/server/utils/favorites'
 import { getDirSize } from '~/server/utils/fileUtils'
 
 import { isPathWithin } from '~/server/utils/fileUtils'
@@ -20,15 +20,13 @@ export default defineEventHandler(async (event): Promise<File[]> => {
         const config = useRuntimeConfig()
         const userStoragePath = path.join(config.storagePath, username)
 
-        let favorites = await getFavoritesIndex(username)
-        const isInitialScan = favorites.length === 0
+        let favorites = await readFavoritesIndex(username)
 
-        if (isInitialScan) {
-            // First time or empty index, perform a full scan once
+        if (favorites === null) {
+            // No index yet: build it with one full scan. An empty result is saved too,
+            // so a user without any entries doesn't trigger a full scan on every visit.
             favorites = await performFullScan(userStoragePath)
-            if (favorites.length > 0) {
-                await saveFavoritesIndex(username, favorites)
-            }
+            await saveFavoritesIndex(username, favorites)
         }
 
         const favoriteFiles: File[] = []

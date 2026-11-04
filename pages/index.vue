@@ -34,7 +34,7 @@
           :class="heroCellClass[i]"
         >
           <p class="num text-3xl sm:text-4xl font-medium text-fg tracking-title leading-none">
-            <span v-if="isLoading" class="text-fg-3">—</span>
+            <span v-if="stat.value === null" class="text-fg-3 animate-pulse">—</span>
             <template v-else>{{ stat.value }}</template>
           </p>
           <p class="micro mt-2">{{ stat.label }}</p>
@@ -54,7 +54,7 @@
                 <span class="text-right">Free</span>
                 <span class="text-right">Total</span>
               </div>
-              <template v-if="isLoading">
+              <template v-if="!stats?.drives">
                 <div v-for="i in 2" :key="i" class="h-[68px] animate-pulse"></div>
               </template>
               <div v-else-if="!stats?.drives?.length" class="px-4 py-6 text-[14px] text-fg-3">No drives reported.</div>
@@ -82,11 +82,14 @@
           <section>
             <div class="flex items-baseline justify-between mb-4">
               <h2 class="section-title">Largest folders</h2>
-              <span v-if="storageMapData" class="num text-[13px] text-fg-3">{{ formatSize(storageMapData.size) }} total</span>
+              <span v-if="storageMapData?.ready" class="num text-[13px] text-fg-3">
+                <span v-if="storageMapData.pending" class="text-fg-3">Updating · </span>{{ formatSize(storageMapData.size) }} total
+              </span>
             </div>
             <div class="hair-list">
-              <div v-if="isLoading" class="h-40 flex items-center justify-center">
+              <div v-if="!storageMapData?.ready" class="h-40 flex flex-col items-center justify-center gap-2">
                 <span class="loading loading-spinner loading-sm"></span>
+                <span class="text-[13px] text-fg-3">Measuring folders…</span>
               </div>
               <div v-else-if="!treemapNodes.length" class="px-4 py-6 text-[14px] text-fg-3">Nothing stored yet.</div>
               <div v-else v-for="node in treemapNodes" :key="node.name" class="px-4 py-3 hover:bg-surface-2 transition-colors">
@@ -133,7 +136,7 @@
               <NuxtLink to="/logs" class="text-[13px] text-fg-2 hover:text-fg transition-colors">View logs</NuxtLink>
             </div>
             <div class="hair-list">
-              <template v-if="isLoading">
+              <template v-if="!activityLoaded">
                 <div v-for="i in 5" :key="i" class="h-14 animate-pulse"></div>
               </template>
               <div v-else-if="!activities.length" class="px-4 py-6 text-[14px] text-fg-3">No activity yet.</div>
@@ -172,9 +175,11 @@ useHead({
 })
 
 interface Stats {
-  used: number
-  total: number
-  free: number
+  // null while the server is still measuring (see usedPending)
+  used: number | null
+  usedPending?: boolean
+  total: number | null
+  free: number | null
   drives: Array<{
     mount: string
     label: string
@@ -182,17 +187,17 @@ interface Stats {
     used: number
     available: number
     use: number
-  }>
+  }> | null
   cpu: {
     model: string
     cores: number
-    load: number
-  }
+    load: number | null
+  } | null
   ram: {
     total: number
     used: number
     free: number
-  }
+  } | null
   username: string
 }
 
@@ -203,44 +208,91 @@ interface ActivityEntry {
   details?: string
 }
 
+interface StorageMap {
+  name: string
+  size: number
+  children?: Array<{ name: string; size: number }>
+  // false until the first scan finished; pending while a (re)scan runs on the server
+  ready?: boolean
+  pending?: boolean
+}
+
 const stats = ref<Stats | null>(null)
 const userState = useState<{ name: string } | null>('user')
 const activities = ref<ActivityEntry[]>([])
-const storageMapData = ref<{ name: string; size: number; children: any[] } | null>(null)
-const isLoading = ref(true)
-let pollingInterval: any = null
+const activityLoaded = ref(false)
+const storageMapData = ref<StorageMap | null>(null)
 
-async function fetchData() {
+// Each section loads and refreshes on its own schedule, so a slow folder scan never holds up
+// CPU/memory numbers. Requests are aborted when leaving the page, so they can't hold browser
+// connections that the next page needs.
+const controller = new AbortController()
+const timers = new Set<ReturnType<typeof setTimeout>>()
+let unmounted = false
+
+async function getJson<T>(url: string): Promise<T | null> {
   try {
-    const [statsRes, activityRes, storageRes] = await Promise.allSettled([
-      fetch('/api/stats', { credentials: 'include' }).then(async r => r.ok ? await r.json() : null),
-      fetch('/api/activity', { credentials: 'include' }).then(async r => r.ok ? await r.json() : []),
-      fetch('/api/storage-map', { credentials: 'include' }).then(async r => r.ok ? await r.json() : null)
-    ])
-    
-    if (statsRes.status === 'fulfilled' && statsRes.value) stats.value = statsRes.value
-    if (activityRes.status === 'fulfilled' && activityRes.value) activities.value = activityRes.value
-    if (storageRes.status === 'fulfilled' && storageRes.value) storageMapData.value = storageRes.value
-  } catch (err) {
-    console.error('Dashboard fetch error:', err)
-  } finally {
-    isLoading.value = false
+    const res = await fetch(url, { credentials: 'include', signal: controller.signal })
+    return res.ok ? await res.json() as T : null
+  } catch (err: any) {
+    if (err?.name !== 'AbortError') console.error(`Dashboard fetch ${url} failed:`, err)
+    return null
   }
 }
 
+/** Runs `task` now and again after each run settles (never overlapping), skipping hidden tabs. */
+function poll(task: () => Promise<number>) {
+  const run = async () => {
+    if (unmounted) return
+    const delay = document.hidden ? 5000 : await task()
+    if (unmounted) return
+    const timer = setTimeout(() => { timers.delete(timer); run() }, delay)
+    timers.add(timer)
+  }
+  run()
+}
+
+async function loadStats(): Promise<number> {
+  const res = await getJson<Stats>('/api/stats')
+  if (res) stats.value = res
+  return 5000
+}
+
+async function loadActivity(): Promise<number> {
+  const res = await getJson<ActivityEntry[]>('/api/activity')
+  if (res) activities.value = res
+  activityLoaded.value = true
+  return 15000
+}
+
+async function loadStorageMap(): Promise<number> {
+  const res = await getJson<StorageMap>('/api/storage-map')
+  if (res) storageMapData.value = res
+  // Check back soon while the server is still scanning, otherwise rarely
+  return !res || res.pending ? 3000 : 60000
+}
+
 onMounted(() => {
-  fetchData()
-  pollingInterval = setInterval(fetchData, 5000)
+  poll(loadStats)
+  poll(loadActivity)
+  poll(loadStorageMap)
 })
 
 onUnmounted(() => {
-  if (pollingInterval) clearInterval(pollingInterval)
+  unmounted = true
+  controller.abort()
+  for (const timer of timers) clearTimeout(timer)
+  timers.clear()
 })
 
-const cpuPercentage = computed(() => stats.value ? Math.round(stats.value.cpu.load) : 0)
+const cpuPercentage = computed(() => {
+  const load = stats.value?.cpu?.load
+  return load === null || load === undefined ? null : Math.round(load)
+})
 const ramPercentage = computed(() => {
-  if (!stats.value) return 0
-  return Math.round((stats.value.ram.used / stats.value.ram.total) * 100)
+  const ram = stats.value?.ram
+  if (!ram || !ram.total) return null
+  return Math.round((ram.used / ram.total) * 100)
 })
 
 const treemapNodes = computed(() => {
@@ -313,11 +365,12 @@ function sharePercent(size: number) {
   return total > 0 ? (size / total) * 100 : 0
 }
 
+// A null value renders as a pulsing placeholder until that number arrives
 const heroStats = computed(() => [
-  { label: 'Used', value: formatSize(stats.value?.used || 0) },
-  { label: 'Free', value: formatSize(stats.value?.free || 0) },
-  { label: 'CPU load', value: `${cpuPercentage.value}%` },
-  { label: 'Memory', value: `${ramPercentage.value}%` },
+  { label: 'Used', value: stats.value?.used == null ? null : formatSize(stats.value.used) },
+  { label: 'Free', value: stats.value?.free == null ? null : formatSize(stats.value.free) },
+  { label: 'CPU load', value: cpuPercentage.value === null ? null : `${cpuPercentage.value}%` },
+  { label: 'Memory', value: ramPercentage.value === null ? null : `${ramPercentage.value}%` },
 ])
 
 // Hairlines between hero stats: 2 columns on phones, 4 from lg

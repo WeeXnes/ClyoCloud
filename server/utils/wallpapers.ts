@@ -1,88 +1,26 @@
-import fs from 'fs/promises'
-import path from 'path'
+import { createPathIndex, type PathIndexEntry } from './pathIndex'
 
-export interface WallpaperEntry {
-    path: string;
-    isFolder: boolean;
-}
+export type WallpaperEntry = PathIndexEntry
 
-export async function getWallpapersIndex(username: string): Promise<WallpaperEntry[]> {
-    const config = useRuntimeConfig()
-    const indexPath = path.join(config.storagePath, username, '.wallpapers.json')
-    
-    try {
-        const content = await fs.readFile(indexPath, 'utf-8')
-        return JSON.parse(content)
-    } catch {
-        return []
-    }
-}
+const index = createPathIndex('.wallpapers.json', 'wallpapers')
 
-export async function saveWallpapersIndex(username: string, wallpapers: WallpaperEntry[]) {
-    const config = useRuntimeConfig()
-    const indexPath = path.join(config.storagePath, username, '.wallpapers.json')
-    
-    try {
-        await fs.writeFile(indexPath, JSON.stringify(wallpapers, null, 2), 'utf-8')
-    } catch (err) {
-        console.error('Error saving wallpapers index:', err)
-    }
-}
+/** null when no index has been written yet */
+export const readWallpapersIndex = index.read
+export const getWallpapersIndex = index.get
+export const saveWallpapersIndex = index.save
 
 export async function addToWallpapers(username: string, filePath: string, isFolder: boolean) {
-    const wallpapers = await getWallpapersIndex(username)
-    if (!wallpapers.some(f => f.path === filePath)) {
-        wallpapers.push({ path: filePath, isFolder })
-        await saveWallpapersIndex(username, wallpapers)
-    }
+    await index.add(username, filePath, isFolder)
 }
 
 export async function removeFromWallpapers(username: string, filePath: string) {
-    const wallpapers = await getWallpapersIndex(username)
-    const newWallpapers = wallpapers.filter(f => f.path !== filePath)
-    if (newWallpapers.length !== wallpapers.length) {
-        await saveWallpapersIndex(username, newWallpapers)
-    }
+    await index.remove(username, filePath)
 }
 
 export async function renameInWallpapers(username: string, oldPath: string, newPath: string) {
-    const wallpapers = await getWallpapersIndex(username)
-    let changed = false
-    
-    const updatedWallpapers = wallpapers.map(f => {
-        if (f.path === oldPath) {
-            changed = true
-            return { ...f, path: newPath }
-        }
-        // If it's a folder, update children paths
-        if (f.path.startsWith(oldPath + '/')) {
-            changed = true
-            return { ...f, path: newPath + f.path.slice(oldPath.length) }
-        }
-        return f
-    })
-    
-    if (changed) {
-        await saveWallpapersIndex(username, updatedWallpapers)
-    }
+    await index.rename(username, oldPath, newPath)
 }
 
 export async function moveInWallpapers(username: string, oldPaths: string[], destination: string) {
-    const wallpapers = await getWallpapersIndex(username)
-    let changed = false
-    
-    const updatedWallpapers = wallpapers.map(f => {
-        const matchingPath = oldPaths.find(p => f.path === p || f.path.startsWith(p + '/'))
-        if (matchingPath) {
-            changed = true
-            const fileName = matchingPath.split('/').pop()!
-            const newBase = destination ? `${destination}/${fileName}` : fileName
-            return { ...f, path: newBase + f.path.slice(matchingPath.length) }
-        }
-        return f
-    })
-    
-    if (changed) {
-        await saveWallpapersIndex(username, updatedWallpapers)
-    }
+    await index.move(username, oldPaths, destination)
 }

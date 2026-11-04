@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.1] - 2026-11-04
+
+### Changed
+- **Dashboard loads right away**: Each section loads on its own. CPU, memory and drives show within a moment, while used space and largest folders show a placeholder until they are measured, instead of the whole page waiting for a full scan of your files. Requests no longer overlap, pause in background tabs, and are cancelled when you leave the page, so navigating away is never held up.
+- Used space and the largest-folders list are kept up to date in the background: the last known numbers are shown immediately and refreshed after uploads, deletes, moves and renames. Only the folders that changed are measured again, not the whole tree.
+- Folder size scans read the disk a few entries at a time, so a large scan no longer slows down file browsing, uploads or streaming for everyone else. Requests for the same folder share one scan.
+- System numbers (CPU, memory, drives) are served from a short cache and never wait more than a few seconds, even if a mounted drive stops responding.
+- Thumbnails and previews are re-checked by the browser after a minute (a quick "not modified" answer) instead of being trusted for a week.
+
+### Fixed
+- Used space and the storage quota stayed out of date for up to 30 minutes after emptying the trash, deleting from the trash, or the automatic 30-day trash purge.
+- A size scan that was running while files changed could store its outdated result for 30 minutes.
+- The size cache grew without limit and kept sizes of deleted folders, so a re-created folder with the same name could show the old size.
+- The Free number on the dashboard could come from the wrong disk when the storage lives on its own mount.
+- Media and Shorts used one cached scan per user for every folder, so opening one folder could show another folder's videos. Trashed videos showed up there too.
+- Tags: files in the trash came back in tag results after a restart; tags of restored files were missing until a restart; users created after startup had no tag results; paths sent with a leading or trailing slash were not matched on rename, move, delete or tag changes.
+- Restoring from the trash now puts restored favourites and wallpapers back in their lists. Deleting a folder also removes the favourites and wallpapers inside it.
+- Favourites, wallpapers and the trash list could lose entries when several changes happened at once (for example a bulk delete). They are now updated one at a time and written atomically.
+- Favourites and Wallpapers no longer rescan all files on every visit when the list is empty.
+- Thumbnails and video previews are regenerated when the file was replaced, instead of showing the old picture.
+- A browser sending both `If-None-Match` and `If-Modified-Since` could get a "not modified" answer for a changed thumbnail.
+
 ## [2.21.0] - 2026-11-04
 
 ### Added

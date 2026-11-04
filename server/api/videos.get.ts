@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import type { Video, FileMeta, ShortMedia, SlideshowMedia } from '~/types/File'
 import { isPathWithin } from '~/server/utils/fileUtils'
+import { mediaCache, mediaCacheKey, setMediaCache } from '~/server/utils/mediaCache'
 
 const CACHE_TTL = 30 * 1000; // 30 seconds cache
 
@@ -30,6 +31,8 @@ async function scanMedia(directoryPath: string, userStoragePath: string): Promis
                 const ext = path.extname(entry.name).toLowerCase();
 
                 if (entry.isDirectory()) {
+                    // Skip .trash and other hidden folders: their contents are not part of the library
+                    if (entry.name.startsWith('.')) continue;
                     await scanDir(fullPath);
                 } else if (entry.isFile()) {
                     if (VIDEO_EXTENSIONS.includes(ext)) {
@@ -102,25 +105,26 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
 
         const username = event.context.user.name;
         let items: ShortMedia[] = [];
-        const cached = mediaCache.get(username);
+        const config = useRuntimeConfig();
+        const userStoragePath = path.join(config.storagePath, username);
+        const pathQuery = getQuery(event).path;
+        const subPath = pathQuery ? pathQuery.toString() : '';
+        const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '');
+        const fullPath = path.join(userStoragePath, safeSubPath);
+
+        if (!isPathWithin(userStoragePath, fullPath)) {
+            throw createError({ statusCode: 403, statusMessage: 'Access denied' });
+        }
+
+        // Keyed by sub-path too: a scan of one folder must not answer requests for another
+        const cacheKey = mediaCacheKey(username, path.relative(userStoragePath, fullPath));
+        const cached = mediaCache.get(cacheKey);
 
         if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
             items = cached.items;
         } else {
-            const config = useRuntimeConfig();
-            const userStoragePath = path.join(config.storagePath, username);
-            const query = getQuery(event);
-            const subPath = query.path ? query.path.toString() : '';
-
-            const safeSubPath = path.normalize(subPath).replace(/^(\.\.(\/|\\|$))+/, '');
-            const fullPath = path.join(userStoragePath, safeSubPath);
-
-            if (!isPathWithin(userStoragePath, fullPath)) {
-                throw createError({ statusCode: 403, statusMessage: 'Access denied' });
-            }
-
             items = await scanMedia(fullPath, userStoragePath);
-            mediaCache.set(username, { items, timestamp: Date.now() });
+            setMediaCache(cacheKey, items);
         }
 
         const query = getQuery(event);
@@ -132,7 +136,6 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
             );
         }
 
-        const config = useRuntimeConfig();
         const usersData = await fs.readFile(config.usersFilePath, 'utf-8');
         const users = JSON.parse(usersData);
         const userData = users.find((u: any) => u.name === username);

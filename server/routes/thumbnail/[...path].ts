@@ -6,7 +6,7 @@ import path, { join, resolve } from 'path'
 import { runFfmpeg, runFfprobe } from '~/server/utils/ffmpeg'
 
 import { isPathWithin } from '~/server/utils/fileUtils'
-import { handleHttpCache } from '~/server/utils/httpCache'
+import { handleHttpCache, isDerivedFresh } from '~/server/utils/httpCache'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
@@ -48,7 +48,8 @@ export default defineEventHandler(async (event) => {
     try {
         try {
             const thumbnailStats = await stat(requestedThumbnail)
-            if (thumbnailStats.isFile()) {
+            // Regenerate when the source file was replaced after the cached copy was made
+            if (thumbnailStats.isFile() && await isDerivedFresh(thumbnailStats, requestedFile)) {
                 if (handleHttpCache(event, thumbnailStats as any, false)) {
                     return
                 }

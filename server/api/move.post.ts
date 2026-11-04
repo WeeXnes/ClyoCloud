@@ -53,6 +53,7 @@ export default defineEventHandler(async (event) => {
 
         const results = []
 
+        const changedPaths: string[] = []
         for (const itemPath of paths) {
             const oldFullPath = path.resolve(path.join(userStoragePath, itemPath))
             const itemName = path.basename(oldFullPath)
@@ -96,6 +97,7 @@ export default defineEventHandler(async (event) => {
             try {
                 // Rename the file/folder
                 await fs.rename(oldFullPath, newFullPath)
+                changedPaths.push(oldFullPath, newFullPath)
 
                 const relativeOldPath = path.relative(userStoragePath, oldFullPath)
                 const relativeNewPath = path.relative(userStoragePath, newFullPath)
@@ -131,7 +133,7 @@ export default defineEventHandler(async (event) => {
             await moveInWallpapers(event.context.user.name, successfulMoves, destinationPath)
         }
 
-        clearUserCache(event.context.user.name)
+        clearUserCache(event.context.user.name, changedPaths)
 
         return { success: true, results }
     } catch (error: any) {

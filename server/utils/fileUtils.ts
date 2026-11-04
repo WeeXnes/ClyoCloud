@@ -1,74 +1,198 @@
 import fs from 'fs/promises'
 import path from 'path'
 
+import { clearMediaCache } from './mediaCache'
+
+const SIZE_CACHE_TTL = 30 * 60 * 1000 // 30 minutes cache for dir sizes
+const SIZE_CACHE_MAX_ENTRIES = 20000
+// Disk work for size scans is capped so a big scan never starves other requests of the libuv threadpool
+const SIZE_SCAN_CONCURRENCY = 8
+
 const sizeCache = new Map<string, { size: number; timestamp: number }>()
-const CACHE_TTL = 30 * 60 * 1000 // 30 minutes cache for dir sizes
+const sizeInflight = new Map<string, Promise<number>>()
+// Bumped on every invalidation; a scan only caches its result if no invalidation hit its user meanwhile
+const userEpochs = new Map<string, number>()
 
-export async function getDirSize(dirPath: string): Promise<number> {
-    const cached = sizeCache.get(dirPath)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        return cached.size
+/**
+ * Runs at most `max` tasks at once; the rest wait in FIFO order.
+ */
+export function createLimiter(max: number) {
+    let active = 0
+    const queue: Array<() => void> = []
+    return async function limit<T>(task: () => Promise<T>): Promise<T> {
+        if (active >= max) {
+            await new Promise<void>(resolve => queue.push(resolve))
+        } else {
+            active++
+        }
+        try {
+            return await task()
+        } finally {
+            const next = queue.shift()
+            if (next) next() // hand the slot over directly
+            else active--
+        }
     }
+}
 
-    let totalSize = 0
+const limitFs = createLimiter(SIZE_SCAN_CONCURRENCY)
+
+function storageRoot(): string | null {
     try {
-        const files = await fs.readdir(dirPath, { withFileTypes: true })
-        const sizes = await Promise.all(files.map(async (file) => {
-            const filePath = path.join(dirPath, file.name)
-            if (file.isDirectory()) {
-                return await getDirSize(filePath)
-            } else if (file.isFile()) {
-                const stats = await fs.stat(filePath)
-                return stats.size
-            }
-            return 0
-        }))
-        totalSize = sizes.reduce((a, b) => a + b, 0)
-        sizeCache.set(dirPath, { size: totalSize, timestamp: Date.now() })
-    } catch (err) {}
-    return totalSize
+        const root = useRuntimeConfig().storagePath
+        return root ? path.resolve(root) : null
+    } catch {
+        return null
+    }
+}
+
+/** The user directory a path belongs to, used to scope invalidation epochs. */
+function epochKeyFor(resolvedPath: string): string {
+    const root = storageRoot()
+    if (!root) return ''
+    const relative = path.relative(root, resolvedPath)
+    if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return ''
+    return path.join(root, relative.split(path.sep)[0])
+}
+
+function bumpEpoch(key: string) {
+    userEpochs.set(key, (userEpochs.get(key) ?? 0) + 1)
 }
 
 /**
- * Force clear the directory size cache for a specific path (useful when files are added/deleted)
+ * Changes every time this user's files are invalidated. Lets other caches tell
+ * whether a value they computed earlier may be out of date.
+ */
+export function getUserCacheEpoch(username: string): number {
+    const root = storageRoot()
+    const key = root ? path.join(root, username) : ''
+    return (userEpochs.get(key) ?? 0) + (key ? userEpochs.get('') ?? 0 : 0)
+}
+
+function setSizeCache(key: string, size: number) {
+    sizeCache.delete(key) // re-insert so Map order stays oldest-first
+    if (sizeCache.size >= SIZE_CACHE_MAX_ENTRIES) {
+        const now = Date.now()
+        for (const [k, v] of sizeCache) {
+            if (now - v.timestamp >= SIZE_CACHE_TTL) sizeCache.delete(k)
+        }
+        while (sizeCache.size >= SIZE_CACHE_MAX_ENTRIES) {
+            sizeCache.delete(sizeCache.keys().next().value as string)
+        }
+    }
+    sizeCache.set(key, { size, timestamp: Date.now() })
+}
+
+async function computeDirSize(key: string): Promise<number> {
+    const epochKey = epochKeyFor(key)
+    const startEpoch = userEpochs.get(epochKey) ?? 0
+
+    let entries
+    try {
+        entries = await limitFs(() => fs.readdir(key, { withFileTypes: true }))
+    } catch {
+        return 0
+    }
+
+    const sizes = await Promise.all(entries.map(async (entry) => {
+        const entryPath = path.join(key, entry.name)
+        if (entry.isDirectory()) {
+            return getDirSize(entryPath)
+        }
+        if (entry.isFile()) {
+            try {
+                return (await limitFs(() => fs.stat(entryPath))).size
+            } catch {
+                return 0 // removed while scanning
+            }
+        }
+        return 0
+    }))
+    const total = sizes.reduce((a, b) => a + b, 0)
+
+    if ((userEpochs.get(epochKey) ?? 0) === startEpoch) {
+        setSizeCache(key, total)
+    }
+    return total
+}
+
+/**
+ * Total size of a directory tree. Results are cached per directory, concurrent
+ * calls for the same directory share one scan, and disk access is rate-limited.
+ */
+export function getDirSize(dirPath: string): Promise<number> {
+    const key = path.resolve(dirPath)
+    const cached = sizeCache.get(key)
+    if (cached && Date.now() - cached.timestamp < SIZE_CACHE_TTL) {
+        return Promise.resolve(cached.size)
+    }
+
+    const inflight = sizeInflight.get(key)
+    if (inflight) return inflight
+
+    const scan = computeDirSize(key).finally(() => {
+        if (sizeInflight.get(key) === scan) sizeInflight.delete(key)
+    })
+    sizeInflight.set(key, scan)
+    return scan
+}
+
+function dropSizeEntries(predicate: (key: string) => boolean) {
+    for (const key of sizeCache.keys()) {
+        if (predicate(key)) sizeCache.delete(key)
+    }
+    // New callers must not join a scan that started before the change
+    for (const key of sizeInflight.keys()) {
+        if (predicate(key)) sizeInflight.delete(key)
+    }
+}
+
+/**
+ * Force clear the directory size cache for a path (useful when files are added/deleted):
+ * the path itself, everything below it, and every parent directory.
  */
 export function clearSizeCache(dirPath: string) {
-    sizeCache.delete(dirPath)
-    // Also clear parent caches as their sizes are now invalid
-    const parentPath = path.dirname(dirPath)
-    if (parentPath && parentPath !== dirPath) {
-        clearSizeCache(parentPath)
+    const target = path.resolve(dirPath)
+    const ancestors = new Set<string>()
+    for (let p = target; ; p = path.dirname(p)) {
+        ancestors.add(p)
+        if (path.dirname(p) === p) break
     }
+    dropSizeEntries(key => ancestors.has(key) || key.startsWith(target + path.sep))
+    bumpEpoch(epochKeyFor(target))
 }
 
-export const storageMapCache = new Map<string, { data: any; timestamp: number }>()
-
 /**
- * Clear sizeCache and storageMapCache for a specific user.
+ * Invalidate a user's cached sizes, storage summaries and media scans.
+ * Call it after anything changes in the user's storage. Pass the absolute paths that
+ * changed to keep the rest of the size cache (only those paths, what is inside them and
+ * their parent folders get rescanned); without them the user's whole cache is dropped.
  */
-export function clearUserCache(username: string) {
-    try {
-        const config = useRuntimeConfig()
-        const userStoragePath = path.resolve(path.join(config.storagePath, username))
-        
-        for (const key of sizeCache.keys()) {
-            const resolvedKey = path.resolve(key)
-            if (resolvedKey === userStoragePath || resolvedKey.startsWith(userStoragePath + path.sep)) {
-                sizeCache.delete(key)
-            }
+export function clearUserCache(username: string, changedPaths?: string[]) {
+    const root = storageRoot()
+    if (root) {
+        const userStoragePath = path.join(root, username)
+        const scoped = changedPaths?.map(p => path.resolve(p)).filter(p => isPathWithin(userStoragePath, p))
+        if (scoped && scoped.length > 0) {
+            for (const changed of scoped) clearSizeCache(changed)
+        } else {
+            dropSizeEntries(key => key === userStoragePath || key.startsWith(userStoragePath + path.sep))
         }
-    } catch (e) {
+        bumpEpoch(userStoragePath)
+    } else {
         // Fallback if useRuntimeConfig is not available
-        for (const key of sizeCache.keys()) {
-            const parts = key.split(path.sep)
-            if (parts.includes(username)) {
-                sizeCache.delete(key)
-            }
-        }
+        dropSizeEntries(key => key.split(path.sep).includes(username))
+        bumpEpoch('')
     }
-    
-    // Clear storage map cache
-    storageMapCache.delete(username)
+
+    clearMediaCache(username)
+}
+
+/** Test helper: forget every cached size. */
+export function resetSizeCacheForTests() {
+    sizeCache.clear()
+    sizeInflight.clear()
+    userEpochs.clear()
 }
 
 import type { File, FileMeta } from '~/types/File'

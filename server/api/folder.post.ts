@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
 
     await logActivity(event.context.user.name, 'MKDIR', relativePath, undefined, event)
 
-    clearUserCache(event.context.user.name)
+    clearUserCache(event.context.user.name, [fullPath])
 
     return { success: true }
   } catch (error) {
