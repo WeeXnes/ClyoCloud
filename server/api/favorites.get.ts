@@ -1,90 +1,25 @@
-import { defineEventHandler, createError } from 'h3'
-import fs from 'fs/promises'
-import path from 'path'
-import type { File, FileMeta } from '~/types/File'
-import { readFavoritesIndex, saveFavoritesIndex, type FavoriteEntry } from '~/server/utils/favorites'
-import { getDirSize } from '~/server/utils/fileUtils'
+import { defineEventHandler, getQuery, createError } from 'h3'
+import type { File } from '~/types/File'
+import { favoritesIndex } from '~/server/utils/favorites'
+import { listIndexedFiles } from '~/server/utils/indexedFiles'
 
-import { isPathWithin } from '~/server/utils/fileUtils'
-
+/**
+ * The user's favorites, checked against the disk. `?sync=true` rescans the storage first,
+ * picking up files marked or removed outside ClyoCloud.
+ */
 export default defineEventHandler(async (event): Promise<File[]> => {
-    try {
-        if (!event.context.user) {
-            throw createError({
-                statusCode: 401,
-                statusMessage: 'Unauthorized',
-            })
-        }
-
-        const username = event.context.user.name
-        const config = useRuntimeConfig()
-        const userStoragePath = path.join(config.storagePath, username)
-
-        let favorites = await readFavoritesIndex(username)
-
-        if (favorites === null) {
-            // No index yet: build it with one full scan. An empty result is saved too,
-            // so a user without any entries doesn't trigger a full scan on every visit.
-            favorites = await performFullScan(userStoragePath)
-            await saveFavoritesIndex(username, favorites)
-        }
-
-        const favoriteFiles: File[] = []
-
-        // Process favorites from index
-        await Promise.all(favorites.map(async (entry) => {
-            const fullPath = path.join(userStoragePath, entry.path)
-            if (!isPathWithin(userStoragePath, fullPath)) return
-
-            const baseName = path.basename(fullPath)
-            const dirName = path.dirname(fullPath)
-            let cloudInfoPath = `${fullPath}.cloudinfo`
-
-            try {
-                const stats = await fs.stat(fullPath)
-                let cloudInfoContent = ''
-                try {
-                    cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8')
-                } catch (readErr) {
-                    if (baseName.length > 100) {
-                        const legacyPath = path.join(dirName, `${baseName.substring(0, 100)}.cloudinfo`)
-                        cloudInfoContent = await fs.readFile(legacyPath, 'utf-8')
-                    } else {
-                        throw readErr
-                    }
-                }
-                
-                const meta = JSON.parse(cloudInfoContent) as FileMeta
-                
-                // Final check to ensure it's still a favorite and exists
-                if (meta.isFavourite) {
-                    let size = stats.size
-                    if (entry.isFolder) {
-                        size = await getDirSize(fullPath)
-                    }
-
-                    favoriteFiles.push({
-                        name: entry.path,
-                        size,
-                        type: path.extname(baseName),
-                        lastModified: stats.mtime.getTime(),
-                        isFolder: entry.isFolder,
-                        meta,
-                    })
-                }
-            } catch (err) {
-                // File or meta might have been deleted, ignore
-            }
-        }))
-
-        favoriteFiles.sort((a, b) => {
-            if (a.isFolder !== b.isFolder) {
-                return a.isFolder ? -1 : 1
-            }
-            return a.name.localeCompare(b.name)
+    if (!event.context.user?.name) {
+        throw createError({
+            statusCode: 401,
+            statusMessage: 'Unauthorized',
         })
+    }
 
-        return favoriteFiles
+    const query = getQuery(event)
+    const sync = query.sync === 'true' || query.sync === '1'
+
+    try {
+        return await listIndexedFiles(event.context.user.name, favoritesIndex, meta => meta.isFavourite, { sync })
     } catch (error) {
         console.error('Error fetching favorites:', error)
         throw createError({
@@ -93,33 +28,3 @@ export default defineEventHandler(async (event): Promise<File[]> => {
         })
     }
 })
-
-async function performFullScan(userStoragePath: string): Promise<FavoriteEntry[]> {
-    const favorites: FavoriteEntry[] = []
-
-    async function scan(currentPath: string, relativePath: string) {
-        const entries = await fs.readdir(currentPath, { withFileTypes: true })
-        for (const entry of entries) {
-            if (entry.name.startsWith('.') || entry.name.endsWith('.cloudinfo')) continue
-
-            const fullPath = path.join(currentPath, entry.name)
-            const relPath = relativePath ? `${relativePath}/${entry.name}` : entry.name
-            const cloudInfoPath = `${fullPath}.cloudinfo`
-
-            try {
-                const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8')
-                const meta = JSON.parse(cloudInfoContent)
-                if (meta.isFavourite) {
-                    favorites.push({ path: relPath, isFolder: entry.isDirectory() })
-                }
-            } catch {}
-
-            if (entry.isDirectory()) {
-                await scan(fullPath, relPath)
-            }
-        }
-    }
-
-    await scan(userStoragePath, '')
-    return favorites
-}

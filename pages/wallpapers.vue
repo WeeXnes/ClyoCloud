@@ -16,16 +16,22 @@ const isGridView = ref(true)
 const sortOption = ref<'name' | 'size' | 'date'>('name')
 const hoveredFile = ref<string | null>(null)
 
-const fetchWallpapers = async () => {
-  isLoading.value = true
+const isSyncing = ref(false)
+
+// sync = true rescans the storage first, picking up files changed outside ClyoCloud
+const fetchWallpapers = async (sync = false) => {
+  if (sync) isSyncing.value = true
+  else isLoading.value = true
   try {
-    const data = await $fetch<File[]>('/api/wallpapers')
+    const data = await $fetch<File[]>(sync ? '/api/wallpapers?sync=true' : '/api/wallpapers')
     files.value = data
+    if (sync) createNotification('Wallpapers are up to date', NotificationType.SUCCESS)
   } catch (err) {
     console.error('Failed to fetch wallpapers:', err)
-    createNotification('Failed to load wallpapers', NotificationType.ERROR)
+    createNotification(sync ? 'Could not sync wallpapers' : 'Failed to load wallpapers', NotificationType.ERROR)
   } finally {
     isLoading.value = false
+    isSyncing.value = false
   }
 }
 
@@ -99,7 +105,7 @@ const removeWallpaper = async (file: File) => {
   }
 }
 
-onMounted(fetchWallpapers)
+onMounted(() => fetchWallpapers())
 </script>
 
 <template>
@@ -138,6 +144,16 @@ onMounted(fetchWallpapers)
              </div>
 
              <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+               <button
+                 class="btn btn-xs md:btn-sm gap-1.5"
+                 :disabled="isLoading || isSyncing"
+                 title="Rescan your storage for changes made outside ClyoCloud"
+                 @click="fetchWallpapers(true)"
+               >
+                 <Icon name="mdi:refresh" class="w-4 h-4" :class="{ 'animate-spin': isSyncing }" />
+                 <span class="hidden sm:inline">Sync</span>
+               </button>
+
                <!-- Sort Dropdown -->
                <div class="dropdown dropdown-end">
                  <button tabindex="0" class="btn btn-xs md:btn-sm gap-1.5">

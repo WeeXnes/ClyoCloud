@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.2] - 2026-11-04
+
+### Fixed
+- **Changes made outside ClyoCloud are picked up**: ClyoCloud now watches the storage folder. Files added, deleted, renamed or re-tagged another way (SMB, a file manager, rsync, scripts, a hand-edited `.cloudinfo`) show up correctly in sizes, tags, collections, Wallpapers and Favorites within a couple of seconds. A full rescan also runs at startup and every hour (every 10 minutes when watching is not possible, for example on network mounts or when the inotify limit is reached) as a safety net.
+- **Wallpapers and Favorites never show stale entries**: entries whose file is gone, moved out of reach or no longer marked are removed from `.wallpapers.json` / `.favorites.json` when the list is read, so they don't come back in the companion apps either. Files marked outside ClyoCloud are added by the rescan. A wrong folder/file flag is corrected.
+- **Sync button** on Wallpapers and Favorites rescans your storage on demand (`?sync=true` on the API).
+- Two quick metadata changes to the same file (for example a tag edit and a wallpaper toggle) could overwrite each other, losing one of them. Sidecars are now written under a lock and atomically.
+- Un-starring a folder, or removing it from Wallpapers, also dropped every starred or wallpaper file inside it from the list.
+- The tag list, wallpapers and favourites could disagree with a file's `.cloudinfo` when saving it failed halfway: the lists were updated before the file was written.
+- Removing a file from Wallpapers now also removes its automatic "Wallpaper" tag, so the badge doesn't stay behind.
+- **Settings → rebuild cache** rescans only your own storage; an admin rescans everyone.
+
+### Added
+- `CLYO_WATCH_STORAGE=false` turns off the storage watcher; `CLYO_RESCAN_MINUTES` sets how often the full rescan runs.
+
 ## [2.21.1] - 2026-11-04
 
 ### Changed

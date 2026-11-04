@@ -5,8 +5,7 @@ import mime from 'mime-types'
 import wallpaperV2Template from '../workflows/wallpaper_v2_2880x1800.json'
 import { isPathWithin, isTrashPath, clearUserCache } from './fileUtils'
 import { logActivity } from './activityLogger'
-import { addToWallpapers } from './wallpapers'
-import { updateFileInCache } from './tagCache'
+import { updateFileMeta } from './fileMeta'
 import { checkDiskHeadroom, checkUserQuota } from './storageQuota'
 
 export type ScenePreset = 'outdoor' | 'indoor' | 'studio'
@@ -553,14 +552,11 @@ async function runJobAsync(
             { name: modelTag, color: '#6366F1' }
         ]
     }
-    await fs.writeFile(`${candidatePath}.cloudinfo`, JSON.stringify(meta, null, 2), 'utf-8')
-
     const relativeOutputPath = path.relative(userStoragePath, candidatePath).replace(/\\/g, '/')
 
-    // Make it show up in the Wallpapers tab, companion apps and collections right away
-    await addToWallpapers(job.username, relativeOutputPath, false)
-    await updateFileInCache(job.username, relativeOutputPath, meta)
-    clearUserCache(job.username)
+    // Writes the sidecar and puts the file in Wallpapers, collections and companion apps right away
+    await updateFileMeta(job.username, relativeOutputPath, (current) => Object.assign(current, meta))
+    clearUserCache(job.username, [candidatePath])
 
     await logActivity(
         job.username,

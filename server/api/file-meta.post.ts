@@ -1,11 +1,9 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
-import type { FileMeta } from '~/types/File'
-import { addToFavorites, removeFromFavorites } from '~/server/utils/favorites'
-import { addToWallpapers, removeFromWallpapers } from '~/server/utils/wallpapers'
-
 import { isPathWithin, isTrashPath } from '~/server/utils/fileUtils'
+import { updateFileMeta } from '~/server/utils/fileMeta'
+import { logActivity } from '~/server/utils/activityLogger'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -16,12 +14,13 @@ export default defineEventHandler(async (event) => {
             })
         }
 
+        const username = event.context.user.name
         const config = useRuntimeConfig()
-        const userStoragePath = path.resolve(path.join(config.storagePath, event.context.user.name))
+        const userStoragePath = path.resolve(path.join(config.storagePath, username))
         const body = await readBody(event)
         const { fullPath, description, tags, isPublic, isFavourite, previewImage, isWallpaper, isPhotoWidget } = body
 
-        if (!fullPath) {
+        if (!fullPath || typeof fullPath !== 'string') {
             throw createError({
                 statusCode: 400,
                 statusMessage: 'Missing fullPath',
@@ -29,71 +28,55 @@ export default defineEventHandler(async (event) => {
         }
 
         const filePath = path.resolve(path.join(userStoragePath, fullPath))
-        if (!isPathWithin(userStoragePath, filePath) || isTrashPath(userStoragePath, filePath)) {
+        if (!isPathWithin(userStoragePath, filePath) || isTrashPath(userStoragePath, filePath) || filePath === userStoragePath) {
             throw createError({
                 statusCode: 403,
                 statusMessage: 'Access denied',
             })
         }
 
-        await fs.access(filePath)
-        const cloudInfoPath = `${filePath}.cloudinfo`
-        let meta: FileMeta = { tags: [] }
-
         try {
-            const cloudInfoContent = await fs.readFile(cloudInfoPath, 'utf-8')
-            meta = JSON.parse(cloudInfoContent) as FileMeta
+            await fs.access(filePath)
         } catch {
-            // New meta
+            throw createError({
+                statusCode: 404,
+                statusMessage: 'File not found',
+            })
         }
 
-        if (description !== undefined) meta.description = description
+        const relativePath = path.relative(userStoragePath, filePath)
+        const meta = await updateFileMeta(username, relativePath, (meta) => {
+            if (description !== undefined) meta.description = description
+            if (previewImage !== undefined) meta.previewImage = previewImage
+            if (tags !== undefined) meta.tags = Array.isArray(tags) ? tags : []
+            if (isPublic !== undefined) meta.isPublic = isPublic
+            if (isFavourite !== undefined) meta.isFavourite = isFavourite
+            if (isWallpaper !== undefined) {
+                meta.isWallpaper = isWallpaper
+                // The "Wallpaper" badge goes with the flag, unless this same request sets the tags itself
+                if (!isWallpaper && tags === undefined) {
+                    meta.tags = (meta.tags || []).filter(t => String(t?.name).toLowerCase() !== 'wallpaper')
+                }
+            }
+            if (isPhotoWidget !== undefined) meta.isPhotoWidget = isPhotoWidget
+        })
+
         if (previewImage !== undefined) {
-            meta.previewImage = previewImage
-            await logActivity(event.context.user.name, 'FOLDER_ICON', fullPath, previewImage ? `Set preview image to ${previewImage}` : 'Reset preview image', event)
+            await logActivity(username, 'FOLDER_ICON', fullPath, previewImage ? `Set preview image to ${previewImage}` : 'Reset preview image', event)
         }
-        if (tags !== undefined) {
-            meta.tags = tags
-            await logActivity(event.context.user.name, 'TAG', fullPath, `Updated tags`, event)
-        }
+        if (tags !== undefined) await logActivity(username, 'TAG', fullPath, 'Updated tags', event)
         if (isPublic !== undefined) {
-            meta.isPublic = isPublic
-            await logActivity(event.context.user.name, 'SHARE', fullPath, isPublic ? 'Enabled public access' : 'Disabled public access', event)
+            await logActivity(username, 'SHARE', fullPath, isPublic ? 'Enabled public access' : 'Disabled public access', event)
         }
         if (isFavourite !== undefined) {
-            meta.isFavourite = isFavourite
-            await logActivity(event.context.user.name, 'FAVORITE', fullPath, isFavourite ? 'Added to favorites' : 'Removed from favorites', event)
-            
-            // Update favorites index
-            if (isFavourite) {
-                const stats = await fs.stat(filePath)
-                await addToFavorites(event.context.user.name, fullPath, stats.isDirectory())
-            } else {
-                await removeFromFavorites(event.context.user.name, fullPath)
-            }
+            await logActivity(username, 'FAVORITE', fullPath, isFavourite ? 'Added to favorites' : 'Removed from favorites', event)
         }
         if (isWallpaper !== undefined) {
-            meta.isWallpaper = isWallpaper
-            await logActivity(event.context.user.name, 'WALLPAPER', fullPath, isWallpaper ? 'Added to wallpapers' : 'Removed from wallpapers', event)
-            
-            // Update wallpapers index
-            if (isWallpaper) {
-                const stats = await fs.stat(filePath)
-                await addToWallpapers(event.context.user.name, fullPath, stats.isDirectory())
-            } else {
-                await removeFromWallpapers(event.context.user.name, fullPath)
-            }
+            await logActivity(username, 'WALLPAPER', fullPath, isWallpaper ? 'Added to wallpapers' : 'Removed from wallpapers', event)
         }
         if (isPhotoWidget !== undefined) {
-            meta.isPhotoWidget = isPhotoWidget
-            await logActivity(event.context.user.name, 'PHOTO_WIDGET', fullPath, isPhotoWidget ? 'Added to photo widgets' : 'Removed from photo widgets', event)
+            await logActivity(username, 'PHOTO_WIDGET', fullPath, isPhotoWidget ? 'Added to photo widgets' : 'Removed from photo widgets', event)
         }
-
-        await fs.writeFile(cloudInfoPath, JSON.stringify(meta, null, 2), 'utf-8')
-
-        // Update tag cache and clear media cache to force a fresh scan
-        await updateFileInCache(event.context.user.name, fullPath, meta)
-        clearMediaCache(event.context.user.name)
 
         return { success: true, meta }
     } catch (error: any) {

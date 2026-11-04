@@ -751,16 +751,23 @@ onUnmounted(() => {
 
 const isLoading = ref(true)
 
-const fetchFavorites = async () => {
-  isLoading.value = true
+const isSyncing = ref(false)
+
+// sync = true rescans the storage first, picking up files changed outside ClyoCloud
+const fetchFavorites = async (sync = false) => {
+  if (sync) isSyncing.value = true
+  else isLoading.value = true
   try {
-    const response = await fetch('/api/favorites', { credentials: 'include' })
+    const response = await fetch(sync ? '/api/favorites?sync=true' : '/api/favorites', { credentials: 'include' })
     if (!response.ok) throw new Error('Failed to fetch favorites')
     files.value = await response.json()
+    if (sync) createNotification('Favorites are up to date', NotificationType.SUCCESS)
   } catch (error) {
     console.error('Error fetching favorites:', error)
+    if (sync) createNotification('Could not sync favorites', NotificationType.ERROR)
   } finally {
     isLoading.value = false
+    isSyncing.value = false
   }
 }
 
@@ -1125,6 +1132,15 @@ const getPreviewUrl = (fullPath: string) => {
              </div>
 
              <div class="flex items-center gap-1.5 md:gap-2 ml-auto md:ml-0">
+               <button
+                 class="btn btn-xs md:btn-sm gap-1.5"
+                 :disabled="isLoading || isSyncing"
+                 title="Rescan your storage for changes made outside ClyoCloud"
+                 @click="fetchFavorites(true)"
+               >
+                 <Icon name="mdi:refresh" class="w-4 h-4" :class="{ 'animate-spin': isSyncing }" />
+                 <span class="hidden sm:inline">Sync</span>
+               </button>
                <div class="dropdown dropdown-end">
                  <button tabindex="0" class="btn btn-xs md:btn-sm gap-2">
                     <Icon name="mdi:sort-variant" class="w-4 h-4" />

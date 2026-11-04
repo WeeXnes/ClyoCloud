@@ -6,6 +6,7 @@ import chalk from "chalk";
 import readline from "readline";
 import bcrypt from "bcryptjs";
 import { setJwtSecret } from "~/server/utils/jwtConfig";
+import { startStorageWatcher, stopStorageWatcher } from "~/server/utils/storageWatcher";
 
 const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
@@ -105,7 +106,10 @@ export default defineNitroPlugin(async (nitroApp) => {
         checkUserTagsFile(userTagsPath, username)
     }
 
-    // Build the tag cache in the background
+    // Watch for changes made outside ClyoCloud first, so nothing is missed while the
+    // startup rescan runs; then rebuild tags, wallpapers and favourites from the sidecars
+    startStorageWatcher();
+    nitroApp.hooks.hook('close', () => stopStorageWatcher());
     rebuildTagCache();
 });
 

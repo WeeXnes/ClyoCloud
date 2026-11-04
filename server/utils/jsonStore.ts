@@ -23,10 +23,10 @@ export function withFileLock<T>(filePath: string, task: () => Promise<T>): Promi
 
 /**
  * Writes via a synced temp file and rename, so a crash never leaves a truncated file behind.
- * Keeps the existing file's mode; new files are owner-only.
+ * Keeps the existing file's mode; new files get `newFileMode` (owner-only by default).
  */
-export async function writeFileAtomic(filePath: string, data: string): Promise<void> {
-    let mode = 0o600
+export async function writeFileAtomic(filePath: string, data: string, newFileMode = 0o600): Promise<void> {
+    let mode = newFileMode
     try {
         mode = (await fs.stat(filePath)).mode & 0o777
     } catch {

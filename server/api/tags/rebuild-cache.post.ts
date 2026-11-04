@@ -1,24 +1,31 @@
 import { defineEventHandler, createError } from 'h3'
-import { rebuildTagCache } from '~/server/utils/tagCache'
+import { reconcileUser } from '~/server/utils/tagCache'
+import { clearUserCache } from '~/server/utils/fileUtils'
+import { rescanAllUsers } from '~/server/utils/storageWatcher'
 
+/**
+ * Rescans storage and rebuilds every cache derived from it: tags, wallpapers, favourites and sizes.
+ * Users rescan their own storage; an admin rescans everyone.
+ */
 export default defineEventHandler(async (event) => {
+    const user = event.context.user
+    if (!user?.name) {
+        throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+    }
+
     try {
-        if (!event.context.user || !event.context.user.name) {
-            throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
+        if (user.isAdmin) {
+            await rescanAllUsers()
+        } else {
+            clearUserCache(user.name)
+            await reconcileUser(user.name)
         }
-
-        // Only allow admins or all users? For now, any authenticated user can trigger a rebuild
-        // since it's a global cache, but maybe it should be restricted.
-        // Assuming any user can refresh for now.
-        
-        await rebuildTagCache();
-
-        return { success: true, message: 'Tag cache rebuild started' };
+        return { success: true, message: 'Caches rebuilt' }
     } catch (error: any) {
-        console.error('Error triggering tag cache rebuild:', error);
+        console.error('Error rebuilding caches:', error)
         throw createError({
             statusCode: error.statusCode || 500,
-            statusMessage: error.statusMessage || 'Could not rebuild tag cache',
-        });
+            statusMessage: error.statusMessage || 'Could not rebuild caches',
+        })
     }
-});
+})
