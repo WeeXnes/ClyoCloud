@@ -67,6 +67,10 @@ const maxDuplicateResults = ref(50)
 const selectedShortsPaths = ref<string[]>([])
 const excludedMediaPaths = ref<string[]>([])
 const theme = useState<string>('currentTheme')
+const themeOptions = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+]
 const isSavingSettings = ref(false)
 const isRebuildingCache = ref(false)
 
@@ -357,7 +361,7 @@ async function fetchUserSettings() {
       serverMaxConcurrency.value = data.serverMaxConcurrency || 8
       selectedShortsPaths.value = data.selectedShortsPaths || []
       excludedMediaPaths.value = data.excludedMediaPaths || []
-      theme.value = data.theme || 'onedev'
+      theme.value = data.theme === 'light' ? 'light' : 'dark'
       maxDuplicateResults.value = data.maxDuplicateResults || 50
 
     }
@@ -626,21 +630,18 @@ async function logout() {
 </script>
 
 <<template>
-  <div class="min-h-screen bg-base-300/40 flex flex-col font-sans text-base-content/90">
-    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
-      <div class="w-full px-6 py-4">
+  <div class="min-h-screen bg-base-100 flex flex-col font-sans text-fg">
+    <header class="page-bar">
+      <div class="page-wrap py-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="Open navigation">
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Icon name="mdi:cog-outline" class="text-primary w-5 h-5" />
-              </div>
               <div>
-                <h1 class="text-base font-extrabold tracking-tight">System Settings</h1>
-                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">Configuration</p>
+                <h1 class="text-[15px] font-medium tracking-section text-fg leading-tight">System Settings</h1>
+                <p class="hidden sm:block text-[13px] text-fg-3 leading-tight">Configuration</p>
               </div>
             </div>
           </div>
@@ -648,173 +649,152 @@ async function logout() {
       </div>
     </header>
 
-    <main class="flex-1 w-full max-w-[800px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <main class="flex-1 w-full page-wrap py-12 space-y-8 *:max-w-form">
       
       <!-- Category Navigation Menu (Shown if activeCategory is null) -->
-      <div v-if="activeCategory === null" class="space-y-6">
+      <div v-if="activeCategory === null" class="space-y-10">
         <div class="flex flex-col gap-1">
-          <h2 class="text-xl font-black tracking-tight">Cloud Control Panel</h2>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Select a settings category below to manage your cloud environment</p>
+          <h2 class="page-title">Settings</h2>
+          <p class="text-fg-2 mt-1">Choose a category.</p>
         </div>
 
-        <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm divide-y divide-base-content/5">
+        <div class="bg-base-100 border border-line rounded-xl overflow-hidden divide-y divide-line">
           <!-- 1. Security & Authentication -->
           <button 
             @click="activeCategory = 'security'"
-            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+            class="w-full flex items-center justify-between px-4 py-4 hover:bg-surface-2 transition-colors text-left group"
           >
             <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/10 group-hover:scale-105 transition-transform duration-300">
-                <Icon name="mdi:shield-lock-outline" class="w-5 h-5" />
-              </div>
               <div>
-                <h3 class="font-extrabold text-sm tracking-tight text-base-content">Security & Access</h3>
-                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Update credentials, configure 2FA, session control</p>
+                <h3 class="text-[15px] text-fg">Security & Access</h3>
+                <p class="text-[13px] text-fg-3 mt-0.5">Update credentials, configure 2FA, session control</p>
               </div>
             </div>
-            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+            <Icon name="mdi:arrow-right" class="w-4 h-4 text-fg-3 group-hover:text-fg transition-colors" />
           </button>
 
           <!-- 2. System & Storage -->
           <button 
             @click="activeCategory = 'system'"
-            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+            class="w-full flex items-center justify-between px-4 py-4 hover:bg-surface-2 transition-colors text-left group"
           >
             <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/10 group-hover:scale-105 transition-transform duration-300">
-                <Icon name="mdi:server-network" class="w-5 h-5" />
-              </div>
               <div>
-                <h3 class="font-extrabold text-sm tracking-tight text-base-content">System & Storage</h3>
-                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Download paths, storage scan, maintenance</p>
+                <h3 class="text-[15px] text-fg">System & Storage</h3>
+                <p class="text-[13px] text-fg-3 mt-0.5">Download paths, storage scan, maintenance</p>
               </div>
             </div>
-            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+            <Icon name="mdi:arrow-right" class="w-4 h-4 text-fg-3 group-hover:text-fg transition-colors" />
           </button>
 
           <!-- 3. Visuals & Identity -->
           <button 
             @click="activeCategory = 'appearance'"
-            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+            class="w-full flex items-center justify-between px-4 py-4 hover:bg-surface-2 transition-colors text-left group"
           >
             <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success border border-success/10 group-hover:scale-105 transition-transform duration-300">
-                <Icon name="mdi:palette-outline" class="w-5 h-5" />
-              </div>
               <div>
-                <h3 class="font-extrabold text-sm tracking-tight text-base-content">Appearance & Tags</h3>
-                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Visual themes, predefined tag indexing</p>
+                <h3 class="text-[15px] text-fg">Appearance & Tags</h3>
+                <p class="text-[13px] text-fg-3 mt-0.5">Visual themes, predefined tag indexing</p>
               </div>
             </div>
-            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+            <Icon name="mdi:arrow-right" class="w-4 h-4 text-fg-3 group-hover:text-fg transition-colors" />
           </button>
 
           <!-- 4. Media Processing -->
           <button 
             @click="activeCategory = 'previews'"
-            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+            class="w-full flex items-center justify-between px-4 py-4 hover:bg-surface-2 transition-colors text-left group"
           >
             <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/10 group-hover:scale-105 transition-transform duration-300">
-                <Icon name="mdi:movie-filter-outline" class="w-5 h-5" />
-              </div>
               <div>
-                <h3 class="font-extrabold text-sm tracking-tight text-base-content">Media Processing</h3>
-                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Previews generation, slide duration, processing threads</p>
+                <h3 class="text-[15px] text-fg">Media Processing</h3>
+                <p class="text-[13px] text-fg-3 mt-0.5">Previews generation, slide duration, processing threads</p>
               </div>
             </div>
-            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+            <Icon name="mdi:arrow-right" class="w-4 h-4 text-fg-3 group-hover:text-fg transition-colors" />
           </button>
 
           <!-- 5. Directory Rules -->
           <button 
             @click="activeCategory = 'directories'"
-            class="w-full flex items-center justify-between p-5 hover:bg-base-content/5 active:bg-base-content/10 transition-colors text-left group"
+            class="w-full flex items-center justify-between px-4 py-4 hover:bg-surface-2 transition-colors text-left group"
           >
             <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center text-info border border-info/10 group-hover:scale-105 transition-transform duration-300">
-                <Icon name="mdi:folder-outline" class="w-5 h-5" />
-              </div>
               <div>
-                <h3 class="font-extrabold text-sm tracking-tight text-base-content">Directory Rules</h3>
-                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider mt-0.5">Shorts preferences, folders and exclusions</p>
+                <h3 class="text-[15px] text-fg">Directory Rules</h3>
+                <p class="text-[13px] text-fg-3 mt-0.5">Shorts preferences, folders and exclusions</p>
               </div>
             </div>
-            <Icon name="mdi:chevron-right" class="w-5 h-5 text-base-content/30 group-hover:translate-x-1 transition-transform" />
+            <Icon name="mdi:arrow-right" class="w-4 h-4 text-fg-3 group-hover:text-fg transition-colors" />
           </button>
         </div>
       </div>
 
       <!-- Sub-settings View (Shown if activeCategory is not null) -->
-      <div v-else class="space-y-6 animate-in fade-in duration-200">
+      <div v-else class="space-y-10">
         
         <!-- Back Navigation Bar -->
-        <div class="flex items-center justify-between pb-2 border-b border-base-content/5">
-          <button 
-            @click="activeCategory = null"
-            class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-primary hover:text-primary-focus transition-all group"
-          >
-            <Icon name="mdi:arrow-left" class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            Back to categories
-          </button>
-          <span class="text-[9px] font-bold text-base-content/20 uppercase tracking-widest">Sub-menu Configuration</span>
-        </div>
+        <button
+          @click="activeCategory = null"
+          class="flex items-center gap-2 text-[13px] text-fg-2 hover:text-fg transition-colors"
+        >
+          <Icon name="mdi:arrow-left" class="w-4 h-4" />
+          All settings
+        </button>
 
         <!-- Section Title -->
         <div class="flex flex-col gap-1">
-          <h2 class="text-xl font-black tracking-tight">{{ getCategoryTitle(activeCategory) }}</h2>
-          <p class="text-xs text-base-content/50 font-bold uppercase tracking-wide leading-tight">{{ getCategorySubtitle(activeCategory) }}</p>
+          <h2 class="page-title">{{ getCategoryTitle(activeCategory) }}</h2>
+          <p class="text-fg-2 mt-1">{{ getCategorySubtitle(activeCategory) }}</p>
         </div>
 
         <!-- Sub-setting groups -->
 
         <!-- 1. SECURITY SUB-MENU -->
-        <div v-if="activeCategory === 'security'" class="space-y-6">
+        <div v-if="activeCategory === 'security'" class="space-y-12">
           <!-- Update Password Card -->
-          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+          <div class="border-t border-line pt-8 space-y-4">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
-                <Icon name="mdi:key-outline" class="w-4 h-4" />
-              </div>
-              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Update Credentials</h3>
+              <h3 class="section-title">Update Credentials</h3>
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
               <div class="form-control">
                 <label class="label py-1">
-                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Current Password</span>
+                  <span class="label-text">Current Password</span>
                 </label>
                 <input 
                   v-model="currentPassword" 
                   type="password" 
                   placeholder="Current password" 
-                  class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-10 rounded-xl border-base-content/5 focus:outline-none focus:ring-1 focus:ring-primary/20" 
+                  class="input input-bordered w-full transition font-medium text-xs" 
                 />
               </div>
               <div class="form-control">
                 <label class="label py-1">
-                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">New Secret Key</span>
+                  <span class="label-text">New Secret Key</span>
                 </label>
                 <input 
                   v-model="newPassword" 
                   type="password" 
                   placeholder="Min. 6 characters" 
-                  class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-10 rounded-xl border-base-content/5 focus:outline-none focus:ring-1 focus:ring-primary/20" 
+                  class="input input-bordered w-full transition font-medium text-xs" 
                 />
               </div>
               <div class="form-control">
                 <label class="label py-1">
-                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Confirm Secret Key</span>
+                  <span class="label-text">Confirm Secret Key</span>
                 </label>
                 <input 
                   v-model="confirmPassword" 
                   type="password" 
-                  class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-10 rounded-xl border-base-content/5 focus:outline-none focus:ring-1 focus:ring-primary/20" 
+                  class="input input-bordered w-full transition font-medium text-xs" 
                 />
               </div>
             </div>
             <button 
-              class="btn btn-primary rounded-xl h-10 min-h-0 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest w-full mt-2" 
+              class="btn btn-primary gap-2 w-full mt-2" 
               @click="changePassword" 
               :disabled="isChangingPassword"
             >
@@ -825,59 +805,56 @@ async function logout() {
           </div>
 
           <!-- Two-Factor Authentication Card -->
-          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+          <div class="border-t border-line pt-8 space-y-4">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success border border-success/10">
-                  <Icon name="mdi:shield-lock-outline" class="w-4 h-4" />
-                </div>
-                <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Two-Factor Authentication</h3>
+                <h3 class="section-title">Two-Factor Authentication</h3>
               </div>
-              <div :class="`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${is2faEnabled ? 'bg-success/15 text-success' : 'bg-base-200 text-base-content/30'}`">
+              <div :class="`px-2 py-0.5 rounded text-[11px] uppercase tracking-micro font-mono ${is2faEnabled ? 'bg-surface-2 text-success': 'bg-base-200 text-fg-3'}`">
                 {{ is2faEnabled ? 'Enabled' : 'Disabled' }}
               </div>
             </div>
 
             <div v-if="!is2faEnabled" class="pt-2">
-              <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-4">
+              <p class="text-[11px] text-fg-3 font-medium leading-relaxed mb-4">
                 Require a verification code from your authenticator app to authorize session access.
               </p>
               
               <button 
                 v-if="!show2faSetup"
-                class="btn btn-outline btn-primary rounded-xl h-10 min-h-0 w-full gap-2 font-bold text-[10px] uppercase tracking-widest"
+                class="btn btn-outline btn-primary w-full gap-2"
                 @click="setup2fa"
               >
                 <Icon name="mdi:shield-plus-outline" class="w-4 h-4" />
                 Configure 2FA MFA
               </button>
 
-              <div v-else class="space-y-6 pt-2 animate-in fade-in duration-300">
-                <div class="flex flex-col items-center gap-4 p-4 bg-base-300/40 rounded-xl border border-base-content/5">
-                  <img :src="qrCodeUrl" class="w-36 h-36 rounded-lg shadow-sm border border-base-content/10" alt="2FA QR Code" />
+              <div v-else class="space-y-6 pt-2 duration-150">
+                <div class="flex flex-col items-center gap-4 p-4 bg-base-300 rounded-xl border border-line">
+                  <img :src="qrCodeUrl" class="w-36 h-36 rounded-lg border border-line" alt="2FA QR Code" />
                   <div class="text-center">
-                    <p class="text-[8px] font-bold uppercase tracking-widest text-base-content/30 mb-1">Manual secret key</p>
-                    <code class="text-[10px] font-mono font-black tracking-wider text-base-content/60">{{ totpSecret }}</code>
+                    <p class="text-[11px] uppercase tracking-micro font-mono text-fg-3 mb-1">Manual secret key</p>
+                    <code class="text-[11px] font-mono font-semibold tracking-wider text-fg-2">{{ totpSecret }}</code>
                   </div>
                 </div>
 
                 <div class="form-control">
                   <label class="label py-1">
-                    <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Verification Code</span>
+                    <span class="label-text">Verification Code</span>
                   </label>
                   <input 
                     v-model="totpCode"
                     type="text"
                     placeholder="000000"
-                    class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-base tracking-[0.3em] h-10 rounded-xl border-base-content/5"
+                    class="input input-bordered w-full transition font-medium text-center text-base tracking-[0.3em]"
                     maxlength="6"
                   />
                 </div>
 
                 <div class="flex gap-3">
-                  <button class="btn btn-ghost flex-1 h-10 min-h-0 rounded-xl font-bold text-[10px] uppercase tracking-widest" @click="show2faSetup = false">Cancel</button>
+                  <button class="btn btn-ghost flex-1" @click="show2faSetup = false">Cancel</button>
                   <button 
-                    class="btn btn-primary flex-1 h-10 min-h-0 rounded-xl shadow-sm font-bold text-[10px] uppercase tracking-widest"
+                    class="btn btn-primary flex-1"
                     @click="enable2fa"
                     :disabled="isVerifying2fa || totpCode.length < 6"
                   >
@@ -890,11 +867,11 @@ async function logout() {
 
             <div v-else class="pt-2">
               <div v-if="!showDisableConfirm">
-                <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-4">
+                <p class="text-[11px] text-fg-3 font-medium leading-relaxed mb-4">
                   Your account login is enforced with Google Authenticator TOTP token checks.
                 </p>
                 <button 
-                  class="btn btn-error btn-outline rounded-xl h-10 min-h-0 w-full gap-2 font-bold text-[10px] uppercase tracking-widest"
+                  class="btn btn-error btn-outline w-full gap-2"
                   @click="disable2fa"
                 >
                   <Icon name="mdi:shield-off-outline" class="w-4 h-4" />
@@ -902,29 +879,29 @@ async function logout() {
                 </button>
               </div>
               
-              <div v-else class="space-y-6 animate-in fade-in duration-300">
-                <div class="p-4 bg-error/5 rounded-xl border border-error/10 text-center">
-                  <p class="text-[9px] font-bold text-error uppercase tracking-widest mb-1">Confirm identity</p>
-                  <p class="text-[10px] font-bold text-error/60">Enter verification token code from your authenticator device.</p>
+              <div v-else class="space-y-6 duration-150">
+                <div class="p-4 bg-surface-2 rounded-xl border border-line-strong text-center">
+                  <p class="text-[11px] text-error uppercase tracking-micro font-mono mb-1">Confirm identity</p>
+                  <p class="text-[11px] font-medium text-error">Enter verification token code from your authenticator device.</p>
                 </div>
 
                 <div class="form-control">
                   <label class="label py-1">
-                    <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Authenticator Code</span>
+                    <span class="label-text">Authenticator Code</span>
                   </label>
                   <input 
                     v-model="disableCode"
                     type="text"
                     placeholder="000000"
-                    class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-center text-base tracking-[0.3em] h-10 rounded-xl border-base-content/5"
+                    class="input input-bordered w-full transition font-medium text-center text-base tracking-[0.3em]"
                     maxlength="6"
                   />
                 </div>
 
                 <div class="flex gap-3">
-                  <button class="btn btn-ghost flex-1 h-10 min-h-0 rounded-xl font-bold text-[10px] uppercase tracking-widest" @click="showDisableConfirm = false">Cancel</button>
+                  <button class="btn btn-ghost flex-1" @click="showDisableConfirm = false">Cancel</button>
                   <button 
-                    class="btn btn-error flex-1 h-10 min-h-0 rounded-xl shadow-sm font-bold text-[10px] uppercase tracking-widest text-white"
+                    class="btn btn-error flex-1 "
                     @click="confirmDisable2fa"
                     :disabled="isVerifying2fa || disableCode.length < 6"
                   >
@@ -937,33 +914,30 @@ async function logout() {
           </div>
 
           <!-- 2FA Recovery Codes Modal -->
-          <div v-if="showRecoveryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div class="bg-base-100 border border-base-content/10 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div v-if="showRecoveryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 duration-200">
+            <div class="bg-base-100 border border-line rounded-xl max-w-md w-full p-6 space-y-4">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-warning/15 flex items-center justify-center text-warning border border-warning/20">
-                  <Icon name="mdi:shield-key-outline" class="w-6 h-6" />
-                </div>
                 <div>
-                  <h3 class="text-sm font-black uppercase tracking-wider text-base-content/80">Save Your Recovery Codes</h3>
-                  <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-widest">One-time emergency access</p>
+                  <h3 class="text-sm text-fg">Save Your Recovery Codes</h3>
+                  <p class="text-[13px] text-fg-3">One-time emergency access</p>
                 </div>
               </div>
 
-              <div class="p-3 bg-warning/10 border border-warning/20 rounded-xl text-[11px] font-bold text-warning-content leading-relaxed">
+              <div class="p-3 bg-surface-2 border border-line-strong rounded-xl text-[11px] font-medium text-warning-content leading-relaxed">
                 If you lose your authenticator device, each recovery code can be used once to access your account. Store them in a secure password manager.
               </div>
 
-              <div class="grid grid-cols-2 gap-2 bg-base-200/50 p-4 rounded-xl border border-base-content/5">
-                <code v-for="(code, idx) in recoveryCodes" :key="idx" class="font-mono text-xs font-black tracking-wider text-center py-1.5 px-2 bg-base-100 rounded-lg border border-base-content/5 text-primary">
+              <div class="grid grid-cols-2 gap-2 bg-base-200 p-4 rounded-xl border border-line">
+                <code v-for="(code, idx) in recoveryCodes" :key="idx" class="font-mono text-xs font-semibold tracking-wider text-center py-1.5 px-2 bg-base-100 rounded-lg border border-line text-fg">
                   {{ code }}
                 </code>
               </div>
 
               <div class="flex gap-2 pt-2">
-                <button class="btn btn-outline btn-sm rounded-xl flex-1 font-bold text-[10px] uppercase tracking-wider" @click="copyRecoveryCodes">
+                <button class="btn btn-outline btn-sm flex-1" @click="copyRecoveryCodes">
                   <Icon name="mdi:content-copy" class="w-4 h-4 mr-1" /> Copy All
                 </button>
-                <button class="btn btn-primary btn-sm rounded-xl flex-1 font-bold text-[10px] uppercase tracking-wider" @click="showRecoveryModal = false">
+                <button class="btn btn-primary btn-sm flex-1" @click="showRecoveryModal = false">
                   I Saved Them
                 </button>
               </div>
@@ -971,21 +945,18 @@ async function logout() {
           </div>
 
           <!-- App Quick Login -->
-          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+          <div class="border-t border-line pt-8 space-y-4">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
-                <Icon name="mdi:qrcode" class="w-4 h-4" />
-              </div>
-              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">App Quick Login</h3>
+              <h3 class="section-title">App Quick Login</h3>
             </div>
-            <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-2">
+            <p class="text-[11px] text-fg-3 font-medium leading-relaxed mb-2">
               Scan this QR code from the ClyoCloud or ClyoWallpaper mobile app login screen to automatically configure and authenticate the client.
             </p>
 
             <div class="flex flex-col items-center gap-4 pt-2">
               <button 
                 v-if="!appQrCodeUrl"
-                class="btn btn-outline btn-primary rounded-xl h-10 min-h-0 w-full gap-2 font-bold text-[10px] uppercase tracking-widest"
+                class="btn btn-outline btn-primary w-full gap-2"
                 @click="fetchAppQrCode"
                 :disabled="isGeneratingAppQr"
               >
@@ -993,12 +964,12 @@ async function logout() {
                 <span v-else class="loading loading-spinner loading-xs"></span>
                 Generate Login QR Code
               </button>
-              <div v-else class="flex flex-col items-center gap-4 w-full animate-in fade-in duration-300">
-                <div class="p-4 bg-white rounded-xl border border-base-content/10 shadow-inner">
+              <div v-else class="flex flex-col items-center gap-4 w-full duration-150">
+                <div class="p-4 bg-white rounded-xl border border-line">
                   <img :src="appQrCodeUrl" class="w-44 h-44 object-contain" alt="App Login QR Code" />
                 </div>
                 <button 
-                  class="btn btn-ghost rounded-xl h-10 min-h-0 text-[10px] font-bold uppercase tracking-widest" 
+                  class="btn btn-ghost" 
                   @click="appQrCodeUrl = ''"
                 >
                   Hide QR Code
@@ -1007,27 +978,27 @@ async function logout() {
             </div>
 
             <!-- Connected Devices List -->
-            <div v-if="devices.length > 0" class="pt-4 border-t border-base-content/5 space-y-3">
-              <h4 class="text-[10px] font-black uppercase tracking-wider text-base-content/50">Registered Devices</h4>
+            <div v-if="devices.length > 0" class="pt-4 border-t border-line space-y-3">
+              <h4 class="text-[11px] uppercase tracking-micro font-mono text-fg-3">Registered Devices</h4>
               <div class="space-y-2">
                 <div 
                   v-for="device in devices" 
                   :key="device.id" 
-                  class="flex items-center justify-between p-3 rounded-xl bg-base-200/50 border border-base-content/5 text-xs animate-in fade-in duration-300"
+                  class="flex items-center justify-between p-3 rounded-xl bg-base-200 border border-line text-xs duration-150"
                 >
                   <div class="space-y-1">
                     <div class="flex items-center gap-2">
-                      <Icon name="mdi:cellphone" class="w-4 h-4 text-base-content/70" />
-                      <span class="font-bold text-base-content/80">{{ device.model }}</span>
+                      <Icon name="mdi:cellphone" class="w-4 h-4 text-fg-2" />
+                      <span class="font-medium text-fg">{{ device.model }}</span>
                     </div>
-                    <div class="text-[9px] text-base-content/40 font-semibold space-x-2">
+                    <div class="text-[11px] text-fg-3 font-semibold space-x-2">
                       <span>Added: {{ new Date(device.createdAt).toLocaleDateString() }}</span>
                       <span>•</span>
                       <span>Last Active: {{ new Date(device.lastActive).toLocaleDateString() }}</span>
                     </div>
                   </div>
                   <button 
-                    class="btn btn-ghost btn-xs text-error font-bold uppercase tracking-widest text-[9px] hover:bg-error/10 rounded-lg px-2"
+                    class="btn btn-ghost btn-xs text-error hover:bg-surface-2 px-2"
                     @click="revokeDevice(device.id)"
                   >
                     Revoke
@@ -1038,13 +1009,13 @@ async function logout() {
           </div>
 
           <!-- Session Sign Out (Session Control) -->
-          <div class="bg-error/5 border border-error/10 rounded-2xl p-6 space-y-4">
+          <div class="border-t border-line pt-8 space-y-4">
             <div class="flex items-center justify-between gap-4">
               <div>
-                <h3 class="text-xs font-black uppercase tracking-wider text-base-content/70">Terminate session</h3>
-                <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Disconnect from cloud cluster client</p>
+                <h3 class="section-title">Sign out</h3>
+                <p class="text-[14px] text-fg-3 mt-0.5">End this session on this device.</p>
               </div>
-              <button class="btn btn-error btn-outline rounded-xl h-10 min-h-0 px-6 font-bold uppercase text-[10px] tracking-widest" @click="logout">
+              <button class="btn btn-error" @click="logout">
                 Sign out
               </button>
             </div>
@@ -1052,36 +1023,33 @@ async function logout() {
         </div>
 
         <!-- 2. SYSTEM & STORAGE SUB-MENU -->
-        <div v-if="activeCategory === 'system'" class="space-y-6">
+        <div v-if="activeCategory === 'system'" class="space-y-12">
           <!-- List based rows for System options -->
-          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm divide-y divide-base-content/5">
+          <div class="bg-base-100 border border-line rounded-xl overflow-hidden divide-y divide-line">
             
             <!-- Download path config -->
-            <div class="p-5 space-y-3">
+            <div class="px-4 py-4 space-y-3">
               <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10 shrink-0 mt-0.5">
-                  <Icon name="mdi:folder-download-outline" class="w-4 h-4" />
-                </div>
                 <div class="flex-1 min-w-0">
-                  <h4 class="text-xs font-extrabold tracking-wide">Custom Retrieval Path</h4>
-                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Download directory target relative to root storage</p>
+                  <h4 class="text-[14px] text-fg">Custom Retrieval Path</h4>
+                  <p class="text-[13px] text-fg-3 mt-0.5">Download directory target relative to root storage</p>
                 </div>
               </div>
 
               <div class="flex flex-col sm:flex-row gap-3 pt-2">
-                <div class="flex-1 flex items-center bg-base-200/50 border border-base-content/5 rounded-xl focus-within:bg-base-100 focus-within:ring-1 focus-within:ring-primary/20 transition-all overflow-hidden px-4">
-                   <span class="text-base-content/30 text-[11px] font-bold whitespace-nowrap select-none">
+                <div class="flex-1 flex items-center bg-base-200 border border-line rounded-xl focus-within:bg-base-100 focus-within:ring-1 focus-within:ring-line-strong transition overflow-hidden px-4">
+                   <span class="text-fg-3 text-[11px] font-medium whitespace-nowrap select-none">
                      {{ user?.name }}/
                    </span>
                    <input 
                      v-model="downloadPath" 
                      type="text" 
                      placeholder="e.g. videos/youtube" 
-                     class="bg-transparent border-none outline-none w-full font-bold text-xs h-10 pl-1 focus:ring-0 focus:outline-none" 
+                     class="bg-transparent border-none outline-none w-full font-medium text-xs h-10 pl-1 focus:ring-0 focus:outline-none" 
                    />
                 </div>
                 <button 
-                  class="btn btn-primary h-10 min-h-0 rounded-xl px-6 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+                  class="btn btn-primary px-6 gap-2" 
                   @click="saveUserSettings" 
                   :disabled="isSavingSettings"
                 >
@@ -1093,18 +1061,15 @@ async function logout() {
             </div>
 
             <!-- Storage Diagnostics Scan -->
-            <div class="p-5 flex items-center justify-between gap-4">
+            <div class="px-4 py-4 flex items-center justify-between gap-4">
               <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/10 shrink-0 mt-0.5">
-                  <Icon name="mdi:magnify-scan" class="w-4 h-4" />
-                </div>
                 <div>
-                  <h4 class="text-xs font-extrabold tracking-wide">Storage Diagnostics</h4>
-                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Scan cluster for old or oversized junk files</p>
+                  <h4 class="text-[14px] text-fg">Storage Diagnostics</h4>
+                  <p class="text-[13px] text-fg-3 mt-0.5">Scan cluster for old or oversized junk files</p>
                 </div>
               </div>
               <button 
-                class="btn btn-ghost border border-base-content/10 bg-base-200/40 rounded-xl h-10 min-h-0 px-4 font-bold text-[10px] uppercase tracking-widest shrink-0"
+                class="btn px-4 shrink-0"
                 @click="fetchCleanupData"
                 :disabled="isScanningStorage"
               >
@@ -1114,18 +1079,15 @@ async function logout() {
             </div>
 
             <!-- Tag Cache Index Rebuilding -->
-            <div class="p-5 flex items-center justify-between gap-4">
+            <div class="px-4 py-4 flex items-center justify-between gap-4">
               <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success border border-success/10 shrink-0 mt-0.5">
-                  <Icon name="mdi:database-refresh-outline" class="w-4 h-4" />
-                </div>
                 <div>
-                  <h4 class="text-xs font-extrabold tracking-wide">Rebuild Tag Cache</h4>
-                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Synchronize and update tag indexes</p>
+                  <h4 class="text-[14px] text-fg">Rebuild Tag Cache</h4>
+                  <p class="text-[13px] text-fg-3 mt-0.5">Synchronize and update tag indexes</p>
                 </div>
               </div>
               <button 
-                class="btn btn-ghost border border-base-content/10 bg-base-200/40 rounded-xl h-10 min-h-0 px-4 font-bold text-[10px] uppercase tracking-widest shrink-0"
+                class="btn px-4 shrink-0"
                 @click="refreshTagCache"
                 :disabled="isRebuildingCache"
               >
@@ -1135,19 +1097,16 @@ async function logout() {
             </div>
 
             <!-- Duplicate scanner shortcut link -->
-            <div class="p-5 flex items-center justify-between gap-4">
+            <div class="px-4 py-4 flex items-center justify-between gap-4">
               <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-lg bg-info/10 flex items-center justify-center text-info border border-info/10 shrink-0 mt-0.5">
-                  <Icon name="mdi:content-copy" class="w-4 h-4" />
-                </div>
                 <div>
-                  <h4 class="text-xs font-extrabold tracking-wide">Duplicate Media Scanner</h4>
-                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Find matching checksum assets</p>
+                  <h4 class="text-[14px] text-fg">Duplicate Media Scanner</h4>
+                  <p class="text-[13px] text-fg-3 mt-0.5">Find matching checksum assets</p>
                 </div>
               </div>
               <NuxtLink 
                 to="/duplicates" 
-                class="btn btn-ghost border border-base-content/10 bg-base-200/40 rounded-xl h-10 min-h-0 px-4 font-bold text-[10px] uppercase tracking-widest shrink-0"
+                class="btn px-4 shrink-0"
               >
                 <Icon name="mdi:arrow-right" class="w-4 h-4" />
                 Open tool
@@ -1155,14 +1114,11 @@ async function logout() {
             </div>
 
             <!-- Duplicate scan limit -->
-            <div class="p-5 flex items-center justify-between gap-4">
+            <div class="px-4 py-4 flex items-center justify-between gap-4">
               <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10 shrink-0 mt-0.5">
-                  <Icon name="mdi:numeric-10-box" class="w-4 h-4" />
-                </div>
                 <div>
-                  <h4 class="text-xs font-extrabold tracking-wide">Duplicate Scan Limit</h4>
-                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Max duplicate groups displayed (10 to 1000)</p>
+                  <h4 class="text-[14px] text-fg">Duplicate Scan Limit</h4>
+                  <p class="text-[13px] text-fg-3 mt-0.5">Max duplicate groups displayed (10 to 1000)</p>
                 </div>
               </div>
               <input 
@@ -1171,109 +1127,87 @@ async function logout() {
                 min="10" 
                 max="1000" 
                 @change="saveUserSettings"
-                class="input input-bordered w-24 h-10 min-h-0 text-xs font-bold text-center bg-base-200/50 focus:bg-base-100 rounded-xl border-base-content/5" 
+                class="input input-bordered w-24 min-h-0 text-xs font-medium text-center" 
               />
             </div>
           </div>
 
           <!-- Diagnostics Loading/Scanning State details -->
-          <div v-if="isScanningStorage" class="bg-base-100/60 border border-base-content/5 rounded-2xl p-8 flex flex-col items-center gap-4 animate-in fade-in duration-300">
-            <span class="loading loading-spinner loading-md text-primary"></span>
+          <div v-if="isScanningStorage" class="bg-base-100 border border-line rounded-xl p-8 flex flex-col items-center gap-4 duration-150">
+            <span class="loading loading-spinner loading-md text-fg"></span>
             <div class="text-center">
-              <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/70">Analyzing Storage Cluster</p>
-              <p class="text-[9px] font-bold text-base-content/30 mt-1 uppercase">{{ cleanupStatus?.totalFiles || 0 }} files discovered</p>
+              <p class="text-[11px] uppercase tracking-micro font-mono text-fg-2">Analyzing Storage Cluster</p>
+              <p class="text-[11px] font-medium text-fg-3 mt-1 uppercase">{{ cleanupStatus?.totalFiles || 0 }} files discovered</p>
             </div>
           </div>
 
           <!-- Diagnostics Scan details output list -->
-          <div v-if="cleanupData && !isScanningStorage" class="bg-base-100/60 border border-base-content/5 rounded-2xl p-6 space-y-4 animate-in fade-in duration-300">
-            <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Large Files Diagnostics</h3>
-            <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2 divide-y divide-base-content/5">
+          <div v-if="cleanupData && !isScanningStorage" class="border-t border-line pt-8 space-y-4">
+            <h3 class="section-title">Large Files Diagnostics</h3>
+            <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2 divide-y divide-line">
               <div v-for="file in cleanupData.largeFiles" :key="file.fullPath" class="flex items-center justify-between py-2 group">
                 <div class="min-w-0 flex-1">
-                   <p class="text-xs font-extrabold truncate">{{ file.name }}</p>
-                   <p class="text-[9px] font-bold text-base-content/30 uppercase truncate mt-0.5">{{ formatSize(file.size) }}</p>
+                   <p class="text-xs font-semibold truncate">{{ file.name }}</p>
+                   <p class="text-[11px] font-medium text-fg-3 uppercase truncate mt-0.5">{{ formatSize(file.size) }}</p>
                 </div>
                 <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="deleteCleanupFile(file)">
                   <Icon name="mdi:delete-outline" class="w-4 h-4" />
                 </button>
               </div>
-              <div v-if="cleanupData.largeFiles.length === 0" class="text-center py-8 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No optimization targets</div>
+              <div v-if="cleanupData.largeFiles.length === 0" class="text-center py-8 text-[11px] text-fg-3 uppercase tracking-micro font-mono italic">No optimization targets</div>
             </div>
           </div>
         </div>
 
         <!-- 3. APPEARANCE & TAGS SUB-MENU -->
-        <div v-if="activeCategory === 'appearance'" class="space-y-6">
+        <div v-if="activeCategory === 'appearance'" class="space-y-12">
           <!-- Themes Selection Section -->
-          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-4">
+          <div class="border-t border-line pt-8 space-y-4">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
-                <Icon name="mdi:palette-outline" class="w-4 h-4" />
-              </div>
-              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Visual Themes</h3>
+              <h3 class="section-title">Theme</h3>
             </div>
             
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
-              <div 
-                v-for="t in ['onedev', 'light', 'dark', 'dracula', 'forest', 'retro', 'cyberpunk', 'valentine', 'aqua', 'nord', 'sunset', 'dim', 'coffee']" 
-                :key="t"
-                class="relative group cursor-pointer"
-                @click="theme = t; saveUserSettings()"
+            <p class="text-[14px] text-fg-3">Light is the same design, inverted.</p>
+            <div class="inline-flex p-[3px] border border-line rounded-full" role="radiogroup" aria-label="Theme">
+              <button
+                v-for="t in themeOptions"
+                :key="t.value"
+                type="button"
+                role="radio"
+                :aria-checked="theme === t.value"
+                class="h-8 px-4 rounded-full text-[14px] transition-colors"
+                :class="theme === t.value ? 'bg-surface-2 text-fg' : 'text-fg-2 hover:text-fg'"
+                @click="theme = t.value; saveUserSettings()"
               >
-                <div 
-                  class="h-16 rounded-xl border transition-all overflow-hidden flex flex-col"
-                  :class="theme === t ? 'border-primary ring-2 ring-primary/20 shadow-sm' : 'border-base-content/5 hover:border-base-content/20 bg-base-200/50'"
-                  :data-theme="t"
-                >
-                  <div class="flex-1 bg-base-100 p-2 flex items-center justify-between">
-                     <span class="text-[9px] font-black uppercase tracking-widest text-base-content/70">
-                       {{ t }}
-                     </span>
-                     <div class="flex gap-0.5">
-                        <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                        <div class="w-1.5 h-1.5 rounded-full bg-secondary"></div>
-                        <div class="w-1.5 h-1.5 rounded-full bg-accent"></div>
-                     </div>
-                  </div>
-                </div>
-                <div v-if="theme === t" class="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-content rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
-                  <Icon name="mdi:check" class="w-2.5 h-2.5" />
-                </div>
-              </div>
+                {{ t.label }}
+              </button>
             </div>
           </div>
 
           <!-- Tag Library Card -->
-          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-6">
+          <div class="border-t border-line pt-8 space-y-6">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success border border-success/10">
-                  <Icon name="mdi:tag-multiple-outline" class="w-4 h-4" />
-                </div>
-                <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Predefined Tag Library</h3>
+                <h3 class="section-title">Predefined Tag Library</h3>
               </div>
-              <span class="badge badge-sm font-bold text-[9px] uppercase tracking-widest bg-base-200 text-base-content/40 border-none">{{ tags.length }} Active</span>
+              <span class="badge badge-sm text-[11px] uppercase tracking-micro font-mono bg-base-200 text-fg-3 border-none">{{ tags.length }} Active</span>
             </div>
 
             <!-- Tag Pill Items -->
-            <div class="flex flex-wrap gap-2 p-4 bg-base-200/30 rounded-xl border border-base-content/5 min-h-[70px] items-start content-start">
+            <div class="flex flex-wrap gap-2 p-4 bg-base-200 rounded-xl border border-line min-h-[70px] items-start content-start">
               <transition-group name="list">
                 <div 
                   v-for="(tag, index) in tags" 
-                  :key="tag.name" 
-                  class="flex items-center gap-1.5 pl-2.5 pr-1 py-0.5 rounded-md text-white font-extrabold text-[8px] uppercase tracking-wider shadow-sm border border-white/10"
-                  :style="{ backgroundColor: tag.color }"
-                >
+                  :key="tag.name" class="tag-chip">
+                    <span class="dot" :style="{ backgroundColor: tag.color }"></span>
                   {{ tag.name }}
-                  <button @click="removeTag(index)" class="w-3.5 h-3.5 rounded bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors">
+                  <button @click="removeTag(index)" class="w-4 h-4 rounded text-fg-3 hover:text-fg flex items-center justify-center transition-colors" :aria-label="`Remove ${tag.name}`">
                     <Icon name="mdi:close" class="w-2.5 h-2.5" />
                   </button>
                 </div>
               </transition-group>
-              <div v-if="tags.length === 0" class="w-full h-full flex flex-col items-center justify-center py-4 gap-2 opacity-30">
-                 <Icon name="mdi:tag-off-outline" class="w-6 h-6" />
-                 <p class="text-[9px] font-bold uppercase tracking-widest">No tags defined yet</p>
+              <div v-if="tags.length === 0" class="w-full py-4 text-center">
+                 <p class="text-[14px] text-fg-3">No tags yet.</p>
               </div>
             </div>
 
@@ -1281,36 +1215,36 @@ async function logout() {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div class="form-control">
                 <label class="label py-1">
-                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Label Name</span>
+                  <span class="label-text">Label Name</span>
                 </label>
                 <input 
                   v-model="newTagName" 
                   type="text" 
                   placeholder="e.g. Archives" 
-                  class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-10 rounded-xl border-base-content/5 focus:outline-none" 
+                  class="input input-bordered w-full transition font-medium text-xs" 
                 />
               </div>
               <div class="form-control">
                 <label class="label py-1">
-                  <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Label Color</span>
+                  <span class="label-text">Label Color</span>
                 </label>
                 <div class="flex gap-2">
                   <input 
                     v-model="newTagColor" 
                     type="color" 
-                    class="w-10 h-10 rounded-xl cursor-pointer border-none bg-base-200/50 shrink-0" 
+                    class="w-10 h-10 rounded-xl cursor-pointer border-none bg-base-200 shrink-0" 
                   />
                   <input 
                     v-model="newTagColor" 
                     type="text" 
-                    class="input input-bordered flex-1 bg-base-200/50 focus:bg-base-100 transition-all font-mono text-[9px] font-bold h-10 rounded-xl border-base-content/5 focus:outline-none" 
+                    class="input input-bordered flex-1 transition font-mono text-[11px] font-medium" 
                   />
                 </div>
               </div>
             </div>
             
             <button 
-              class="btn btn-secondary text-white rounded-xl h-10 min-h-0 w-full shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest mt-2" 
+              class="btn btn-secondary w-full gap-2 mt-2" 
               @click="addTag" 
               :disabled="isSavingTags"
             >
@@ -1321,59 +1255,56 @@ async function logout() {
         </div>
 
         <!-- 4. MEDIA PROCESSING SUB-MENU -->
-        <div v-if="activeCategory === 'previews'" class="space-y-6">
+        <div v-if="activeCategory === 'previews'" class="space-y-12">
           <!-- Loading Skeleton -->
-          <div v-if="isLoadingSettings" class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-6 animate-pulse">
+          <div v-if="isLoadingSettings" class="border-t border-line pt-8 space-y-6 animate-pulse">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-base-content/10"></div>
+                <div class="w-8 h-8 rounded-lg bg-surface-2"></div>
                 <div class="space-y-2">
-                  <div class="h-3 w-32 bg-base-content/10 rounded"></div>
-                  <div class="h-2 w-48 bg-base-content/5 rounded"></div>
+                  <div class="h-3 w-32 bg-surface-2 rounded"></div>
+                  <div class="h-2 w-48 bg-surface-2 rounded"></div>
                 </div>
               </div>
-              <div class="w-10 h-6 bg-base-content/10 rounded-md"></div>
+              <div class="w-10 h-6 bg-surface-2 rounded-md"></div>
             </div>
-            <div class="space-y-3 pt-4 border-t border-base-content/5">
+            <div class="space-y-3 pt-4 border-t border-line">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-base-content/10"></div>
+                  <div class="w-8 h-8 rounded-lg bg-surface-2"></div>
                   <div class="space-y-2">
-                    <div class="h-3 w-32 bg-base-content/10 rounded"></div>
-                    <div class="h-2 w-48 bg-base-content/5 rounded"></div>
+                    <div class="h-3 w-32 bg-surface-2 rounded"></div>
+                    <div class="h-2 w-48 bg-surface-2 rounded"></div>
                   </div>
                 </div>
-                <div class="w-12 h-4 bg-base-content/10 rounded-full"></div>
+                <div class="w-12 h-4 bg-surface-2 rounded-full"></div>
               </div>
-              <div class="h-2 bg-base-content/10 rounded-full w-full"></div>
+              <div class="h-2 bg-surface-2 rounded-full w-full"></div>
             </div>
-            <div class="space-y-3 pt-4 border-t border-base-content/5">
+            <div class="space-y-3 pt-4 border-t border-line">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-base-content/10"></div>
+                  <div class="w-8 h-8 rounded-lg bg-surface-2"></div>
                   <div class="space-y-2">
-                    <div class="h-3 w-32 bg-base-content/10 rounded"></div>
-                    <div class="h-2 w-48 bg-base-content/5 rounded"></div>
+                    <div class="h-3 w-32 bg-surface-2 rounded"></div>
+                    <div class="h-2 w-48 bg-surface-2 rounded"></div>
                   </div>
                 </div>
-                <div class="w-12 h-4 bg-base-content/10 rounded-full"></div>
+                <div class="w-12 h-4 bg-surface-2 rounded-full"></div>
               </div>
-              <div class="h-2 bg-base-content/10 rounded-full w-full"></div>
+              <div class="h-2 bg-surface-2 rounded-full w-full"></div>
             </div>
           </div>
 
           <!-- Media processing items styled as iOS lists -->
-          <div v-else class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl overflow-hidden shadow-sm divide-y divide-base-content/5">
+          <div v-else class="bg-base-100 border border-line rounded-xl overflow-hidden divide-y divide-line">
             
             <!-- Mobile Auto-Preview -->
             <div class="flex items-center justify-between p-5 gap-4">
               <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10 shrink-0 mt-0.5">
-                  <Icon name="mdi:cellphone-play" class="w-4 h-4" />
-                </div>
                 <div>
-                  <h4 class="text-xs font-extrabold tracking-wide text-base-content">Mobile Auto-Preview</h4>
-                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Auto-play preview animations on mobile layouts</p>
+                  <h4 class="text-xs font-semibold tracking-wide text-fg">Mobile Auto-Preview</h4>
+                  <p class="text-[13px] text-fg-3 mt-0.5">Auto-play preview animations on mobile layouts</p>
                 </div>
               </div>
               <input 
@@ -1387,12 +1318,9 @@ async function logout() {
             <!-- Image Viewer Mobile Fullscreen -->
             <div class="flex items-center justify-between p-5 gap-4">
               <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10 shrink-0 mt-0.5">
-                  <Icon name="mdi:fullscreen" class="w-4 h-4" />
-                </div>
                 <div>
-                  <h4 class="text-xs font-extrabold tracking-wide text-base-content">Image Viewer Mobile Fullscreen</h4>
-                  <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Automatically open media viewer in fullscreen on mobile devices</p>
+                  <h4 class="text-xs font-semibold tracking-wide text-fg">Image Viewer Mobile Fullscreen</h4>
+                  <p class="text-[13px] text-fg-3 mt-0.5">Automatically open media viewer in fullscreen on mobile devices</p>
                 </div>
               </div>
               <input 
@@ -1404,18 +1332,15 @@ async function logout() {
             </div>
 
             <!-- Slideshow Frequency range slider -->
-            <div class="p-5 space-y-3">
+            <div class="px-4 py-4 space-y-3">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/10 shrink-0 mt-0.5">
-                    <Icon name="mdi:image-multiple-outline" class="w-4 h-4" />
-                  </div>
                   <div>
-                    <h4 class="text-xs font-extrabold tracking-wide text-base-content">Slideshow Frequency</h4>
-                    <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">Create 1 slideshow every {{ slideshowFrequency }} entries</p>
+                    <h4 class="text-xs font-semibold tracking-wide text-fg">Slideshow Frequency</h4>
+                    <p class="text-[13px] text-fg-3 mt-0.5">Create 1 slideshow every {{ slideshowFrequency }} entries</p>
                   </div>
                 </div>
-                <span class="badge badge-primary font-bold text-[9px] uppercase tracking-widest shrink-0">{{ slideshowFrequency }} items</span>
+                <span class="badge badge-primary text-[11px] uppercase tracking-micro font-mono shrink-0">{{ slideshowFrequency }} items</span>
               </div>
               <div class="pt-2">
                 <input 
@@ -1430,20 +1355,17 @@ async function logout() {
             </div>
 
             <!-- Thread limits slider -->
-            <div class="p-5 space-y-3">
+            <div class="px-4 py-4 space-y-3">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success border border-success/10 shrink-0 mt-0.5">
-                    <Icon name="mdi:cpu-64-bit" class="w-4 h-4" />
-                  </div>
                   <div>
-                    <h4 class="text-xs font-extrabold tracking-wide text-base-content">Max Concurrent Threads</h4>
-                    <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest mt-0.5">
+                    <h4 class="text-xs font-semibold tracking-wide text-fg">Max Concurrent Threads</h4>
+                    <p class="text-[13px] text-fg-3 mt-0.5">
                       Limit concurrency of background ffmpeg tasks (Detected: {{ cpuCores }} CPU cores, dynamic ceiling: {{ serverMaxConcurrency }} threads)
                     </p>
                   </div>
                 </div>
-                <span class="badge badge-primary font-bold text-[9px] uppercase tracking-widest shrink-0">{{ maxConcurrentPreviews }} threads</span>
+                <span class="badge badge-primary text-[11px] uppercase tracking-micro font-mono shrink-0">{{ maxConcurrentPreviews }} threads</span>
               </div>
               <div class="pt-2">
                 <input 
@@ -1461,72 +1383,72 @@ async function logout() {
           <!-- Thread generation tasks progress widgets -->
           <div 
             v-if="(generationResults && (generationResults.isProcessing || generationResults.processed > 0)) || (thumbnailGenerationResults && (thumbnailGenerationResults.isProcessing || thumbnailGenerationResults.processed > 0))" 
-            class="bg-base-100/60 border border-base-content/5 rounded-2xl p-6 space-y-6"
+            class="border-t border-line pt-8 space-y-6"
           >
-            <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Background Tasks</h3>
+            <h3 class="section-title">Background Tasks</h3>
             
             <!-- Video preview tasks progress -->
-            <div v-if="generationResults && (generationResults.isProcessing || generationResults.processed > 0)" class="space-y-3 animate-in fade-in duration-300">
+            <div v-if="generationResults && (generationResults.isProcessing || generationResults.processed > 0)" class="space-y-3 duration-150">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <span class="text-[9px] font-bold uppercase tracking-widest">Video previews progress</span>
-                  <span v-if="generationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
+                  <span class="text-[11px] uppercase tracking-micro font-mono">Video previews progress</span>
+                  <span v-if="generationResults.isProcessing" class="loading loading-spinner loading-[10px] text-fg"></span>
                 </div>
-                <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ generationResults.processed }} / {{ generationResults.total }}</span>
+                <span class="text-[11px] text-fg-3 uppercase tracking-micro font-mono">{{ generationResults.processed }} / {{ generationResults.total }}</span>
               </div>
               
               <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
                 <div 
-                  class="h-full bg-primary transition-all duration-500 ease-out" 
+                  class="h-full bg-primary transition duration-150 ease-out" 
                   :style="{ width: `${(generationResults.processed / (generationResults.total || 1)) * 100}%` }"
                 ></div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-base-content/5 mt-2">
+              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-line mt-2">
                 <div class="flex flex-col">
-                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
-                  <span class="text-[10px] font-black text-success">{{ generationResults.generated }}</span>
+                  <span class="text-[11px] uppercase tracking-micro font-mono text-fg-3">Created</span>
+                  <span class="text-[11px] font-semibold text-success">{{ generationResults.generated }}</span>
                 </div>
-                <div class="flex flex-col border-l border-base-content/5 pl-3">
-                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
-                  <span class="text-[10px] font-black text-base-content/50">{{ generationResults.skipped }}</span>
+                <div class="flex flex-col border-l border-line pl-3">
+                  <span class="text-[11px] uppercase tracking-micro font-mono text-fg-3">Skipped</span>
+                  <span class="text-[11px] font-semibold text-fg-3">{{ generationResults.skipped }}</span>
                 </div>
-                <div class="flex flex-col border-l border-base-content/5 pl-3">
-                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
-                  <span class="text-[10px] font-black text-error">{{ generationResults.errors }}</span>
+                <div class="flex flex-col border-l border-line pl-3">
+                  <span class="text-[11px] uppercase tracking-micro font-mono text-fg-3">Errors</span>
+                  <span class="text-[11px] font-semibold text-error">{{ generationResults.errors }}</span>
                 </div>
               </div>
             </div>
 
             <!-- Image thumbnail tasks progress -->
-            <div v-if="thumbnailGenerationResults && (thumbnailGenerationResults.isProcessing || thumbnailGenerationResults.processed > 0)" class="space-y-3 animate-in fade-in duration-300">
+            <div v-if="thumbnailGenerationResults && (thumbnailGenerationResults.isProcessing || thumbnailGenerationResults.processed > 0)" class="space-y-3 duration-150">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <span class="text-[9px] font-bold uppercase tracking-widest">Image thumbnails progress</span>
-                  <span v-if="thumbnailGenerationResults.isProcessing" class="loading loading-spinner loading-[10px] text-primary"></span>
+                  <span class="text-[11px] uppercase tracking-micro font-mono">Image thumbnails progress</span>
+                  <span v-if="thumbnailGenerationResults.isProcessing" class="loading loading-spinner loading-[10px] text-fg"></span>
                 </div>
-                <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ thumbnailGenerationResults.processed }} / {{ thumbnailGenerationResults.total }}</span>
+                <span class="text-[11px] text-fg-3 uppercase tracking-micro font-mono">{{ thumbnailGenerationResults.processed }} / {{ thumbnailGenerationResults.total }}</span>
               </div>
               
               <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
                 <div 
-                  class="h-full bg-primary transition-all duration-500 ease-out" 
+                  class="h-full bg-primary transition duration-150 ease-out" 
                   :style="{ width: `${(thumbnailGenerationResults.processed / (thumbnailGenerationResults.total || 1)) * 100}%` }"
                 ></div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-base-content/5 mt-2">
+              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-line mt-2">
                 <div class="flex flex-col">
-                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Created</span>
-                  <span class="text-[10px] font-black text-success">{{ thumbnailGenerationResults.generated }}</span>
+                  <span class="text-[11px] uppercase tracking-micro font-mono text-fg-3">Created</span>
+                  <span class="text-[11px] font-semibold text-success">{{ thumbnailGenerationResults.generated }}</span>
                 </div>
-                <div class="flex flex-col border-l border-base-content/5 pl-3">
-                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Skipped</span>
-                  <span class="text-[10px] font-black text-base-content/50">{{ thumbnailGenerationResults.skipped }}</span>
+                <div class="flex flex-col border-l border-line pl-3">
+                  <span class="text-[11px] uppercase tracking-micro font-mono text-fg-3">Skipped</span>
+                  <span class="text-[11px] font-semibold text-fg-3">{{ thumbnailGenerationResults.skipped }}</span>
                 </div>
-                <div class="flex flex-col border-l border-base-content/5 pl-3">
-                  <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Errors</span>
-                  <span class="text-[10px] font-black text-error">{{ thumbnailGenerationResults.errors }}</span>
+                <div class="flex flex-col border-l border-line pl-3">
+                  <span class="text-[11px] uppercase tracking-micro font-mono text-fg-3">Errors</span>
+                  <span class="text-[11px] font-semibold text-error">{{ thumbnailGenerationResults.errors }}</span>
                 </div>
               </div>
             </div>
@@ -1536,7 +1458,7 @@ async function logout() {
           <div class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button 
-                class="btn btn-primary rounded-xl h-11 min-h-0 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+                class="btn btn-primary gap-2" 
                 @click="generateAllPreviews" 
                 :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
               >
@@ -1545,7 +1467,7 @@ async function logout() {
                 Generate video previews
               </button>
               <button 
-                class="btn btn-primary rounded-xl h-11 min-h-0 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest" 
+                class="btn btn-primary gap-2" 
                 @click="generateAllThumbnails" 
                 :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
               >
@@ -1555,7 +1477,7 @@ async function logout() {
               </button>
             </div>
             <button 
-              class="btn btn-error rounded-xl h-11 min-h-0 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest text-white w-full" 
+              class="btn btn-error gap-2 w-full" 
               @click="clearAllPreviews" 
               :disabled="isGeneratingPreviews || isGeneratingThumbnails || isClearingPreviews"
             >
@@ -1567,16 +1489,13 @@ async function logout() {
         </div>
 
         <!-- 5. DIRECTORY RULES SUB-MENU -->
-        <div v-if="activeCategory === 'directories'" class="space-y-6">
+        <div v-if="activeCategory === 'directories'" class="space-y-12">
           <!-- Shorts Selection compilation feeds -->
-          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-4">
+          <div class="border-t border-line pt-8 space-y-4">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
-                <Icon name="mdi:play-box-outline" class="w-4 h-4" />
-              </div>
-              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Shorts Sources</h3>
+              <h3 class="section-title">Shorts Sources</h3>
             </div>
-            <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-2">
+            <p class="text-[11px] text-fg-3 font-medium leading-relaxed mb-2">
               Select directories from which to show short video loops.
             </p>
 
@@ -1584,28 +1503,25 @@ async function logout() {
               <div 
                 v-for="(path, index) in selectedShortsPaths" 
                 :key="path" 
-                class="flex items-center justify-between p-3.5 bg-base-200/50 rounded-xl border border-base-content/5 group"
+                class="flex items-center justify-between p-3.5 bg-base-200 rounded-xl border border-line group"
               >
                 <div class="min-w-0 flex-1">
-                   <p class="text-xs font-extrabold truncate text-base-content">{{ path }}</p>
+                   <p class="text-xs font-semibold truncate text-fg">{{ path }}</p>
                 </div>
                 <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="removeSelectedPath(index)">
                   <Icon name="mdi:delete-outline" class="w-4 h-4" />
                 </button>
               </div>
-              <div v-if="selectedShortsPaths.length === 0" class="text-center py-6 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No shorts targets configured</div>
+              <div v-if="selectedShortsPaths.length === 0" class="text-[13px] text-center py-6 text-fg-3 italic">No shorts targets configured</div>
             </div>
           </div>
 
           <!-- Media Exclusion paths list -->
-          <div class="bg-base-100/60 backdrop-blur-md border border-base-content/5 rounded-2xl p-6 space-y-4">
+          <div class="border-t border-line pt-8 space-y-4">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/10">
-                <Icon name="mdi:eye-off-outline" class="w-4 h-4" />
-              </div>
-              <h3 class="text-xs font-black uppercase tracking-wider text-base-content/60">Excluded Media Paths</h3>
+              <h3 class="section-title">Excluded Media Paths</h3>
             </div>
-            <p class="text-[11px] text-base-content/50 font-bold leading-relaxed mb-2">
+            <p class="text-[11px] text-fg-3 font-medium leading-relaxed mb-2">
               Directories excluded from visual indices. Content within these folders is hidden.
             </p>
 
@@ -1613,16 +1529,16 @@ async function logout() {
               <div 
                 v-for="(path, index) in excludedMediaPaths" 
                 :key="path" 
-                class="flex items-center justify-between p-3.5 bg-base-200/50 rounded-xl border border-base-content/5 group"
+                class="flex items-center justify-between p-3.5 bg-base-200 rounded-xl border border-line group"
               >
                 <div class="min-w-0 flex-1">
-                   <p class="text-xs font-extrabold truncate text-base-content">{{ path }}</p>
+                   <p class="text-xs font-semibold truncate text-fg">{{ path }}</p>
                 </div>
                 <button class="btn btn-ghost btn-circle btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity" @click="removeExcludedMediaPath(index)">
                   <Icon name="mdi:delete-outline" class="w-4 h-4" />
                 </button>
               </div>
-              <div v-if="excludedMediaPaths.length === 0" class="text-center py-6 text-[9px] font-bold text-base-content/30 uppercase tracking-widest italic">No exclusions configured</div>
+              <div v-if="excludedMediaPaths.length === 0" class="text-center py-6 text-[11px] text-fg-3 uppercase tracking-micro font-mono italic">No exclusions configured</div>
             </div>
           </div>
         </div>
@@ -1631,16 +1547,17 @@ async function logout() {
 
     </main>
 
-    <footer class="pt-8 opacity-20 flex flex-col items-center gap-2 mt-auto">
-       <div class="w-10 h-px bg-base-content"></div>
-       <p class="text-[8px] font-bold uppercase tracking-[0.4em]">ClyoCloud - v{{ useRuntimeConfig().public.version }}</p>
+    <footer class="border-t border-line mt-auto">
+      <div class="page-wrap py-4 text-[13px] text-fg-3">
+        ClyoCloud <span class="num">v{{ useRuntimeConfig().public.version }}</span>
+      </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
 .list-enter-active, .list-leave-active {
-  transition: all 0.3s ease;
+  transition: opacity 120ms ease-out;
 }
 .list-enter-from, .list-leave-to {
   opacity: 0;

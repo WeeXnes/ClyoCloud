@@ -1,168 +1,57 @@
 <!-- app.vue -->
 <template>
-  <div class="min-h-screen bg-base-200 font-sans" :data-theme="currentTheme">
+  <div class="min-h-screen bg-base-100 text-fg-2 font-sans" :data-theme="currentTheme">
     <NotificationManager />
-    
+
     <div v-if="user" class="drawer lg:drawer-open">
       <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
-      
-      <div class="drawer-content flex flex-col min-h-screen">
-        <main class="flex-1">
+
+      <div class="drawer-content flex flex-col min-h-screen min-w-0">
+        <main class="flex-1 min-w-0">
           <NuxtPage />
         </main>
       </div>
 
       <div class="drawer-side z-50">
-        <label for="sidebar-drawer" class="drawer-overlay"></label>
-        
-        <aside class="w-72 bg-base-100 h-full border-r border-base-content/10 flex flex-col lg:shadow-none">
-          <!-- Sidebar Header -->
-          <div class="p-6 flex items-center gap-3">
-            <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <img src="/clyo.png" class="w-6 h-6 object-contain" alt="Clyo Logo" />
-            </div>
-            <div>
-              <h2 class="font-bold text-lg tracking-tight leading-none text-base-content">ClyoCloud</h2>
-              <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Personal Storage</span>
-            </div>
+        <label for="sidebar-drawer" class="drawer-overlay" aria-label="Close navigation"></label>
+
+        <aside class="w-60 bg-base-100 h-full border-r border-line flex flex-col">
+          <!-- Wordmark -->
+          <div class="h-header shrink-0 flex items-center px-5 border-b border-line">
+            <NuxtLink to="/" class="text-[15px] leading-none whitespace-nowrap">
+              <span class="font-semibold text-fg tracking-section">ClyoCloud</span>
+            </NuxtLink>
           </div>
 
           <!-- Navigation -->
-          <nav class="flex-1 px-3 py-4 overflow-y-auto custom-scrollbar">
-            <div class="mb-6">
-              <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-3">Library</h3>
-              <ul class="space-y-1">
-                <li>
-                  <NuxtLink to="/" :class="['nav-link', { active: isLinkActive('/') }]">
-                    <Icon name="mdi:home-variant" class="w-5 h-5" />
-                    <span>Dashboard</span>
-                  </NuxtLink>
-                </li>
-                <li>
-                  <NuxtLink to="/files" :class="['nav-link', { active: isLinkActive('/files') }]">
-                    <Icon name="mdi:folder-multiple" class="w-5 h-5" />
-                    <span>My Files</span>
-                  </NuxtLink>
-                </li>
-                <li>
-                  <NuxtLink to="/shared" :class="['nav-link', { active: isLinkActive('/shared') }]">
-                    <Icon name="mdi:share-variant" class="w-5 h-5" />
-                    <span>Shared</span>
-                  </NuxtLink>
-                </li>
-                <li>
-                  <NuxtLink to="/wallpapers" :class="['nav-link', { active: isLinkActive('/wallpapers') }]">
-                    <Icon name="mdi:wallpaper" class="w-5 h-5" />
-                    <span>Wallpapers</span>
-                  </NuxtLink>
-                </li>
-                <li>
-                  <NuxtLink to="/favorites" :class="['nav-link', { active: isLinkActive('/favorites') }]">
-                    <Icon name="mdi:star" class="w-5 h-5" />
-                    <span>Favorites</span>
-                  </NuxtLink>
-                </li>
-                <li>
-                  <NuxtLink to="/media" :class="['nav-link', { active: isLinkActive('/media') }]">
-                    <Icon name="mdi:play-box-multiple-outline" class="w-5 h-5" />
-                    <span>Media</span>
-                  </NuxtLink>
-                </li>
-                <li>
-                  <NuxtLink to="/theatre" :class="['nav-link', { active: isLinkActive('/theatre') }]">
-                    <Icon name="mdi:theater" class="w-5 h-5" />
-                    <span>Theatre</span>
-                  </NuxtLink>
-                </li>
-                <li>
-                  <NuxtLink to="/collections" :class="['nav-link', { active: isLinkActive('/collections') }]">
-                    <Icon name="mdi:tag-multiple" class="w-5 h-5" />
-                    <span>Collections</span>
-                  </NuxtLink>
-                </li>
-
-                <li>
-                  <NuxtLink to="/shorts" :class="['nav-link', { active: isLinkActive('/shorts') }]">
-                    <Icon name="mdi:play-box-outline" class="w-5 h-5" />
-                    <span>Shorts</span>
-                  </NuxtLink>
-                </li>
-              </ul>
-            </div>
-
-            <div class="mb-6">
-              <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-3">Tools</h3>
-              <ul class="space-y-1">
-                <li>
-                  <NuxtLink to="/downloader" :class="['nav-link', { active: isLinkActive('/downloader') }]">
-                    <Icon name="mdi:cloud-download" class="w-5 h-5" />
-                    <span>Downloader</span>
-                  </NuxtLink>
-                </li>
-              </ul>
-            </div>
-
-            <div class="mb-6">
-              <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-3">Storage Management</h3>
-              <ul class="space-y-1">
-                <li>
-                  <NuxtLink to="/duplicates" :class="['nav-link', { active: isLinkActive('/duplicates') }]">
-                    <Icon name="mdi:content-copy" class="w-5 h-5" />
-                    <span>Duplicates</span>
-                  </NuxtLink>
-                </li>
-                <li>
-                  <NuxtLink to="/trash" :class="['nav-link', { active: isLinkActive('/trash') }]">
-                    <Icon name="mdi:trash-can-outline" class="w-5 h-5" />
-                    <span>Recycle Bin</span>
-                  </NuxtLink>
-                </li>
-              </ul>
-            </div>
-
-            <div v-if="user && user.isAdmin" class="mb-6">
-              <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-error/40 mb-3">Administration</h3>
-              <ul class="space-y-1">
-                <li>
-                  <NuxtLink to="/admin" :class="['nav-link', { active: isLinkActive('/admin') }]">
-                    <Icon name="mdi:shield-crown" class="w-5 h-5" />
-                    <span>Admin Panel</span>
-                  </NuxtLink>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 class="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-3">Account</h3>
-              <ul class="space-y-1">
-                <li>
-                  <NuxtLink to="/settings" :class="['nav-link', { active: isLinkActive('/settings') }]">
-                    <Icon name="mdi:cog" class="w-5 h-5" />
-                    <span>Settings</span>
-                  </NuxtLink>
-                </li>
-                <li>
-                  <NuxtLink to="/logs" :class="['nav-link', { active: isLinkActive('/logs') }]">
-                    <Icon name="mdi:history" class="w-5 h-5" />
-                    <span>Logs</span>
+          <nav class="flex-1 px-3 py-5 overflow-y-auto" aria-label="Main">
+            <div v-for="group in visibleNavGroups" :key="group.label" class="mb-6 last:mb-0">
+              <h3 class="micro px-2 mb-2">{{ group.label }}</h3>
+              <ul>
+                <li v-for="item in group.items" :key="item.to">
+                  <NuxtLink
+                    :to="item.to"
+                    :class="['nav-link', { active: isLinkActive(item.to) }]"
+                    :aria-current="isLinkActive(item.to) ? 'page' : undefined"
+                  >
+                    <Icon :name="item.icon" class="w-4 h-4 shrink-0" />
+                    <span>{{ item.label }}</span>
                   </NuxtLink>
                 </li>
               </ul>
             </div>
           </nav>
 
-          <!-- Sidebar Footer / User -->
-          <div class="p-4 border-t border-base-content/10 bg-base-100">
-            <div class="flex items-center gap-3 p-2 rounded-lg bg-base-200/50 border border-base-content/5">
-              <div class="avatar placeholder">
-                <div class="bg-primary/10 text-primary rounded-md w-9">
-                  <span class="text-sm font-bold">{{ user.name.charAt(0).toUpperCase() }}</span>
-                </div>
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs font-bold truncate text-base-content">{{ user.name }}</p>
-                <p class="text-[9px] font-bold text-success uppercase tracking-wider">Online</p>
-              </div>
+          <!-- Signed-in user -->
+          <div class="shrink-0 px-5 py-4 border-t border-line flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full border border-line-strong flex items-center justify-center text-[13px] font-medium text-fg shrink-0">
+              {{ user.name.charAt(0).toUpperCase() }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-[13px] font-medium truncate text-fg leading-tight">{{ user.name }}</p>
+              <p class="text-[12px] text-fg-3 leading-tight flex items-center gap-1.5 mt-0.5">
+                <span class="dot text-success"></span>Signed in
+              </p>
             </div>
           </div>
         </aside>
@@ -176,16 +65,68 @@
 </template>
 
 <script setup lang="ts">
-import { useState, useCookie, useRoute } from 'nuxt/app'
+import { useState, useCookie, useRoute, useHead } from 'nuxt/app'
 import { onMounted, watch, computed } from 'vue'
 
 const route = useRoute()
 const user = useState<{ name: string; isAdmin?: boolean } | null>('user')
-const themeCookie = useCookie('theme', { default: () => 'onedev' })
-const currentTheme = useState<string>('currentTheme', () => themeCookie.value)
+
+// Only Dark and Light exist. Older saved themes (onedev, dracula, ...) fall back to Dark.
+const normalizeTheme = (theme?: string | null) => (theme === 'light' ? 'light' : 'dark')
+
+const themeCookie = useCookie('theme', { default: () => 'dark' })
+const currentTheme = useState<string>('currentTheme', () => normalizeTheme(themeCookie.value))
 const userSettings = useState<any>('userSettings', () => null)
 
+useHead({
+  htmlAttrs: { 'data-theme': computed(() => normalizeTheme(currentTheme.value)) }
+})
 
+const navGroups = [
+  {
+    label: 'Library',
+    items: [
+      { to: '/', label: 'Dashboard', icon: 'mdi:home-variant-outline' },
+      { to: '/files', label: 'My Files', icon: 'mdi:folder-outline' },
+      { to: '/shared', label: 'Shared', icon: 'mdi:share-variant-outline' },
+      { to: '/wallpapers', label: 'Wallpapers', icon: 'mdi:wallpaper' },
+      { to: '/favorites', label: 'Favorites', icon: 'mdi:star-outline' },
+      { to: '/media', label: 'Media', icon: 'mdi:play-box-multiple-outline' },
+      { to: '/theatre', label: 'Theatre', icon: 'mdi:theater' },
+      { to: '/collections', label: 'Collections', icon: 'mdi:tag-multiple-outline' },
+      { to: '/shorts', label: 'Shorts', icon: 'mdi:play-box-outline' },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { to: '/downloader', label: 'Downloader', icon: 'mdi:cloud-download-outline' },
+    ],
+  },
+  {
+    label: 'Storage',
+    items: [
+      { to: '/duplicates', label: 'Duplicates', icon: 'mdi:content-copy' },
+      { to: '/trash', label: 'Recycle Bin', icon: 'mdi:trash-can-outline' },
+    ],
+  },
+  {
+    label: 'Administration',
+    adminOnly: true,
+    items: [
+      { to: '/admin', label: 'Admin Panel', icon: 'mdi:shield-account-outline' },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { to: '/settings', label: 'Settings', icon: 'mdi:cog-outline' },
+      { to: '/logs', label: 'Logs', icon: 'mdi:history' },
+    ],
+  },
+]
+
+const visibleNavGroups = computed(() => navGroups.filter(g => !g.adminOnly || user.value?.isAdmin))
 
 const isLinkActive = (path: string) => {
   if (path === '/') return route.path === '/'
@@ -193,7 +134,12 @@ const isLinkActive = (path: string) => {
 }
 
 watch(currentTheme, (newTheme) => {
-  themeCookie.value = newTheme
+  const normalized = normalizeTheme(newTheme)
+  if (normalized !== newTheme) {
+    currentTheme.value = normalized
+    return
+  }
+  themeCookie.value = normalized
 })
 
 async function refreshUserSettings() {
@@ -202,7 +148,7 @@ async function refreshUserSettings() {
     const data: any = await $fetch('/api/user-settings')
     userSettings.value = data
     if (data.theme) {
-      currentTheme.value = data.theme
+      currentTheme.value = normalizeTheme(data.theme)
     }
   } catch (err) {
     console.error('Failed to fetch settings:', err)
@@ -226,21 +172,14 @@ watch(user, (newUser) => {
 
 <style scoped>
 .nav-link {
-  @apply flex items-center gap-3 px-4 py-2.5 rounded-lg font-bold text-xs text-base-content/60 transition-all duration-200 hover:bg-base-content/5 hover:text-base-content;
+  @apply flex items-center gap-3 px-2 h-8 rounded-md text-[14px] text-fg-2 transition-colors duration-[120ms] hover:text-fg;
 }
 
 .nav-link.active {
-  @apply bg-primary text-primary-content shadow-sm hover:bg-primary/90;
+  @apply text-fg font-medium;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+.nav-link.active :deep(svg) {
+  @apply text-fg;
 }
 </style>

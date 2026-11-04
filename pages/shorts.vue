@@ -393,7 +393,7 @@ const refresh = () => {
     <!-- Back Button -->
     <button 
       @click="navigateTo('/')" 
-      class="absolute top-6 left-6 z-50 btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10 hover:bg-black/40"
+      class="absolute top-6 left-6 z-50 btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60" aria-label="Back"
     >
       <Icon name="mdi:arrow-left" class="w-6 h-6" />
     </button>
@@ -403,43 +403,46 @@ const refresh = () => {
       <button 
         v-if="currentVisibleMedia"
         @click="toggleFavourite(currentVisibleMedia)" 
-        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
-        :class="{ 'text-orange-500': currentVisibleMedia.meta.isFavourite }"
+        class="btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60"
+        :class="{ '!bg-white/20': currentVisibleMedia.meta.isFavourite }"
+        :aria-pressed="currentVisibleMedia.meta.isFavourite"
+        title="Favorite"
       >
         <Icon :name="currentVisibleMedia.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-6 h-6" />
       </button>
       <button 
         v-if="currentVisibleMedia"
         @click="removeFolderFromShorts(currentVisibleMedia)" 
-        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        class="btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60"
         title="Remove Folder from Shorts"
       >
         <Icon name="mdi:folder-remove-outline" class="w-6 h-6" />
       </button>
       <button 
         @click="toggleAutoscroll" 
-        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
-        :class="{ 'text-primary': isAutoscrollEnabled }"
+        class="btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60"
+        :class="{ '!bg-white/20': isAutoscrollEnabled }"
+        :aria-pressed="isAutoscrollEnabled"
         title="Toggle Autoscroll"
       >
         <Icon :name="isAutoscrollEnabled ? 'mdi:play-pause' : 'mdi:play-box-multiple-outline'" class="w-6 h-6" />
       </button>
       <button 
         @click="toggleFullscreen" 
-        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        class="btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60"
         title="Toggle Fullscreen"
       >
         <Icon :name="isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'" class="w-6 h-6" />
       </button>
       <button 
         @click="toggleMute" 
-        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        class="btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60"
       >
         <Icon :name="isMuted ? 'mdi:volume-off' : 'mdi:volume-high'" class="w-6 h-6" />
       </button>
       <button 
         @click="refresh" 
-        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        class="btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60"
       >
         <Icon name="mdi:refresh" class="w-6 h-6" />
       </button>
@@ -447,8 +450,8 @@ const refresh = () => {
 
     <!-- Loading State -->
     <div v-if="isLoading" class="h-full w-full flex flex-col items-center justify-center text-white gap-4">
-      <span class="loading loading-spinner loading-lg text-primary"></span>
-      <p class="font-bold uppercase tracking-[0.2em] text-[10px] opacity-50">Syncing Media Cluster...</p>
+      <span class="loading loading-spinner loading-lg !text-white/70"></span>
+      <p class="text-[14px] text-white/60">Loading shorts…</p>
     </div>
 
     <!-- Media Feed -->
@@ -498,32 +501,30 @@ const refresh = () => {
         <!-- Pause Overlay (Videos Only) -->
         <transition name="fade">
           <div v-if="media.type === 'video' && isPaused && currentVisibleMedia?.fullPath === media.fullPath" class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-            <div class="bg-black/40 p-5 rounded-full backdrop-blur-md border border-white/10">
+            <div class="bg-black/40 p-5 rounded-full border border-white/10">
               <Icon name="mdi:play" class="w-12 h-12 text-white opacity-80" />
             </div>
           </div>
         </transition>
 
         <!-- Media Info Overlay -->
-        <div class="absolute bottom-0 left-0 right-0 p-8 pt-24 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none z-20">
-          <div class="max-w-md pointer-events-auto">
-            <h2 class="text-white font-bold text-lg tracking-tight mb-4 drop-shadow-md">
+        <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-8 pointer-events-none z-20">
+          <div class="max-w-md pointer-events-auto bg-black/60 rounded-xl p-4 inline-block">
+            <h2 class="text-white font-medium text-[15px] mb-3 break-words">
               {{ media.name }}
             </h2>
             <div class="flex flex-wrap items-center gap-2">
               <span 
                 v-for="tag in media.meta.tags.slice(0, 3)" 
-                :key="tag.name"
-                class="badge badge-sm border-none text-white font-bold py-2.5 px-3 rounded shadow-sm"
-                :style="{ backgroundColor: tag.color }"
-              >
+                :key="tag.name" class="tag-chip tag-chip-media">
+                  <span class="dot" :style="{ backgroundColor: tag.color }"></span>
                 {{ tag.name }}
               </span>
-              <span v-if="media.meta.tags.length > 3" class="text-[9px] text-white/50 font-bold self-center uppercase tracking-widest">
+              <span v-if="media.meta.tags.length > 3" class="num text-[12px] text-white/60 self-center">
                 +{{ media.meta.tags.length - 3 }} more
               </span>
               <button
-                class="btn btn-ghost btn-xs bg-white/10 hover:bg-white/20 border border-white/10 rounded-md px-3 h-7 text-white transition-all ml-1 font-bold text-[9px] uppercase tracking-widest"
+                class="btn btn-xs !bg-transparent !border-white/30 !text-white hover:!bg-white/10"
                 @click="openTagModal"
               >
                 <Icon name="mdi:tag-plus-outline" class="w-3.5 h-3.5 mr-1" /> 
@@ -536,91 +537,79 @@ const refresh = () => {
     </div>
 
     <!-- Tag Modal -->
-    <div v-if="showTagModal" class="modal modal-open backdrop-blur-md z-[60]">
-      <div class="modal-box rounded-xl shadow-xl p-8 max-w-sm border border-white/10 bg-[#0d1117] text-white">
-        <div class="flex items-center gap-3 mb-8">
-          <div class="bg-primary/10 p-2.5 rounded-lg border border-primary/10 text-primary">
-            <Icon name="mdi:tag-multiple" class="w-5 h-5" />
-          </div>
-          <div>
-            <h3 class="font-bold text-base tracking-tight text-white">Manage Tags</h3>
-            <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Add tags to your media</p>
-          </div>
+    <div v-if="showTagModal" class="modal modal-open z-[60]">
+      <div class="modal-box p-6 max-w-sm">
+        <div class="mb-6">
+          <h3 class="section-title">Tags</h3>
+          <p class="text-[14px] text-fg-3">Add tags to this item.</p>
         </div>
 
         <div v-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Tag Name</span>
+              <span class="label-text">Tag Name</span>
             </label>
             <input
               v-model="newTagName"
               type="text"
               placeholder="Work, Personal, Favorites..."
-              class="input input-bordered w-full bg-white/5 focus:bg-white/10 transition-all font-bold text-xs h-11 rounded-lg border-white/10 text-white"
+              class="input w-full"
             />
           </div>
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Tag Color</span>
+              <span class="label-text">Tag Color</span>
             </label>
             <div class="flex gap-3 items-center">
               <input
                 v-model="newTagColor"
                 type="color"
-                class="w-11 h-11 rounded-lg cursor-pointer border-none bg-white/5"
+                class="w-10 h-10 rounded-lg cursor-pointer border border-line-strong bg-transparent"
               />
-              <div class="flex-grow h-11 rounded-lg flex items-center px-4 font-bold text-[11px] bg-white/5 border border-dashed border-white/10 uppercase tracking-widest" :style="{ color: newTagColor }">
-                 Color Preview
-              </div>
+              <span class="tag-chip"><span class="dot" :style="{ backgroundColor: newTagColor }"></span>{{ newTagName || 'Preview' }}</span>
             </div>
           </div>
-          <div class="flex flex-col gap-2 mt-10">
-            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTags">Create & Apply</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-white/70" @click="showNewTagForm = false">Existing Tags</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
+          <div class="flex flex-col gap-2 mt-8">
+            <button class="btn btn-primary btn-sm" @click="addTags">Create & Apply</button>
+            <button class="btn btn-ghost btn-sm" @click="showNewTagForm = false">Existing Tags</button>
+            <button class="btn btn-ghost btn-sm" @click="closeTagModal">Cancel</button>
           </div>
         </div>
 
         <div v-else class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-white/40">Select Existing Tags</span>
+              <span class="label-text">Select Existing Tags</span>
             </label>
-            <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar no-scrollbar">
+            <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 ">
               <div
                 v-for="tag in predefinedTags"
                 :key="tag.name"
-                class="p-3 rounded-lg cursor-pointer text-center font-bold text-[9px] uppercase tracking-wider transition-all border border-white/10"
-                :style="{ 
-                  borderColor: isTagSelected(tag) ? tag.color : '',
-                  backgroundColor: isTagSelected(tag) ? tag.color : 'transparent', 
-                  color: isTagSelected(tag) ? 'white' : tag.color
-                }"
+                class="flex items-center gap-2 px-3 h-9 rounded-lg border cursor-pointer text-[13px] transition-colors"
+                :class="isTagSelected(tag) ? 'border-fg text-fg bg-surface-2' : 'border-line text-fg-2 hover:border-line-strong'"
+                role="checkbox"
+                :aria-checked="isTagSelected(tag)"
                 @click="toggleTagSelection(tag)"
               >
-                {{ tag.name }}
+                <span class="dot" :style="{ backgroundColor: tag.color }"></span>
+                <span class="truncate flex-1 text-left">{{ tag.name }}</span>
+                <Icon v-if="isTagSelected(tag)" name="mdi:check" class="w-3.5 h-3.5 shrink-0" />
               </div>
             </div>
           </div>
-          <div class="flex flex-col gap-2 mt-10">
-            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="addTags">Apply Selection</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-white/70" @click="showNewTagForm = true">New Tag</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
+          <div class="flex flex-col gap-2 mt-8">
+            <button class="btn btn-primary btn-sm" @click="addTags">Apply Selection</button>
+            <button class="btn btn-ghost btn-sm" @click="showNewTagForm = true">New Tag</button>
+            <button class="btn btn-ghost btn-sm" @click="closeTagModal">Cancel</button>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-else class="h-full w-full flex flex-col items-center justify-center text-white p-8 text-center gap-6">
-      <div class="bg-white/5 p-8 rounded-xl border border-white/10">
-        <Icon name="mdi:folder-play-outline" class="w-16 h-16 opacity-20" />
-      </div>
-      <div>
-        <h3 class="text-lg font-bold uppercase tracking-widest mb-1">No folders selected</h3>
-        <p class="text-white/40 text-[10px] font-bold uppercase tracking-widest max-w-xs">Select folders from your Files to populate the Shorts feed, or upload media.</p>
-      </div>
-      <NuxtLink to="/files" class="btn btn-primary btn-sm rounded-lg px-8 shadow-sm font-bold uppercase tracking-widest text-[10px]">Go to Files</NuxtLink>
+    <div v-else class="h-full w-full flex flex-col items-center justify-center p-8 text-center">
+      <p class="text-[15px] text-white">No folders selected.</p>
+      <p class="text-[14px] text-white/60 mt-1 max-w-xs">Pick folders in Files to fill the Shorts feed.</p>
+      <NuxtLink to="/files" class="btn btn-sm mt-6 !bg-transparent !border-white/30 !text-white hover:!bg-white/10">Go to files</NuxtLink>
     </div>
   </div>
 </template>
@@ -647,14 +636,4 @@ video::-webkit-media-controls {
   display: none !important;
 }
 
-@media (max-width: 768px) {
-  /* Backdrop filters are extremely expensive on mobile WebKit */
-  .backdrop-blur-md,
-  .backdrop-blur-sm,
-  .backdrop-blur {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background-color: rgba(0, 0, 0, 0.8) !important;
-  }
-}
 </style>

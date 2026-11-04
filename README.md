@@ -81,7 +81,7 @@ Before setting up, ensure you have the following installed:
 
 ### ⚙️ Configuration
 
-ClyoCloud utilizes environment variables for settings. Create a `.env` file in the root directory:
+ClyoCloud utilizes environment variables for settings, read when the server starts. Create a `.env` file in the root directory:
 
 ```env
 PORT=6969
@@ -90,8 +90,12 @@ THUMBNAIL_PATH=/path/to/your/thumbnails
 JWT_SECRET=your_secure_random_string_here
 ```
 
+`npm run dev` loads `.env` automatically. The production server does not, so pass it when starting (see below) or set the variables in your process manager. Setting them during `npm run build` has no effect. Paths you don't set default to `~/.clyo` of the user running the server.
+
+See the [Setup Guide](.docs/setup-guide.md#environment-variables) for all variables.
+
 > [!TIP]
-> Ensure the directory paths defined in `STORAGE_PATH` and `THUMBNAIL_PATH` exist and are writeable by the user running the ClyoCloud process.
+> Ensure the directory paths defined in `STORAGE_PATH` and `THUMBNAIL_PATH` are writeable by the user running the ClyoCloud process.
 
 ---
 
@@ -121,8 +125,8 @@ Follow these steps to get your server up and running:
     # Build the production bundle
     npm run build
 
-    # Start the server
-    node .output/server/index.mjs
+    # Start the server, loading settings from .env
+    node --env-file=.env .output/server/index.mjs
     ```
 
 ---

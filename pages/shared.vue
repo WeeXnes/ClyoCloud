@@ -86,21 +86,18 @@ onMounted(fetchShared)
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/50">
-    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
-      <div class="w-full px-6 py-4">
+  <div class="min-h-screen bg-base-100">
+    <header class="page-bar">
+      <div class="page-wrap py-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="Open navigation">
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center border border-success/20">
-                <Icon name="mdi:share-variant" class="text-success w-5 h-5" />
-              </div>
               <div>
-                <h1 class="text-base font-extrabold tracking-tight">Shared Files</h1>
-                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">Manage your public links</p>
+                <h1 class="text-[15px] font-medium tracking-section text-fg leading-tight">Shared Files</h1>
+                <p class="hidden sm:block text-[13px] text-fg-3 leading-tight">Manage your public links</p>
               </div>
             </div>
           </div>
@@ -108,13 +105,13 @@ onMounted(fetchShared)
           <div class="flex flex-wrap items-center gap-2 md:gap-3">
              <div class="relative flex-1 md:flex-none md:min-w-[240px]">
                 <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                  <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
+                  <Icon name="mdi:magnify" class="w-4 h-4 text-fg-3" />
                 </div>
                 <input
                   v-model="searchQuery"
                   type="text"
                   placeholder="Search shared files..."
-                  class="input input-xs md:input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs h-8 md:h-10"
+                  class="input input-xs md:input-sm input-bordered w-full !pl-9 transition font-medium text-xs "
                 />
              </div>
           </div>
@@ -122,16 +119,16 @@ onMounted(fetchShared)
       </div>
     </header>
 
-    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <div v-if="isLoading" class="flex flex-col gap-3">
-        <div v-for="i in 5" :key="i" class="h-14 rounded-lg bg-base-300 animate-pulse"></div>
+    <main class="page-wrap py-10">
+      <div v-if="isLoading" class="hair-list">
+        <div v-for="i in 5" :key="i" class="h-14 animate-pulse"></div>
       </div>
 
-      <div v-else-if="filteredFiles.length" class="flex flex-col gap-2.5">
+      <div v-else-if="filteredFiles.length" class="hair-list">
         <div 
           v-for="file in filteredFiles" 
           :key="file.name"
-          class="flex items-center gap-4 p-3 bg-base-100 rounded-lg border border-base-content/10 hover:border-primary/30 hover:bg-base-200/50 transition-all cursor-pointer group"
+          class="flex items-center gap-4 px-4 py-3 bg-base-100 hover:bg-surface-2 transition-colors cursor-pointer group"
           @click="onFileClick(file)"
         >
           <div class="flex items-center justify-center shrink-0 w-8 h-8">
@@ -139,22 +136,22 @@ onMounted(fetchShared)
           </div>
 
           <div class="flex-grow min-w-0">
-            <h3 class="text-xs font-bold truncate group-hover:text-primary transition-colors text-base-content">{{ file.name }}</h3>
-            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest mt-0.5">
+            <h3 class="text-[14px] truncate text-fg">{{ file.name }}</h3>
+            <p class="num text-[12px] text-fg-3 mt-0.5">
               {{ file.isFolder ? 'Folder' : (typeof file.size === 'number' && !isNaN(file.size) ? (file.size / 1024 / 1024).toFixed(2) + ' MB' : '0.00 MB') }}
             </p>
           </div>
 
           <div class="flex items-center gap-2">
             <button 
-              class="btn btn-ghost btn-sm btn-circle text-success hover:bg-success/10"
+              class="btn btn-ghost btn-sm btn-circle" aria-label="Copy public link"
               title="Copy Public Link"
               @click.stop="copyPublicLink(file)"
             >
               <Icon name="mdi:link-variant" class="w-5 h-5" />
             </button>
             <button 
-              class="btn btn-ghost btn-sm btn-circle text-error hover:bg-error/10"
+              class="btn btn-ghost btn-sm btn-circle text-error" aria-label="Stop sharing"
               title="Disable Sharing"
               @click.stop="togglePublic(file)"
             >
@@ -165,12 +162,9 @@ onMounted(fetchShared)
       </div>
 
       <div v-else class="flex flex-col items-center justify-center py-24 text-center">
-        <div class="bg-base-200/50 p-6 rounded-xl mb-6">
-          <Icon name="mdi:share-variant-outline" class="w-16 h-16 text-base-content/10" />
-        </div>
-        <h3 class="text-xl font-bold tracking-tight text-base-content">No shared files</h3>
-        <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-2 max-w-xs mx-auto leading-relaxed">Files you make public will appear here for easy management.</p>
-        <NuxtLink to="/files" class="btn btn-primary btn-sm mt-8 px-8 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]">
+        <h3 class="text-[15px] text-fg">No shared files</h3>
+        <p class="text-[14px] text-fg-3 mt-1 max-w-sm mx-auto">Files you make public will appear here for easy management.</p>
+        <NuxtLink to="/files" class="btn btn-sm mt-6">
           Go to Files
         </NuxtLink>
       </div>

@@ -1,34 +1,28 @@
 <template>
-  <div class="min-h-screen bg-base-300/40 flex flex-col font-sans text-base-content/90">
-    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
-      <div class="w-full px-6 py-4">
+  <div class="min-h-screen bg-base-100 flex flex-col font-sans text-fg">
+    <header class="page-bar">
+      <div class="page-wrap py-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="Open navigation">
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div class="flex items-center gap-2">
               <button v-if="selectedIp" @click="selectedIp = null" class="btn btn-ghost btn-circle btn-xs mr-1">
                 <Icon name="mdi:arrow-left" class="w-4 h-4" />
               </button>
-              <div class="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center border border-error/20">
-                <Icon name="mdi:shield-crown" class="text-error w-5 h-5" />
-              </div>
               <div>
-                <h1 class="text-base font-extrabold tracking-tight">
+                <h1 class="text-[15px] font-medium tracking-section text-fg leading-tight">
                   {{ selectedIp ? `IP Inspector: ${selectedIp}` : 'Admin Dashboard' }}
                 </h1>
-                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">
+                <p class="hidden sm:block text-[13px] text-fg-3 leading-tight">
                   {{ selectedIp ? 'Client Traffic Analysis' : 'System Administration' }}
                 </p>
               </div>
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-error/15 text-error border border-error/10">
-              <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-error animate-pulse"></span>
-              Admin
-            </span>
+            <span class="badge">Admin</span>
           </div>
         </div>
       </div>
@@ -37,50 +31,49 @@
     <!-- Access Denied -->
     <div v-if="accessDenied" class="flex-1 flex items-center justify-center">
       <div class="text-center space-y-4">
-        <Icon name="mdi:shield-lock" class="w-16 h-16 text-error/40 mx-auto" />
-        <h2 class="text-xl font-bold">Access Denied</h2>
-        <p class="text-sm text-base-content/50">You need administrator privileges to view this page.</p>
-        <NuxtLink to="/" class="btn btn-primary btn-sm rounded-xl">Back to Dashboard</NuxtLink>
+                <h2 class="text-xl font-medium">Access Denied</h2>
+        <p class="text-sm text-fg-3">You need administrator privileges to view this page.</p>
+        <NuxtLink to="/" class="btn btn-primary btn-sm">Back to Dashboard</NuxtLink>
       </div>
     </div>
 
     <!-- Loading -->
     <div v-else-if="isLoading" class="flex-1 flex items-center justify-center">
-      <span class="loading loading-spinner loading-lg text-primary"></span>
+      <span class="loading loading-spinner loading-lg text-fg"></span>
     </div>
 
     <!-- IP Traffic Inspector Sub-Page -->
-    <main v-else-if="selectedIp" class="flex-1 w-full max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+    <main v-else-if="selectedIp" class="flex-1 w-full page-wrap py-12 space-y-16">
       
       <!-- Back button and IP Info Card -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
         <!-- Geolocation & Limit Info -->
         <div class="lg:col-span-4 card-panel flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm font-bold uppercase tracking-wider text-base-content/50">Client Identity</h2>
-              <span v-if="isIpBlocked(selectedIp)" class="badge badge-error badge-sm uppercase tracking-wider font-extrabold text-[8px] px-2 py-0.5 rounded border border-error/10">Blocked</span>
-              <span v-else class="badge badge-success badge-sm uppercase tracking-wider font-extrabold text-[8px] px-2 py-0.5 rounded border border-success/10">Active</span>
+              <h2 class="section-title">Client identity</h2>
+              <span v-if="isIpBlocked(selectedIp)" class="flex items-center gap-1.5 text-[13px] text-fg-2"><span class="dot text-error"></span>Blocked</span>
+              <span v-else class="flex items-center gap-1.5 text-[13px] text-fg-2"><span class="dot text-success"></span>Active</span>
             </div>
             <div class="space-y-4">
               <div>
-                <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-wider">IP Address</p>
-                <p class="text-lg font-mono font-extrabold text-primary">{{ selectedIp }}</p>
+                <p class="text-[13px] text-fg-3">IP Address</p>
+                <p class="text-lg font-mono font-semibold text-fg">{{ selectedIp }}</p>
               </div>
               <div>
-                <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-wider">Location</p>
-                <p class="text-sm font-bold">{{ selectedIpGeo?.city || 'Local' }}, {{ selectedIpGeo?.country || 'Intranet' }}</p>
-                <p class="text-[10px] text-base-content/30 font-mono mt-0.5">Coords: {{ selectedIpGeo?.lat?.toFixed(4) || '0' }}, {{ selectedIpGeo?.lon?.toFixed(4) || '0' }}</p>
+                <p class="text-[13px] text-fg-3">Location</p>
+                <p class="text-sm font-medium">{{ selectedIpGeo?.city || 'Local' }}, {{ selectedIpGeo?.country || 'Intranet' }}</p>
+                <p class="text-[11px] text-fg-3 font-mono mt-0.5">Coords: {{ selectedIpGeo?.lat?.toFixed(4) || '0' }}, {{ selectedIpGeo?.lon?.toFixed(4) || '0' }}</p>
               </div>
               <div>
-                <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-wider">Total Requests</p>
-                <p class="text-sm font-bold">{{ getIpRequestCount(selectedIp) }} requests ({{ getIpTrafficShare(selectedIp) }}% of total)</p>
+                <p class="text-[13px] text-fg-3">Total Requests</p>
+                <p class="text-sm font-medium">{{ getIpRequestCount(selectedIp) }} requests ({{ getIpTrafficShare(selectedIp) }}% of total)</p>
               </div>
             </div>
           </div>
 
-          <div class="pt-6 border-t border-base-content/5 mt-6 flex gap-2">
-            <button @click="selectedIp = null" class="btn btn-sm rounded-xl flex-1 font-bold">
+          <div class="pt-6 border-t border-line mt-6 flex gap-2">
+            <button @click="selectedIp = null" class="btn btn-sm flex-1">
               <Icon name="mdi:arrow-left" class="w-4 h-4 mr-1" /> Close Inspector
             </button>
           </div>
@@ -88,7 +81,6 @@
 
         <!-- IP Map Location -->
         <div class="lg:col-span-8 card-panel relative overflow-hidden flex flex-col justify-center min-h-[250px]">
-          <div class="absolute inset-0 bg-base-300/20 z-0"></div>
           <div class="relative z-10 w-full h-[220px]">
             <canvas ref="selectedWorldMapCanvas" class="w-full h-full rounded-xl"></canvas>
           </div>
@@ -99,16 +91,16 @@
       <div class="card-panel">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-sm font-bold">Recent Request Logs</h2>
-            <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Real-time HTTP requests from this address</p>
+            <h2 class="section-title">Recent Request Logs</h2>
+            <p class="text-[13px] text-fg-3">Real-time HTTP requests from this address</p>
           </div>
-          <span class="text-[10px] font-mono text-base-content/40">Showing last {{ filteredRequests.length }} entries</span>
+          <span class="text-[11px] font-mono text-fg-3">Showing last {{ filteredRequests.length }} entries</span>
         </div>
 
         <div class="overflow-x-auto custom-scrollbar">
           <table class="table table-xs w-full text-left font-mono">
             <thead>
-              <tr class="border-b border-base-content/10 text-base-content/40 uppercase tracking-widest text-[9px] font-bold">
+              <tr class="border-b border-line text-fg-3 uppercase tracking-micro font-mono text-[11px] ">
                 <th class="py-2.5">Time</th>
                 <th class="py-2.5">Method</th>
                 <th class="py-2.5">Path</th>
@@ -117,28 +109,27 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(req, i) in filteredRequests" :key="i" class="border-b border-base-content/5 hover:bg-base-200/50">
-                <td class="py-2 text-[10px] text-base-content/50">{{ formatTime(req.timestamp) }}</td>
+              <tr v-for="(req, i) in filteredRequests" :key="i" class="border-b border-line hover:bg-base-200">
+                <td class="py-2 text-[11px] text-fg-3">{{ formatTime(req.timestamp) }}</td>
                 <td class="py-2">
-                  <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide"
-                        :class="req.method === 'POST' ? 'bg-primary/10 text-primary' : 'bg-success/10 text-success'">
+                  <span class="text-[11px] uppercase tracking-micro font-mono text-fg-2">
                     {{ req.method }}
                   </span>
                 </td>
-                <td class="py-2 text-[10px] font-bold text-base-content/80 max-w-xs truncate flex items-center gap-1.5" :title="req.path">
-                  <Icon v-if="req.isAuth" name="mdi:lock" class="w-3.5 h-3.5 text-success shrink-0" title="Authenticated request (Auth middleware verified)" />
+                <td class="py-2 text-[11px] font-medium text-fg max-w-xs truncate flex items-center gap-1.5" :title="req.path">
+                  <Icon v-if="req.isAuth" name="mdi:lock" class="w-3.5 h-3.5 text-fg-3 shrink-0" title="Authenticated request (Auth middleware verified)" />
                   <span class="truncate">{{ req.path }}</span>
                 </td>
                 <td class="py-2">
-                  <span class="px-1.5 py-0.25 rounded text-[9px] font-extrabold font-mono"
-                        :class="req.statusCode < 300 ? 'text-success bg-success/10' : req.statusCode < 400 ? 'text-info bg-info/10' : 'text-error bg-error/10'">
+                  <span class="num text-[12px]"
+                        :class="req.statusCode < 300 ? 'text-success' : req.statusCode < 400 ? 'text-fg-2' : 'text-error'">
                     {{ req.statusCode }}
                   </span>
                 </td>
-                <td class="py-2 text-[9px] text-base-content/40 max-w-sm truncate" :title="req.userAgent">{{ req.userAgent || '-' }}</td>
+                <td class="py-2 text-[11px] text-fg-3 max-w-sm truncate" :title="req.userAgent">{{ req.userAgent || '-' }}</td>
               </tr>
               <tr v-if="!filteredRequests.length">
-                <td colspan="5" class="py-8 text-center text-xs text-base-content/30 font-bold">No recent requests recorded for this IP</td>
+                <td colspan="5" class="py-8 text-center text-xs text-fg-3 font-medium">No recent requests recorded for this IP</td>
               </tr>
             </tbody>
           </table>
@@ -147,63 +138,57 @@
     </main>
 
     <!-- Main Dashboard Page -->
-    <main v-else class="flex-1 w-full max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500">
+    <main v-else class="flex-1 w-full page-wrap py-12 space-y-16">
 
       <!-- World Map Card -->
       <div class="card-panel">
         <div class="mb-4">
-          <h2 class="text-sm font-bold">Connection Map</h2>
-          <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Geographic mapping of incoming client connections (click markers to inspect)</p>
+          <h2 class="section-title">Connection Map</h2>
+          <p class="text-[13px] text-fg-3">Geographic mapping of incoming client connections (click markers to inspect)</p>
         </div>
-        <div class="relative w-full h-[300px] rounded-xl overflow-hidden bg-base-200/20 border border-base-content/5">
+        <div class="relative w-full h-[300px] rounded-xl overflow-hidden bg-base-200 border border-line">
           <canvas ref="worldMapCanvas" @click="handleMapClick" class="w-full h-full cursor-pointer"></canvas>
         </div>
       </div>
 
       <!-- Overview Cards Row -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-line border-y border-line">
         <div class="stat-card">
-          <Icon name="mdi:clock-outline" class="w-5 h-5 text-primary" />
           <div class="stat-value">{{ formatUptime(data?.server?.uptimeMs) }}</div>
           <div class="stat-label">Uptime</div>
         </div>
         <div class="stat-card">
-          <Icon name="mdi:swap-vertical" class="w-5 h-5 text-info" />
           <div class="stat-value">{{ data?.traffic?.totalRequestsToday?.toLocaleString() || '0' }}</div>
           <div class="stat-label">Requests Today</div>
         </div>
         <div class="stat-card">
-          <Icon name="mdi:swap-vertical-bold" class="w-5 h-5 text-secondary" />
           <div class="stat-value">{{ data?.traffic?.totalRequests?.toLocaleString() || '0' }}</div>
           <div class="stat-label">Total Requests</div>
         </div>
         <div class="stat-card">
-          <Icon name="mdi:account-group" class="w-5 h-5 text-success" />
           <div class="stat-value">{{ data?.users?.length || 0 }}</div>
           <div class="stat-label">Users</div>
         </div>
         <div class="stat-card">
-          <Icon name="mdi:cellphone-link" class="w-5 h-5 text-warning" />
           <div class="stat-value">{{ data?.totalDevices || 0 }}</div>
           <div class="stat-label">Devices</div>
         </div>
         <div class="stat-card">
-          <Icon name="mdi:shield-alert" class="w-5 h-5 text-error" />
           <div class="stat-value">{{ totalBlockedIPs }}</div>
           <div class="stat-label">Blocked IPs</div>
         </div>
       </div>
 
       <!-- Charts Row -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
         <!-- Traffic Chart (wide) -->
         <div class="lg:col-span-8 card-panel">
           <div class="flex items-center justify-between mb-4">
             <div>
-              <h2 class="text-sm font-bold">Traffic Overview</h2>
-              <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Requests per minute (last 60 min)</p>
+              <h2 class="section-title">Traffic Overview</h2>
+              <p class="text-[13px] text-fg-3">Requests per minute (last 60 min)</p>
             </div>
-            <div class="text-[10px] text-base-content/30 font-mono">
+            <div class="text-[11px] text-fg-3 font-mono">
               Peak: {{ peakRequestsPerMin }}/min
             </div>
           </div>
@@ -215,22 +200,22 @@
         <!-- Status Code Donut -->
         <div class="lg:col-span-4 card-panel">
           <div class="mb-4">
-            <h2 class="text-sm font-bold">Status Codes</h2>
-            <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Response distribution</p>
+            <h2 class="section-title">Status Codes</h2>
+            <p class="text-[13px] text-fg-3">Response distribution</p>
           </div>
           <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 min-h-[12rem] py-4 sm:py-0">
             <div class="relative w-40 h-40 shrink-0">
               <canvas ref="donutChartCanvas" width="160" height="160" class="w-40 h-40"></canvas>
               <div class="absolute inset-0 flex items-center justify-center flex-col">
-                <span class="text-lg font-bold">{{ data?.traffic?.totalRequests?.toLocaleString() || '0' }}</span>
-                <span class="text-[9px] text-base-content/40 uppercase font-bold">Total</span>
+                <span class="num text-lg text-fg">{{ data?.traffic?.totalRequests?.toLocaleString() || '0' }}</span>
+                <span class="micro">Total</span>
               </div>
             </div>
             <div class="space-y-1.5 sm:space-y-2 flex flex-row sm:flex-col flex-wrap justify-center gap-x-4 gap-y-1 sm:gap-0">
               <div v-for="(entry, i) in statusCodeEntries" :key="i" class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: entry.color }"></span>
-                <span class="text-[10px] font-bold text-base-content/60">{{ entry.label }}</span>
-                <span class="text-[10px] font-mono text-base-content/40">{{ entry.count }}</span>
+                <span class="dot" :style="{ background: entry.color }"></span>
+                <span class="text-[11px] font-medium text-fg-2">{{ entry.label }}</span>
+                <span class="text-[11px] font-mono text-fg-3">{{ entry.count }}</span>
               </div>
             </div>
           </div>
@@ -238,35 +223,33 @@
       </div>
 
       <!-- Rate Limits + Top Endpoints Row -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-12">
         <!-- Rate Limits -->
         <div class="card-panel">
           <div class="mb-4">
-            <h2 class="text-sm font-bold">Rate Limiters</h2>
-            <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Active protection status</p>
+            <h2 class="section-title">Rate Limiters</h2>
+            <p class="text-[13px] text-fg-3">Active protection status</p>
           </div>
-          <div class="space-y-4">
-            <div v-for="limiter in data?.rateLimits?.limiters" :key="limiter.name" class="p-3 rounded-xl bg-base-200/50 border border-base-content/5">
+          <div class="hair-list">
+            <div v-for="limiter in data?.rateLimits?.limiters" :key="limiter.name" class="px-4 py-3">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
-                        :class="limiter.blockedIPs.length > 0 ? 'bg-error/15 text-error' : 'bg-success/15 text-success'">
-                    {{ limiter.name }}
-                  </span>
-                  <span class="text-[10px] text-base-content/40">{{ limiter.config.maxAttempts }} req / {{ Math.round(limiter.config.windowMs / 1000) }}s</span>
+                  <span class="dot" :class="limiter.blockedIPs.length > 0 ? 'text-error' : 'text-success'"></span>
+                  <span class="text-[14px] text-fg">{{ limiter.name }}</span>
+                  <span class="text-[11px] text-fg-3">{{ limiter.config.maxAttempts }} req / {{ Math.round(limiter.config.windowMs / 1000) }}s</span>
                 </div>
-                <span class="text-[10px] font-mono text-base-content/40">
+                <span class="text-[11px] font-mono text-fg-3">
                   {{ limiter.trackedIPs }} tracked
                 </span>
               </div>
               <!-- Blocked IPs -->
               <div v-if="limiter.blockedIPs.length > 0" class="mt-2 space-y-1">
-                <div v-for="blocked in limiter.blockedIPs" :key="blocked.ip" class="flex items-center justify-between px-2 py-1 rounded-lg bg-error/5 border border-error/10 text-[10px]">
-                  <span class="font-mono text-error hover:underline cursor-pointer font-bold" @click="selectedIp = blocked.ip">{{ blocked.ip }}</span>
-                  <span class="text-error/60">{{ Math.ceil(blocked.remainingMs / 1000) }}s remaining</span>
+                <div v-for="blocked in limiter.blockedIPs" :key="blocked.ip" class="flex items-center justify-between text-[12px]">
+                  <span class="font-mono text-error hover:underline cursor-pointer font-medium" @click="selectedIp = blocked.ip">{{ blocked.ip }}</span>
+                  <span class="num text-fg-3">{{ Math.ceil(blocked.remainingMs / 1000) }}s remaining</span>
                 </div>
               </div>
-              <div v-else class="text-[10px] text-success/60 mt-1">No blocked IPs</div>
+              <div v-else class="text-[12px] text-fg-3 mt-1">No blocked IPs</div>
             </div>
           </div>
         </div>
@@ -274,50 +257,48 @@
         <!-- Top Endpoints -->
         <div class="card-panel">
           <div class="mb-4">
-            <h2 class="text-sm font-bold">Top Endpoints</h2>
-            <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Most requested paths</p>
+            <h2 class="section-title">Top Endpoints</h2>
+            <p class="text-[13px] text-fg-3">Most requested paths</p>
           </div>
           <div class="space-y-2">
             <div v-for="(ep, i) in (data?.traffic?.topEndpoints || []).slice(0, 10)" :key="i" class="flex items-center gap-3">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between mb-1">
-                  <span class="text-[11px] font-mono font-bold truncate text-base-content/70">{{ ep.path }}</span>
-                  <span class="text-[10px] font-mono text-base-content/40 ml-2 shrink-0">{{ ep.count }}</span>
+                  <span class="text-[11px] font-mono font-medium truncate text-fg-2">{{ ep.path }}</span>
+                  <span class="text-[11px] font-mono text-fg-3 ml-2 shrink-0">{{ ep.count }}</span>
                 </div>
-                <div class="w-full h-1 bg-base-300 rounded-full overflow-hidden">
-                  <div class="h-full rounded-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
+                <div class="w-full h-1 bg-surface-2 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full bg-fg-3"
                        :style="{ width: endpointBarWidth(ep.count) + '%' }"></div>
                 </div>
               </div>
             </div>
-            <div v-if="!data?.traffic?.topEndpoints?.length" class="text-[10px] text-base-content/30 py-4 text-center">No data yet</div>
+            <div v-if="!data?.traffic?.topEndpoints?.length" class="text-[14px] text-fg-3 py-4">No data yet</div>
           </div>
         </div>
       </div>
 
       <!-- Users + Devices + Security Events -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
         <!-- Users -->
         <div class="lg:col-span-4 card-panel">
           <div class="mb-4">
-            <h2 class="text-sm font-bold">Users</h2>
-            <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Registered accounts</p>
+            <h2 class="section-title">Users</h2>
+            <p class="text-[13px] text-fg-3">Registered accounts</p>
           </div>
-          <div class="space-y-2">
-            <div v-for="user in data?.users" :key="user.name" class="flex items-center gap-3 p-2 rounded-lg bg-base-200/50 border border-base-content/5">
-              <div class="avatar placeholder">
-                <div class="rounded-md w-8" :class="user.isAdmin ? 'bg-error/10 text-error' : 'bg-primary/10 text-primary'">
-                  <span class="text-xs font-bold">{{ user.name.charAt(0).toUpperCase() }}</span>
-                </div>
+          <div class="hair-list">
+            <div v-for="user in data?.users" :key="user.name" class="flex items-center gap-3 px-4 py-3">
+              <div class="w-8 h-8 rounded-full border border-line-strong flex items-center justify-center text-[13px] font-medium text-fg shrink-0">
+                {{ user.name.charAt(0).toUpperCase() }}
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-xs font-bold truncate">{{ user.name }}</span>
-                  <span v-if="user.isAdmin" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-error/15 text-error">Admin</span>
+                  <span class="text-[14px] text-fg truncate">{{ user.name }}</span>
+                  <span v-if="user.isAdmin" class="badge">Admin</span>
                 </div>
                 <div class="flex items-center gap-2 mt-0.5">
-                  <span v-if="user.twoFactorEnabled" class="text-[9px] text-success font-bold">2FA</span>
-                  <span class="text-[9px] text-base-content/30">{{ getUserDeviceCount(user.name) }} devices</span>
+                  <span v-if="user.twoFactorEnabled" class="flex items-center gap-1 text-[12px] text-fg-2"><span class="dot text-success"></span>2FA</span>
+                  <span class="num text-[12px] text-fg-3">{{ getUserDeviceCount(user.name) }} devices</span>
                 </div>
               </div>
             </div>
@@ -327,42 +308,38 @@
         <!-- Connected Devices -->
         <div class="lg:col-span-4 card-panel">
           <div class="mb-4">
-            <h2 class="text-sm font-bold">Connected Devices</h2>
-            <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">All registered mobile clients</p>
+            <h2 class="section-title">Connected Devices</h2>
+            <p class="text-[13px] text-fg-3">All registered mobile clients</p>
           </div>
-          <div class="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+          <div class="hair-list max-h-[400px] overflow-y-auto">
             <template v-for="group in data?.devices" :key="group.username">
-              <div v-for="device in group.devices" :key="device.id" class="flex items-center gap-3 p-2 rounded-lg bg-base-200/50 border border-base-content/5">
-                <div class="w-8 h-8 rounded-md bg-warning/10 flex items-center justify-center shrink-0">
-                  <Icon name="mdi:cellphone" class="w-4 h-4 text-warning" />
-                </div>
+              <div v-for="device in group.devices" :key="device.id" class="flex items-center gap-3 px-4 py-3 border-t border-line first:border-t-0">
+                <Icon name="mdi:cellphone" class="w-4 h-4 text-fg-3 shrink-0" />
                 <div class="flex-1 min-w-0">
-                  <p class="text-[11px] font-bold truncate">{{ device.model }}</p>
-                  <p class="text-[9px] text-base-content/30">{{ group.username }} · {{ formatTime(device.lastActive) }}</p>
+                  <p class="text-[14px] text-fg truncate">{{ device.model }}</p>
+                  <p class="text-[11px] text-fg-3">{{ group.username }} · {{ formatTime(device.lastActive) }}</p>
                 </div>
               </div>
             </template>
-            <div v-if="!data?.totalDevices" class="text-[10px] text-base-content/30 py-4 text-center">No devices registered</div>
+            <div v-if="!data?.totalDevices" class="px-4 py-4 text-[14px] text-fg-3">No devices registered</div>
           </div>
         </div>
 
         <!-- Security Events -->
         <div class="lg:col-span-4 card-panel">
           <div class="mb-4">
-            <h2 class="text-sm font-bold">Security Events</h2>
-            <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Recent auth activity</p>
+            <h2 class="section-title">Security Events</h2>
+            <p class="text-[13px] text-fg-3">Recent auth activity</p>
           </div>
-          <div class="space-y-1.5 max-h-[400px] overflow-y-auto custom-scrollbar">
-            <div v-for="(event, i) in securityEvents" :key="i" class="flex items-center gap-2 p-2 rounded-lg bg-base-200/50 border border-base-content/5">
-              <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" :class="getEventColor(event.action)">
-                <Icon :name="getEventIcon(event.action)" class="w-3.5 h-3.5" />
-              </div>
+          <div class="hair-list max-h-[400px] overflow-y-auto">
+            <div v-for="(event, i) in securityEvents" :key="i" class="flex items-center gap-3 px-4 py-3">
+              <span class="dot" :class="getEventColor(event.action)"></span>
               <div class="flex-1 min-w-0">
-                <p class="text-[10px] font-bold truncate">{{ event.username }}: {{ event.action }}</p>
-                <p class="text-[9px] text-base-content/30 truncate">{{ event.details || event.path }} · {{ formatTime(event.timestamp) }}</p>
+                <p class="text-[14px] text-fg truncate">{{ event.username }} <span class="micro ml-1">{{ event.action }}</span></p>
+                <p class="text-[11px] text-fg-3 truncate">{{ event.details || event.path }} · {{ formatTime(event.timestamp) }}</p>
               </div>
             </div>
-            <div v-if="!securityEvents.length" class="text-[10px] text-base-content/30 py-4 text-center">No events yet</div>
+            <div v-if="!securityEvents.length" class="px-4 py-4 text-[14px] text-fg-3">No events yet</div>
           </div>
         </div>
       </div>
@@ -370,41 +347,41 @@
       <!-- Server Info -->
       <div class="card-panel">
         <div class="mb-4">
-          <h2 class="text-sm font-bold">Server Information</h2>
-          <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Runtime diagnostics</p>
+          <h2 class="section-title">Server Information</h2>
+          <p class="text-[13px] text-fg-3">Runtime diagnostics</p>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <p class="text-[9px] text-base-content/30 uppercase font-bold tracking-wider mb-1">Node.js</p>
-            <p class="text-xs font-mono font-bold">{{ data?.server?.nodeVersion || '-' }}</p>
+            <p class="text-[11px] text-fg-3 uppercase tracking-micro font-mono mb-1">Node.js</p>
+            <p class="num text-[14px] text-fg">{{ data?.server?.nodeVersion || '-' }}</p>
           </div>
           <div>
-            <p class="text-[9px] text-base-content/30 uppercase font-bold tracking-wider mb-1">Platform</p>
-            <p class="text-xs font-mono font-bold">{{ data?.server?.platform || '-' }} / {{ data?.server?.arch || '-' }}</p>
+            <p class="text-[11px] text-fg-3 uppercase tracking-micro font-mono mb-1">Platform</p>
+            <p class="num text-[14px] text-fg">{{ data?.server?.platform || '-' }} / {{ data?.server?.arch || '-' }}</p>
           </div>
           <div>
-            <p class="text-[9px] text-base-content/30 uppercase font-bold tracking-wider mb-1">Heap Used</p>
-            <p class="text-xs font-mono font-bold">{{ formatSize(data?.server?.processMemory?.heapUsed) }}</p>
+            <p class="text-[11px] text-fg-3 uppercase tracking-micro font-mono mb-1">Heap Used</p>
+            <p class="num text-[14px] text-fg">{{ formatSize(data?.server?.processMemory?.heapUsed) }}</p>
           </div>
           <div>
-            <p class="text-[9px] text-base-content/30 uppercase font-bold tracking-wider mb-1">RSS</p>
-            <p class="text-xs font-mono font-bold">{{ formatSize(data?.server?.processMemory?.rss) }}</p>
+            <p class="text-[11px] text-fg-3 uppercase tracking-micro font-mono mb-1">RSS</p>
+            <p class="num text-[14px] text-fg">{{ formatSize(data?.server?.processMemory?.rss) }}</p>
           </div>
           <div>
-            <p class="text-[9px] text-base-content/30 uppercase font-bold tracking-wider mb-1">CPU Load</p>
-            <p class="text-xs font-mono font-bold">{{ data?.server?.system?.cpuLoad?.toFixed(1) || '0' }}%</p>
+            <p class="text-[11px] text-fg-3 uppercase tracking-micro font-mono mb-1">CPU Load</p>
+            <p class="num text-[14px] text-fg">{{ data?.server?.system?.cpuLoad?.toFixed(1) || '0' }}%</p>
           </div>
           <div>
-            <p class="text-[9px] text-base-content/30 uppercase font-bold tracking-wider mb-1">CPU Cores</p>
-            <p class="text-xs font-mono font-bold">{{ data?.server?.system?.cpuCores || '-' }}</p>
+            <p class="text-[11px] text-fg-3 uppercase tracking-micro font-mono mb-1">CPU Cores</p>
+            <p class="num text-[14px] text-fg">{{ data?.server?.system?.cpuCores || '-' }}</p>
           </div>
           <div>
-            <p class="text-[9px] text-base-content/30 uppercase font-bold tracking-wider mb-1">System RAM</p>
-            <p class="text-xs font-mono font-bold">{{ formatSize(data?.server?.system?.ramUsed) }} / {{ formatSize(data?.server?.system?.ramTotal) }}</p>
+            <p class="text-[11px] text-fg-3 uppercase tracking-micro font-mono mb-1">System RAM</p>
+            <p class="num text-[14px] text-fg">{{ formatSize(data?.server?.system?.ramUsed) }} / {{ formatSize(data?.server?.system?.ramTotal) }}</p>
           </div>
           <div>
-            <p class="text-[9px] text-base-content/30 uppercase font-bold tracking-wider mb-1">RAM Free</p>
-            <p class="text-xs font-mono font-bold">{{ formatSize(data?.server?.system?.ramFree) }}</p>
+            <p class="text-[11px] text-fg-3 uppercase tracking-micro font-mono mb-1">RAM Free</p>
+            <p class="num text-[14px] text-fg">{{ formatSize(data?.server?.system?.ramFree) }}</p>
           </div>
         </div>
       </div>
@@ -412,24 +389,23 @@
       <!-- Top IPs -->
       <div class="card-panel">
         <div class="mb-4">
-          <h2 class="text-sm font-bold">Top Client IPs</h2>
-          <p class="text-[10px] text-base-content/40 font-bold uppercase tracking-wider">Most active connections (click to inspect)</p>
+          <h2 class="section-title">Top Client IPs</h2>
+          <p class="text-[13px] text-fg-3">Most active connections (click to inspect)</p>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="hair-list">
           <div v-for="(ip, i) in (data?.traffic?.topIPs || []).slice(0, 8)" :key="i"
                @click="selectedIp = ip.ip"
-               class="flex items-center justify-between p-2.5 rounded-lg bg-base-200/50 border border-base-content/5 hover:border-primary/40 hover:bg-base-200 transition-all duration-200 cursor-pointer group">
+               class="flex items-center justify-between px-4 py-3 hover:bg-surface-2 transition-colors cursor-pointer group">
             <div class="flex items-center gap-2 min-w-0">
-              <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
-              <span class="text-[11px] font-mono font-bold text-base-content/60 group-hover:text-base-content truncate">{{ ip.ip }}</span>
+              <span class="num text-[14px] text-fg truncate">{{ ip.ip }}</span>
             </div>
-            <div class="flex items-center gap-1.5 shrink-0 font-mono text-[10px]">
-              <span class="badge badge-sm bg-base-300 border-none text-base-content/40 group-hover:text-primary transition-colors font-bold">{{ ip.count }} req</span>
-              <span v-if="ip.geo?.countryCode" class="text-[9px] font-extrabold uppercase text-base-content/30" :title="ip.geo.country">{{ ip.geo.countryCode }}</span>
+            <div class="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
+              <span class="num text-[13px] text-fg-2">{{ ip.count }} req</span>
+              <span v-if="ip.geo?.countryCode" class="text-[11px] font-semibold uppercase text-fg-3" :title="ip.geo.country">{{ ip.geo.countryCode }}</span>
             </div>
           </div>
         </div>
-        <div v-if="!data?.traffic?.topIPs?.length" class="text-[10px] text-base-content/30 py-4 text-center">No data yet</div>
+        <div v-if="!data?.traffic?.topIPs?.length" class="text-[14px] text-fg-3 py-4">No data yet</div>
       </div>
 
     </main>
@@ -531,6 +507,13 @@ const peakRequestsPerMin = computed(() => {
   return Math.max(...data.value.traffic.timeSeries.map((b: any) => b.count), 0)
 })
 
+// Canvas can't read CSS variables, so resolve 'var(--x)' to the current theme's value when drawing
+function themeColor(value: string): string {
+  const match = value.match(/^var\((--[\w-]+)\)$/)
+  if (!match || typeof window === 'undefined') return value
+  return getComputedStyle(document.documentElement).getPropertyValue(match[1]).trim() || value
+}
+
 const statusCodeEntries = computed(() => {
   const dist = data.value?.traffic?.statusCodeDistribution || {}
   const categories: { label: string; color: string; count: number }[] = []
@@ -543,11 +526,11 @@ const statusCodeEntries = computed(() => {
     else if (c >= 500) count5xx += count as number
     else countOther += count as number
   }
-  if (count2xx) categories.push({ label: '2xx Success', color: '#22c55e', count: count2xx })
-  if (count3xx) categories.push({ label: '3xx Redirect', color: '#3b82f6', count: count3xx })
-  if (count4xx) categories.push({ label: '4xx Client', color: '#f59e0b', count: count4xx })
-  if (count5xx) categories.push({ label: '5xx Server', color: '#ef4444', count: count5xx })
-  if (countOther) categories.push({ label: 'Other', color: '#6b7280', count: countOther })
+  if (count2xx) categories.push({ label: '2xx Success', color: 'var(--success)', count: count2xx })
+  if (count3xx) categories.push({ label: '3xx Redirect', color: 'var(--text-3)', count: count3xx })
+  if (count4xx) categories.push({ label: '4xx Client', color: 'var(--warning)', count: count4xx })
+  if (count5xx) categories.push({ label: '5xx Server', color: 'var(--danger)', count: count5xx })
+  if (countOther) categories.push({ label: 'Other', color: 'var(--line-strong)', count: countOther })
   return categories
 })
 
@@ -609,7 +592,7 @@ function drawTrafficChart() {
   const h = rect.height - padding.top - padding.bottom
 
   // Grid lines
-  ctx.strokeStyle = 'rgba(128,128,128,0.08)'
+  ctx.strokeStyle = themeColor('var(--line)')
   ctx.lineWidth = 1
   for (let i = 0; i <= 4; i++) {
     const y = padding.top + (h / 4) * i
@@ -620,28 +603,11 @@ function drawTrafficChart() {
 
     // Y-axis labels
     const val = Math.round(maxVal - (maxVal / 4) * i)
-    ctx.fillStyle = 'rgba(128,128,128,0.4)'
-    ctx.font = '9px monospace'
+    ctx.fillStyle = themeColor('var(--text-3)')
+    ctx.font = '10px "Geist Mono Variable", monospace'
     ctx.textAlign = 'right'
     ctx.fillText(String(val), padding.left - 5, y + 3)
   }
-
-  // Draw filled area + line
-  const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + h)
-  gradient.addColorStop(0, 'rgba(99,102,241,0.25)')
-  gradient.addColorStop(1, 'rgba(99,102,241,0)')
-
-  ctx.beginPath()
-  ctx.moveTo(padding.left, padding.top + h)
-  for (let i = 0; i < series.length; i++) {
-    const x = padding.left + (w / (series.length - 1)) * i
-    const y = padding.top + h - (series[i].count / maxVal) * h
-    ctx.lineTo(x, y)
-  }
-  ctx.lineTo(padding.left + w, padding.top + h)
-  ctx.closePath()
-  ctx.fillStyle = gradient
-  ctx.fill()
 
   // Line
   ctx.beginPath()
@@ -651,14 +617,14 @@ function drawTrafficChart() {
     if (i === 0) ctx.moveTo(x, y)
     else ctx.lineTo(x, y)
   }
-  ctx.strokeStyle = 'rgba(99,102,241,0.8)'
-  ctx.lineWidth = 2
+  ctx.strokeStyle = themeColor('var(--text)')
+  ctx.lineWidth = 1.5
   ctx.lineJoin = 'round'
   ctx.stroke()
 
   // Time labels
-  ctx.fillStyle = 'rgba(128,128,128,0.3)'
-  ctx.font = '9px monospace'
+  ctx.fillStyle = themeColor('var(--text-3)')
+  ctx.font = '10px "Geist Mono Variable", monospace'
   ctx.textAlign = 'center'
   const labelInterval = Math.max(1, Math.floor(series.length / 6))
   for (let i = 0; i < series.length; i += labelInterval) {
@@ -686,7 +652,7 @@ function drawDonutChart() {
     // Empty state
     ctx.beginPath()
     ctx.arc(80, 80, 60, 0, Math.PI * 2)
-    ctx.strokeStyle = 'rgba(128,128,128,0.1)'
+    ctx.strokeStyle = themeColor('var(--line)')
     ctx.lineWidth = 16
     ctx.stroke()
     return
@@ -699,7 +665,7 @@ function drawDonutChart() {
     const sliceAngle = (entry.count / total) * Math.PI * 2
     ctx.beginPath()
     ctx.arc(80, 80, 60, startAngle, startAngle + sliceAngle)
-    ctx.strokeStyle = entry.color
+    ctx.strokeStyle = themeColor(entry.color)
     ctx.lineWidth = 16
     ctx.lineCap = 'butt'
     ctx.stroke()
@@ -721,27 +687,10 @@ function drawWorldMapInternal(canvas: HTMLCanvasElement, singleIpMode: boolean =
   const w = rect.width
   const h = rect.height
 
-  // Draw Grid Lines (Latitude/Longitude style) for high-tech network appearance
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)'
-  ctx.lineWidth = 0.8
-  const gridSize = 20
-  for (let x = 0; x < w; x += gridSize) {
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, h)
-    ctx.stroke()
-  }
-  for (let y = 0; y < h; y += gridSize) {
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(w, y)
-    ctx.stroke()
-  }
-
   // Draw Solid Stylized Continents (Highly recognizable vectors)
-  ctx.fillStyle = 'rgba(99, 102, 241, 0.08)' // soft glowing fill
-  ctx.strokeStyle = 'rgba(99, 102, 241, 0.22)' // crisp boundary stroke
-  ctx.lineWidth = 1.2
+  ctx.fillStyle = themeColor('var(--surface-2)')
+  ctx.strokeStyle = themeColor('var(--line-strong)')
+  ctx.lineWidth = 1
   ctx.lineJoin = 'round'
 
   for (const poly of MAP_LANDMASSE_POLYGONS) {
@@ -762,7 +711,6 @@ function drawWorldMapInternal(canvas: HTMLCanvasElement, singleIpMode: boolean =
 
   // Draw IP markers
   const list = data.value?.traffic?.topIPs || []
-  const time = Date.now() / 1000
 
   for (const item of list) {
     if (!item.geo || (item.geo.lat === 0 && item.geo.lon === 0)) continue
@@ -778,34 +726,34 @@ function drawWorldMapInternal(canvas: HTMLCanvasElement, singleIpMode: boolean =
     const py = ((90 - lat) / 180) * h
 
     const isSelected = selectedIp.value === item.ip
-    const pulseRad = 5 + Math.sin(time * 5 + (isSelected ? 2 : 0)) * (isSelected ? 4 : 2)
-
-    // Pulse Ring
-    ctx.beginPath()
-    ctx.arc(px, py, pulseRad, 0, Math.PI * 2)
-    ctx.strokeStyle = isSelected ? 'rgba(239, 68, 68, 0.5)' : 'rgba(245, 158, 11, 0.4)'
-    ctx.lineWidth = 1.5
-    ctx.stroke()
+    // Ring around the selected marker
+    if (isSelected) {
+      ctx.beginPath()
+      ctx.arc(px, py, 8, 0, Math.PI * 2)
+      ctx.strokeStyle = themeColor('var(--text)')
+      ctx.lineWidth = 1
+      ctx.stroke()
+    }
 
     // Core Dot
     ctx.beginPath()
     ctx.arc(px, py, isSelected ? 4.5 : 3, 0, Math.PI * 2)
-    ctx.fillStyle = isSelected ? '#ef4444' : '#f59e0b'
+    ctx.fillStyle = themeColor(isSelected ? 'var(--text)' : 'var(--text-2)')
     ctx.fill()
 
     // Draw active city tag label
     if (isSelected || (!singleIpMode && list.length <= 3)) {
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'
+      ctx.fillStyle = themeColor('var(--invert)')
       ctx.beginPath()
       const label = `${item.geo.city || 'Local'}, ${item.geo.countryCode || 'LCL'}`
-      ctx.font = 'bold 8px monospace'
+      ctx.font = '10px "Geist Mono Variable", monospace'
       const textW = ctx.measureText(label).width
-      ctx.roundRect(px - textW/2 - 4, py - 18, textW + 8, 11, 3)
+      ctx.roundRect(px - textW/2 - 5, py - 22, textW + 10, 15, 4)
       ctx.fill()
 
-      ctx.fillStyle = '#ffffff'
+      ctx.fillStyle = themeColor('var(--on-invert)')
       ctx.textAlign = 'center'
-      ctx.fillText(label, px, py - 10)
+      ctx.fillText(label, px, py - 11)
     }
   }
 }
@@ -878,14 +826,13 @@ function formatTime(timestamp: number): string {
 
 function getEventColor(action: string): string {
   switch (action) {
-    case 'LOGIN_SUCCESS': return 'bg-success/15 text-success'
-    case 'LOGIN_FAIL': case '2FA_FAIL': return 'bg-error/15 text-error'
-    case 'LOGIN_STEP1': return 'bg-primary/15 text-primary'
-    case 'PASSWORD_CHANGE': return 'bg-warning/15 text-warning'
-    case 'QR_GENERATE': return 'bg-info/15 text-info'
-    case 'DEVICE_REGISTER': return 'bg-success/15 text-success'
-    case 'DEVICE_REVOKE': return 'bg-error/15 text-error'
-    default: return 'bg-base-content/5 text-base-content/40'
+    case 'LOGIN_SUCCESS':
+    case 'DEVICE_REGISTER': return 'text-success'
+    case 'LOGIN_FAIL':
+    case '2FA_FAIL':
+    case 'DEVICE_REVOKE': return 'text-error'
+    case 'PASSWORD_CHANGE': return 'text-warning'
+    default: return 'text-fg-3'
   }
 }
 
@@ -917,25 +864,29 @@ onUnmounted(() => {
 
 <style scoped>
 .stat-card {
-  @apply flex flex-col items-center justify-center gap-1 p-4 rounded-xl bg-base-100 border border-base-content/5 shadow-sm;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px 16px;
+  background: var(--bg);
 }
 .stat-value {
-  @apply text-lg font-extrabold tabular-nums;
+  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.875rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text);
 }
 .stat-label {
-  @apply text-[9px] font-bold uppercase tracking-widest text-base-content/30;
+  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
 }
 .card-panel {
-  @apply p-5 rounded-2xl bg-base-100 border border-base-content/5 shadow-sm;
-}
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  min-width: 0;
 }
 </style>

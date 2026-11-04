@@ -588,59 +588,59 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-neutral-950 text-slate-100 flex flex-col font-sans select-none pb-12">
+  <div class="min-h-screen bg-base-100 text-fg-2 flex flex-col font-sans select-none pb-16">
     <!-- Header -->
-    <header class="sticky top-0 z-[40] w-full bg-neutral-900/80 backdrop-blur-md border-b border-neutral-800">
-      <div class="w-full px-6 py-4 flex items-center justify-between">
+    <header class="page-bar">
+      <div class="page-wrap py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden text-slate-400 hover:bg-white/10">
+          <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="Open navigation">
             <Icon name="mdi:menu" class="w-5 h-5" />
           </label>
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-              <Icon name="mdi:theater" class="text-primary w-5 h-5" />
-            </div>
             <div>
-              <h1 class="text-base font-extrabold tracking-tight text-white leading-none">Clyo Theatre</h1>
-              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">Cinematic Experience</p>
+              <h1 class="text-[15px] font-medium tracking-section text-fg leading-tight">Theatre</h1>
+              <p class="hidden sm:block text-[13px] text-fg-3 leading-tight">Movies and shows</p>
             </div>
           </div>
         </div>
 
         <div class="flex items-center gap-3">
           <!-- Search Bar -->
-          <div class="relative">
+          <div class="relative flex-1 sm:flex-none">
             <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <Icon name="mdi:magnify" class="w-4 h-4 text-neutral-400" />
+              <Icon name="mdi:magnify" class="w-4 h-4 text-fg-3" />
             </div>
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search movies & shows..."
-              class="w-60 pl-9 pr-3 py-1.5 bg-neutral-800/80 hover:bg-neutral-800 focus:bg-neutral-800 text-white rounded-lg border border-neutral-700 focus:border-primary focus:outline-none text-xs transition-all font-semibold"
+              class="input input-sm w-full sm:w-60 !pl-9"
             />
           </div>
 
           <!-- Category Filters -->
-          <div class="join bg-neutral-800/50 border border-neutral-700 p-0.5 rounded-lg text-xs font-bold">
+          <div class="inline-flex shrink-0 p-[3px] border border-line rounded-full text-[13px]" role="group" aria-label="Filter">
             <button 
               @click="activeFilter = 'all'" 
-              class="px-3 py-1.5 rounded-md transition-all"
-              :class="activeFilter === 'all' ? 'bg-primary text-primary-content shadow-md' : 'text-neutral-400 hover:text-white'"
+              class="h-7 px-3 rounded-full transition-colors"
+              :aria-pressed="activeFilter === 'all'"
+              :class="activeFilter === 'all' ? 'bg-surface-2 text-fg' : 'text-fg-2 hover:text-fg'"
             >
               All
             </button>
             <button 
               @click="activeFilter = 'movies'" 
-              class="px-3 py-1.5 rounded-md transition-all"
-              :class="activeFilter === 'movies' ? 'bg-primary text-primary-content shadow-md' : 'text-neutral-400 hover:text-white'"
+              class="h-7 px-3 rounded-full transition-colors"
+              :aria-pressed="activeFilter === 'movies'"
+              :class="activeFilter === 'movies' ? 'bg-surface-2 text-fg' : 'text-fg-2 hover:text-fg'"
             >
               Movies
             </button>
             <button 
               @click="activeFilter = 'shows'" 
-              class="px-3 py-1.5 rounded-md transition-all"
-              :class="activeFilter === 'shows' ? 'bg-primary text-primary-content shadow-md' : 'text-neutral-400 hover:text-white'"
+              class="h-7 px-3 rounded-full transition-colors"
+              :aria-pressed="activeFilter === 'shows'"
+              :class="activeFilter === 'shows' ? 'bg-surface-2 text-fg' : 'text-fg-2 hover:text-fg'"
             >
               Shows
             </button>
@@ -650,69 +650,63 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
     </header>
 
     <!-- Main Content Area -->
-    <div class="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+    <div class="flex-1 w-full page-wrap mt-10">
       
       <!-- Loading State -->
       <div v-if="isLoading" class="flex flex-col gap-6 items-center justify-center py-40">
-        <span class="loading loading-spinner loading-lg text-primary"></span>
-        <p class="text-xs uppercase tracking-widest text-neutral-400 font-semibold animate-pulse">Scanning movies & shows directories...</p>
+        <span class="loading loading-spinner loading-lg text-fg"></span>
+        <p class="text-[14px] text-fg-3">Scanning movie and show folders…</p>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="error" class="bg-red-950/40 border border-red-900 rounded-xl p-8 text-center max-w-xl mx-auto my-12">
-        <Icon name="mdi:folder-alert-outline" class="w-16 h-16 text-red-500/80 mx-auto mb-4" />
-        <h3 class="text-base font-bold text-white mb-2">No Media Folders Configured</h3>
-        <p class="text-xs text-neutral-400 leading-relaxed mb-6">
-          To begin streaming, make sure your movies and shows paths are created and populated. By default, they are located at:
-        </p>
-        <div class="bg-black/50 p-4 rounded-lg text-left font-mono text-[11px] text-primary space-y-2 border border-neutral-800">
-          <p>🎬 Movies Path: ~/.clyo/movies/</p>
-          <p>📺 TV Shows Path: ~/.clyo/shows/</p>
-        </div>
-        <button @click="fetchMedia" class="btn btn-primary btn-sm mt-6 font-bold uppercase text-[10px] tracking-wider rounded-lg">
-          Rescan Directory
-        </button>
+      <div v-else-if="error" class="max-w-form mx-auto py-16">
+        <p class="text-[15px] text-fg">No media folders found.</p>
+        <p class="text-[14px] text-fg-3 mt-1">Create the movies and shows folders and add some files. By default they are:</p>
+        <dl class="hair-list mt-6 text-[13px]">
+          <div class="flex justify-between gap-4 px-4 py-3"><dt class="micro">Movies</dt><dd class="num text-fg-2">~/.clyo/movies/</dd></div>
+          <div class="flex justify-between gap-4 px-4 py-3"><dt class="micro">Shows</dt><dd class="num text-fg-2">~/.clyo/shows/</dd></div>
+        </dl>
+        <button @click="fetchMedia" class="btn btn-sm mt-6">Scan again</button>
       </div>
 
       <!-- Content (Hero + Grids) -->
-      <div v-else class="space-y-12">
+      <div v-else class="space-y-16">
         
         <!-- Hero Banner (Jellyfin/Netflix Spotlight) -->
         <div 
           v-if="featuredMedia" 
-          class="relative w-full h-[400px] md:h-[480px] rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 flex items-end group/hero"
+          class="relative w-full h-[400px] md:h-[480px] rounded-xl overflow-hidden border border-line bg-black text-white flex items-end"
         >
           <!-- Backdrop Blur Image -->
-          <div class="absolute inset-0 bg-neutral-950">
+          <div class="absolute inset-0 bg-black">
             <img 
               v-if="featuredMedia.artworkUrl"
               :src="featuredMedia.artworkUrl" 
-              class="w-full h-full object-cover opacity-35 scale-105 filter blur-lg transition-transform duration-1000 group-hover/hero:scale-110"
+              class="w-full h-full object-cover opacity-40"
               alt=""
             />
-            <div class="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent"></div>
-            <div class="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/20 to-transparent"></div>
+            <div class="absolute inset-0 bg-black/50"></div>
           </div>
 
           <!-- Hero Content details card -->
           <div class="relative z-10 w-full max-w-3xl p-8 md:p-12 space-y-4">
-            <span class="inline-block bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+            <span class="inline-block border border-white/30 px-1.5 py-px rounded-md text-[11px] uppercase tracking-micro font-mono text-white/80">
               {{ featuredMedia.type === 'movie' ? 'Spotlight Movie' : 'Spotlight Show' }}
             </span>
 
-            <h1 class="text-3xl md:text-5xl font-black text-white tracking-tight leading-none drop-shadow">
+            <h2 class="page-title !text-white">
               {{ featuredMedia.title }}
-            </h1>
+            </h2>
 
-            <div class="flex items-center gap-4 text-xs font-bold text-neutral-400">
+            <div class="flex items-center gap-3 text-[14px] text-white/80">
               <span v-if="featuredMedia.year">{{ featuredMedia.year }}</span>
-              <span v-if="featuredMedia.year" class="w-1 h-1 rounded-full bg-neutral-600"></span>
+              <span v-if="featuredMedia.year" aria-hidden="true">·</span>
               <span>
                 {{ featuredMedia.type === 'movie' ? 'Feature Film' : `${featuredMedia.seasons?.length} Seasons` }}
               </span>
             </div>
 
-            <p class="text-xs md:text-sm text-neutral-300 leading-relaxed font-medium line-clamp-3 drop-shadow-sm max-w-2xl">
+            <p class="text-[15px] text-white/80 leading-relaxed line-clamp-3 max-w-2xl">
               {{ featuredMedia.description || 'No description configured. Click details to configure metadata and select artworks.' }}
             </p>
 
@@ -720,14 +714,14 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
               <button 
                 v-if="featuredMedia.type === 'movie' && featuredMedia.videoPath"
                 @click="startPlayback(featuredMedia.title, undefined, featuredMedia.videoPath, featuredMedia.id, 'movie')"
-                class="btn btn-primary btn-sm px-6 rounded-lg font-bold text-[10px] uppercase tracking-widest gap-2 shadow-lg"
+                class="btn btn-sm gap-2 !bg-white !border-white !text-black"
               >
                 <Icon name="mdi:play" class="w-4 h-4" />
-                Play Now
+                Play
               </button>
               <button 
                 @click="openDetails(featuredMedia)"
-                class="btn btn-neutral btn-sm bg-neutral-900/80 hover:bg-neutral-800 border-neutral-700 px-6 rounded-lg font-bold text-[10px] uppercase tracking-widest gap-2"
+                class="btn btn-sm gap-2 !bg-transparent !border-white/40 !text-white hover:!bg-white/10"
               >
                 <Icon name="mdi:information-outline" class="w-4 h-4" />
                 Details
@@ -736,30 +730,27 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
           </div>
 
           <!-- Poster image inside Hero (right side) -->
-          <div class="absolute right-12 bottom-12 hidden md:block w-48 aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border border-neutral-800">
+          <div class="absolute right-12 bottom-12 hidden md:block w-48 aspect-[2/3] rounded-xl overflow-hidden border border-white/20">
             <img 
               v-if="featuredMedia.artworkUrl"
               :src="featuredMedia.artworkUrl" 
               class="w-full h-full object-cover" 
               alt="Poster"
             />
-            <div v-else class="w-full h-full bg-neutral-900 flex items-center justify-center">
-              <Icon name="mdi:movie" class="w-16 h-16 text-neutral-800" />
+            <div v-else class="w-full h-full bg-base-200 flex items-center justify-center">
+              <Icon name="mdi:movie" class="w-16 h-16 text-line-strong" />
             </div>
           </div>
         </div>
 
         <!-- Movies List -->
         <div v-if="activeFilter === 'all' || activeFilter === 'movies'" class="space-y-4">
-          <div class="flex items-center justify-between border-b border-neutral-800 pb-2">
-            <h2 class="text-base font-extrabold tracking-tight text-white uppercase tracking-[0.1em] flex items-center gap-2">
-              <Icon name="mdi:movie-roll" class="text-primary w-5 h-5" />
-              Movies
-            </h2>
-            <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{{ filteredMovies.length }} Films</span>
+          <div class="flex items-baseline justify-between">
+            <h2 class="section-title">Movies</h2>
+            <span class="num text-[13px] text-fg-3">{{ filteredmovies.length }} films</span>
           </div>
 
-          <div v-if="filteredMovies.length === 0" class="py-12 text-center text-neutral-500 text-xs">
+          <div v-if="filteredMovies.length === 0" class="py-12 text-[14px] text-fg-3">
             No movies match your search query.
           </div>
 
@@ -771,32 +762,32 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
               @click="openDetails(movie)"
             >
               <!-- Card Poster image -->
-              <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800 shadow-md group-hover:shadow-[0_0_20px_rgba(75,94,170,0.3)] transition-all duration-300 transform group-hover:-translate-y-1">
+              <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-base-200 border border-line group-hover:border-line-strong transition-colors">
                 <img 
                   v-if="movie.artworkUrl"
                   :src="movie.artworkUrl" 
-                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  class="w-full h-full object-cover" 
                   alt="Poster"
                   loading="lazy"
                 />
                 <div v-else class="w-full h-full flex flex-col items-center justify-center p-4 text-center">
-                  <Icon name="mdi:movie-open-outline" class="w-10 h-10 text-neutral-800 mb-2" />
-                  <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-tighter truncate max-w-full">{{ movie.title }}</span>
+                  <Icon name="mdi:movie-open-outline" class="w-10 h-10 text-line-strong mb-2" />
+                  <span class="text-[11px] text-fg-3 uppercase tracking-micro font-mono truncate max-w-full">{{ movie.title }}</span>
                 </div>
 
                 <!-- Hover Play Overlay -->
-                <div class="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center justify-center gap-3">
                   <button 
                     v-if="movie.videoPath"
                     @click.stop="startPlayback(movie.title, undefined, movie.videoPath, movie.id, 'movie')"
-                    class="w-12 h-12 flex items-center justify-center bg-primary text-primary-content rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all hover:bg-primary/95"
+                    class="w-11 h-11 flex items-center justify-center bg-white text-black rounded-full transition-opacity hover:opacity-85"
                     title="Play Movie"
                   >
                     <Icon name="mdi:play" class="w-5 h-5 pl-0.5" />
                   </button>
                   <button 
                     @click.stop="openDetails(movie)"
-                    class="w-12 h-12 flex items-center justify-center bg-neutral-800 text-white rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all hover:bg-neutral-700"
+                    class="w-11 h-11 flex items-center justify-center border border-white/40 text-white rounded-full transition-colors hover:bg-white/10"
                     title="View Details"
                   >
                     <Icon name="mdi:information-variant" class="w-5 h-5" />
@@ -806,10 +797,10 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
 
               <!-- Card title & subtitle -->
               <div class="px-1 text-left min-w-0">
-                <h4 class="font-bold text-xs text-slate-100 group-hover:text-primary transition-colors truncate max-w-full mb-0.5">
+                <h4 class="text-[14px] text-fg truncate max-w-full mb-0.5">
                   {{ movie.title }}
                 </h4>
-                <div class="flex items-center justify-between text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+                <div class="flex items-center justify-between num text-[12px] text-fg-3">
                   <span>{{ movie.year || 'Unknown Year' }}</span>
                   <span>{{ formatFileSize(movie.size) }}</span>
                 </div>
@@ -820,15 +811,12 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
 
         <!-- TV Shows List -->
         <div v-if="activeFilter === 'all' || activeFilter === 'shows'" class="space-y-4">
-          <div class="flex items-center justify-between border-b border-neutral-800 pb-2">
-            <h2 class="text-base font-extrabold tracking-tight text-white uppercase tracking-[0.1em] flex items-center gap-2">
-              <Icon name="mdi:television-classic" class="text-primary w-5 h-5" />
-              TV Shows
-            </h2>
-            <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{{ filteredShows.length }} Series</span>
+          <div class="flex items-baseline justify-between">
+            <h2 class="section-title">Shows</h2>
+            <span class="num text-[13px] text-fg-3">{{ filteredshows.length }} series</span>
           </div>
 
-          <div v-if="filteredShows.length === 0" class="py-12 text-center text-neutral-500 text-xs">
+          <div v-if="filteredShows.length === 0" class="py-12 text-[14px] text-fg-3">
             No TV shows match your search query.
           </div>
 
@@ -840,24 +828,24 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
               @click="openDetails(show)"
             >
               <!-- Card Poster image -->
-              <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800 shadow-md group-hover:shadow-[0_0_20px_rgba(75,94,170,0.3)] transition-all duration-300 transform group-hover:-translate-y-1">
+              <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-base-200 border border-line group-hover:border-line-strong transition-colors">
                 <img 
                   v-if="show.artworkUrl"
                   :src="show.artworkUrl" 
-                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  class="w-full h-full object-cover" 
                   alt="Poster"
                   loading="lazy"
                 />
-                <div v-else class="w-full h-full bg-neutral-900 flex flex-col items-center justify-center p-4 text-center">
-                  <Icon name="mdi:television-guide" class="w-10 h-10 text-neutral-800 mb-2" />
-                  <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-tighter truncate max-w-full">{{ show.title }}</span>
+                <div v-else class="w-full h-full bg-base-200 flex flex-col items-center justify-center p-4 text-center">
+                  <Icon name="mdi:television-guide" class="w-10 h-10 text-line-strong mb-2" />
+                  <span class="text-[11px] text-fg-3 uppercase tracking-micro font-mono truncate max-w-full">{{ show.title }}</span>
                 </div>
 
                 <!-- Hover Overlay -->
-                <div class="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center justify-center">
                   <button 
                     @click.stop="openDetails(show)"
-                    class="w-12 h-12 flex items-center justify-center bg-primary text-primary-content rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all hover:bg-primary/95"
+                    class="w-11 h-11 flex items-center justify-center bg-white text-black rounded-full transition-opacity hover:opacity-85"
                     title="View Seasons"
                   >
                     <Icon name="mdi:folder-open" class="w-5 h-5" />
@@ -867,10 +855,10 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
 
               <!-- Card title & seasons -->
               <div class="px-1 text-left min-w-0">
-                <h4 class="font-bold text-xs text-slate-100 group-hover:text-primary transition-colors truncate max-w-full mb-0.5">
+                <h4 class="text-[14px] text-fg truncate max-w-full mb-0.5">
                   {{ show.title }}
                 </h4>
-                <div class="flex items-center justify-between text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+                <div class="flex items-center justify-between num text-[12px] text-fg-3">
                   <span>{{ show.year || 'TV Series' }}</span>
                   <span>{{ show.seasons?.length }} Seasons</span>
                 </div>
@@ -883,19 +871,18 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
     </div>
 
     <!-- Media Detail Modal (Jellyfin Style Details Panel) -->
-    <div v-if="selectedMedia" class="modal modal-open backdrop-blur-lg z-50">
-      <div class="modal-box bg-neutral-900/90 border border-neutral-800 rounded-2xl max-w-4xl p-0 overflow-hidden shadow-2xl relative">
+    <div v-if="selectedMedia" class="modal modal-open z-50">
+      <div class="modal-box max-w-4xl p-0 overflow-hidden relative">
         
         <!-- Backdrop Banner with Blurs -->
-        <div class="relative w-full h-44 bg-neutral-950">
+        <div class="relative w-full h-44 bg-black">
           <img 
             v-if="selectedMedia.artworkUrl"
             :src="selectedMedia.artworkUrl" 
-            class="w-full h-full object-cover opacity-20 filter blur-md"
+            class="w-full h-full object-cover opacity-30"
             alt=""
           />
-          <div class="absolute inset-0 bg-gradient-to-t from-neutral-900 to-transparent"></div>
-          <button @click="closeDetails" class="absolute top-4 right-4 btn btn-circle btn-sm btn-ghost text-slate-400 hover:text-white bg-black/40 hover:bg-black/60 border-none">
+          <button @click="closeDetails" class="absolute top-4 right-4 btn btn-circle btn-sm !border-white/30 !text-white !bg-black/40 hover:!bg-black/60" aria-label="Close">
             <Icon name="mdi:close" class="w-5 h-5" />
           </button>
         </div>
@@ -905,7 +892,7 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
           
           <!-- Left Column (Poster + Actions) -->
           <div class="w-full md:w-56 shrink-0 flex flex-col items-center gap-4">
-            <div class="w-full aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border border-neutral-700 bg-neutral-900">
+            <div class="w-full aspect-[2/3] rounded-xl overflow-hidden border border-line-strong bg-base-200">
               <img 
                 v-if="selectedMedia.artworkUrl"
                 :src="selectedMedia.artworkUrl" 
@@ -913,7 +900,7 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
                 alt="Poster"
               />
               <div v-else class="w-full h-full flex items-center justify-center">
-                <Icon name="mdi:movie-open" class="w-16 h-16 text-neutral-800" />
+                <Icon name="mdi:movie-open" class="w-16 h-16 text-line-strong" />
               </div>
             </div>
 
@@ -922,14 +909,14 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
               <button 
                 v-if="selectedMedia.type === 'movie' && selectedMedia.videoPath"
                 @click="startPlayback(selectedMedia.title, undefined, selectedMedia.videoPath, selectedMedia.id, 'movie')"
-                class="btn btn-primary btn-sm w-full rounded-lg font-bold text-[10px] uppercase tracking-widest gap-2"
+                class="btn btn-primary btn-sm w-full gap-2"
               >
                 <Icon name="mdi:play" class="w-4 h-4" />
                 Play Movie
               </button>
               <button 
                 @click="openEditMetadata"
-                class="btn btn-outline btn-neutral btn-sm w-full border-neutral-700 hover:bg-neutral-800 rounded-lg text-slate-300 font-bold text-[10px] uppercase tracking-widest gap-2"
+                class="btn btn-sm w-full gap-2"
               >
                 <Icon name="mdi:pencil" class="w-4 h-4" />
                 Edit Info
@@ -941,23 +928,23 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
           <div class="flex-1 space-y-6 text-left">
             <div>
               <div class="flex items-center gap-3 flex-wrap">
-                <h2 class="text-2xl font-black text-white tracking-tight">{{ selectedMedia.title }}</h2>
-                <span class="badge badge-sm bg-neutral-800 border-neutral-700 text-neutral-400 font-bold rounded">{{ selectedMedia.year || 'No Year' }}</span>
-                <span class="badge badge-sm bg-neutral-800 border-neutral-700 text-neutral-400 font-bold uppercase rounded text-[8px] tracking-widest">
+                <h2 class="text-2xl font-medium text-fg tracking-title md:text-white">{{ selectedMedia.title }}</h2>
+                <span class="badge num">{{ selectedMedia.year || 'No year' }}</span>
+                <span class="badge">
                   {{ selectedMedia.type === 'movie' ? 'Movie' : 'TV Series' }}
                 </span>
               </div>
-              <p class="text-xs text-neutral-400 mt-1 uppercase font-bold tracking-widest">Directory: {{ selectedMedia.name }}</p>
+              <p class="text-[13px] text-fg-3 mt-1">Folder: <span class="num">{{ selectedMedia.name }}</span></p>
             </div>
 
             <!-- Description -->
-            <div class="bg-neutral-950/40 p-4 rounded-xl border border-neutral-800 text-xs text-slate-300 leading-relaxed font-medium">
+            <div class="text-[15px] text-fg-2 leading-relaxed">
               {{ selectedMedia.description || 'No description configured. Click "Edit Info" to write a summary, set artwork URLs, or upload poster images.' }}
             </div>
 
             <!-- Shows / Seasons & Episode Selection -->
-            <div v-if="selectedMedia.type === 'show' && selectedMedia.seasons && selectedMedia.seasons.length > 0" class="space-y-4 border-t border-neutral-800 pt-4">
-              <h3 class="text-xs uppercase font-extrabold tracking-widest text-slate-400">Seasons</h3>
+            <div v-if="selectedMedia.type === 'show' && selectedMedia.seasons && selectedMedia.seasons.length > 0" class="space-y-4 border-t border-line pt-4">
+              <h3 class="micro">Seasons</h3>
               
               <!-- Season Navigation tabs -->
               <div class="flex flex-wrap gap-2">
@@ -965,33 +952,31 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
                   v-for="(season, index) in selectedMedia.seasons" 
                   :key="season.name"
                   @click="activeSeasonIndex = index"
-                  class="btn btn-xs rounded-md font-bold tracking-wider"
-                  :class="activeSeasonIndex === index ? 'btn-primary text-primary-content shadow' : 'btn-neutral bg-neutral-800/80 hover:bg-neutral-800 text-neutral-400 border-none'"
+                  class="btn btn-xs"
+                  :class="activeSeasonIndex === index ? 'btn-primary' : ''"
                 >
                   {{ season.name }}
                 </button>
               </div>
 
               <!-- Episodes in selected season -->
-              <div class="space-y-2 mt-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-2">
+              <div class="hair-list mt-2 max-h-[220px] overflow-y-auto">
                 <div 
                   v-for="episode in selectedMedia.seasons[activeSeasonIndex].episodes" 
                   :key="episode.videoFile"
-                  class="flex items-center justify-between p-2.5 bg-neutral-950/30 hover:bg-neutral-800/40 border border-neutral-800 hover:border-neutral-700 rounded-lg transition-all group/ep text-xs"
+                  class="flex items-center justify-between px-4 py-2.5 hover:bg-surface-2 transition-colors group/ep"
                 >
                   <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-8 h-8 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
-                      <Icon name="mdi:play-circle" class="w-4 h-4 text-neutral-600 group-hover/ep:text-primary transition-colors" />
-                    </div>
+                    <Icon name="mdi:play-circle-outline" class="w-4 h-4 text-fg-3 group-hover/ep:text-fg transition-colors shrink-0" />
                     <div class="min-w-0">
-                      <p class="font-bold text-slate-200 truncate pr-4">{{ episode.title }}</p>
-                      <p class="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">{{ formatFileSize(episode.size) }}</p>
+                      <p class="text-[14px] text-fg truncate pr-4">{{ episode.title }}</p>
+                      <p class="num text-[12px] text-fg-3">{{ formatFileSize(episode.size) }}</p>
                     </div>
                   </div>
                   
                   <button 
                     @click="startPlayback(episode.title, `${selectedMedia.title} - ${selectedMedia.seasons[activeSeasonIndex].name}`, episode.videoPath, selectedMedia.id, 'show')"
-                    class="btn btn-ghost btn-circle btn-xs text-primary hover:text-primary-content hover:bg-primary"
+                    class="btn btn-ghost btn-circle btn-sm" aria-label="Play episode"
                     title="Play Episode"
                   >
                     <Icon name="mdi:play" class="w-4 h-4" />
@@ -1006,66 +991,65 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
     </div>
 
     <!-- Metadata Edit Modal -->
-    <div v-if="showEditModal && selectedMedia" class="modal modal-open backdrop-blur-md z-[60]">
-      <div class="modal-box bg-neutral-900 border border-neutral-800 rounded-2xl max-w-lg p-6 text-left shadow-2xl">
-        <h3 class="text-base font-extrabold text-white mb-6 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-2">
-          <Icon name="mdi:cog-outline" class="w-5 h-5 text-primary" />
+    <div v-if="showEditModal && selectedMedia" class="modal modal-open z-[60]">
+      <div class="modal-box max-w-lg p-6 text-left">
+        <h3 class="section-title mb-6">
           Edit Media Information
         </h3>
 
-        <div class="space-y-4 text-xs font-bold">
+        <div class="space-y-4">
           <!-- Title Input -->
           <div class="form-control w-full">
-            <label class="label"><span class="label-text text-neutral-400">Display Title</span></label>
+            <label class="label"><span class="label-text text-fg-2">Display Title</span></label>
             <input 
               v-model="editForm.title" 
               type="text" 
               placeholder="e.g. Inception" 
-              class="input input-sm input-bordered w-full bg-neutral-950 border-neutral-700 text-white rounded-lg"
+              class="input input-sm input-bordered w-full"
             />
           </div>
 
           <!-- Year Input -->
           <div class="form-control w-full">
-            <label class="label"><span class="label-text text-neutral-400">Release Year</span></label>
+            <label class="label"><span class="label-text text-fg-2">Release Year</span></label>
             <input 
               v-model="editForm.year" 
               type="text" 
               placeholder="e.g. 2010" 
-              class="input input-sm input-bordered w-full bg-neutral-950 border-neutral-700 text-white rounded-lg"
+              class="input input-sm input-bordered w-full"
             />
           </div>
 
           <!-- Description Input -->
           <div class="form-control w-full">
-            <label class="label"><span class="label-text text-neutral-400">Description / Summary</span></label>
+            <label class="label"><span class="label-text text-fg-2">Description / Summary</span></label>
             <textarea 
               v-model="editForm.description" 
               placeholder="Provide a plot summary..." 
-              class="textarea textarea-bordered w-full h-24 bg-neutral-950 border-neutral-700 text-white rounded-lg"
+              class="textarea textarea-bordered w-full h-24"
             ></textarea>
           </div>
 
           <!-- Artwork URL Input -->
           <div class="form-control w-full">
-            <label class="label"><span class="label-text text-neutral-400">Artwork URL (Fetch from anywhere)</span></label>
+            <label class="label"><span class="label-text text-fg-2">Artwork URL (Fetch from anywhere)</span></label>
             <input 
               v-model="editForm.artworkUrl" 
               type="text" 
               placeholder="https://example.com/poster.jpg" 
-              class="input input-sm input-bordered w-full bg-neutral-950 border-neutral-700 text-white rounded-lg"
+              class="input input-sm input-bordered w-full"
             />
-            <span class="text-[9px] text-neutral-500 font-semibold mt-1">Paste any direct image link to set as artwork.</span>
+            <span class="text-[13px] text-fg-3 mt-1">Paste any direct image link to set as artwork.</span>
           </div>
 
           <!-- Local File Artwork Input -->
           <div class="form-control w-full">
-            <label class="label"><span class="label-text text-neutral-400">Or Upload Local Image</span></label>
+            <label class="label"><span class="label-text text-fg-2">Or Upload Local Image</span></label>
             <input 
               type="file" 
               accept="image/*"
               @change="handleFileChange"
-              class="file-input file-input-bordered file-input-sm file-input-primary w-full bg-neutral-950 border-neutral-700 text-slate-300 rounded-lg"
+              class="file-input file-input-sm w-full"
             />
           </div>
         </div>
@@ -1073,14 +1057,14 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
         <div class="modal-action flex justify-end gap-2 mt-6">
           <button 
             @click="closeEditMetadata" 
-            class="btn btn-neutral btn-sm rounded-lg font-bold text-[10px] uppercase tracking-widest"
+            class="btn btn-ghost btn-sm"
           >
             Cancel
           </button>
           <button 
             @click="saveMetadata" 
             :disabled="isSavingMeta"
-            class="btn btn-primary btn-sm rounded-lg font-bold text-[10px] uppercase tracking-widest px-6 shadow-lg"
+            class="btn btn-primary btn-sm"
           >
             <span v-if="isSavingMeta" class="loading loading-spinner loading-xs"></span>
             Save Changes
@@ -1117,15 +1101,15 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
       <transition name="fade-slide">
         <div 
           v-if="showControls" 
-          class="absolute top-0 inset-x-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-6 flex items-center justify-between pointer-events-auto"
+          class="absolute top-0 inset-x-0 z-20 bg-black/60 p-6 flex items-center justify-between pointer-events-auto"
         >
           <div class="flex items-center gap-3">
-            <button @click="closePlayer" class="btn btn-ghost btn-circle text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10">
+            <button @click="closePlayer" class="btn btn-circle !bg-transparent !text-white !border-white/20 hover:!bg-white/10" aria-label="Close player">
               <Icon name="mdi:arrow-left" class="w-5 h-5" />
             </button>
             <div class="text-left">
-              <h2 class="text-sm font-bold text-white tracking-tight">{{ playingMedia.title }}</h2>
-              <p v-if="playingMedia.subTitle" class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">{{ playingMedia.subTitle }}</p>
+              <h2 class="text-sm font-medium text-white tracking-tight">{{ playingMedia.title }}</h2>
+              <p v-if="playingMedia.subTitle" class="text-[11px] text-white/70 uppercase tracking-micro font-mono mt-0.5">{{ playingMedia.subTitle }}</p>
             </div>
           </div>
 
@@ -1133,16 +1117,16 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
           <div class="flex items-center gap-4">
             <button 
               @click="toggleCompatibility"
-              class="btn btn-xs rounded-md font-bold tracking-widest flex items-center gap-1.5"
-              :class="playCompatibility ? 'btn-warning text-warning-content shadow' : 'btn-neutral bg-white/5 text-slate-300 hover:text-white border border-white/10'"
+              class="btn btn-xs flex items-center gap-1.5"
+              :class="playCompatibility ? '!border-warning !text-warning !bg-transparent' : '!bg-transparent !text-white/80 !border-white/20 hover:!bg-white/10'"
             >
               <Icon name="mdi:auto-fix" class="w-3.5 h-3.5" />
               {{ playCompatibility ? 'COMPATIBILITY TRANSCODE ACTIVE' : 'DIRECT STREAM (NATIVE)' }}
             </button>
 
             <!-- Keyboard shortcut hint -->
-            <div class="tooltip tooltip-bottom text-[10px]" data-tip="Keys: Space (Play), Arrows (Seek/Volume), F (Fullscreen), Esc (Close)">
-              <Icon name="mdi:keyboard" class="w-5 h-5 text-slate-400 hover:text-white cursor-pointer" />
+            <div class="tooltip tooltip-bottom text-[11px]" data-tip="Keys: Space (Play), Arrows (Seek/Volume), F (Fullscreen), Esc (Close)">
+              <Icon name="mdi:keyboard" class="w-5 h-5 text-white/70 hover:text-white cursor-pointer" />
             </div>
           </div>
         </div>
@@ -1152,53 +1136,53 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
       <transition name="fade-slide">
         <div 
           v-if="showControls" 
-          class="absolute bottom-0 inset-x-0 z-20 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 pt-12 space-y-4 pointer-events-auto"
+          class="absolute bottom-0 inset-x-0 z-20 bg-black/60 p-6 pt-12 space-y-4 pointer-events-auto"
         >
           
           <!-- Timeline scrubber bar -->
           <div class="flex items-center gap-4">
-            <span class="text-[10px] font-bold font-mono text-neutral-300">{{ formatTime(playerCurrentTime) }}</span>
+            <span class="text-[11px] font-medium font-mono text-white">{{ formatTime(playerCurrentTime) }}</span>
             
             <div 
-              class="relative flex-1 h-2 bg-neutral-800 rounded-full cursor-pointer group/timeline overflow-hidden border border-white/5"
+              class="relative flex-1 h-1.5 bg-white/15 rounded-full cursor-pointer group/timeline overflow-hidden"
               @click="seek"
             >
               <!-- Buffered Bar -->
               <div 
-                class="absolute left-0 top-0 bottom-0 bg-neutral-700/60 rounded-full" 
+                class="absolute left-0 top-0 bottom-0 bg-white/30 rounded-full" 
                 :style="{ width: playerBuffered + '%' }"
               ></div>
               <!-- Current Playback Position Bar -->
               <div 
-                class="absolute left-0 top-0 bottom-0 bg-primary rounded-full group-hover/timeline:bg-primary-focus"
+                class="absolute left-0 top-0 bottom-0 bg-white rounded-full"
                 :style="{ width: (playerCurrentTime / (playerDuration || 1)) * 100 + '%' }"
               ></div>
             </div>
             
-            <span class="text-[10px] font-bold font-mono text-neutral-300">{{ formatTime(playerDuration) }}</span>
+            <span class="text-[11px] font-medium font-mono text-white">{{ formatTime(playerDuration) }}</span>
           </div>
 
           <!-- Bottom controls buttons -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
               <!-- Rewind 10s -->
-              <button @click="skipTime(-10)" class="text-slate-300 hover:text-white focus:outline-none" title="Rewind 10s">
+              <button @click="skipTime(-10)" class="text-white hover:text-white" title="Rewind 10s">
                 <Icon name="mdi:replay-10" class="w-6 h-6" />
               </button>
 
               <!-- Play / Pause -->
-              <button @click="togglePlay" class="w-12 h-12 flex items-center justify-center bg-primary text-primary-content rounded-full shadow hover:bg-primary/95 focus:outline-none" title="Play / Pause">
+              <button @click="togglePlay" class="w-12 h-12 flex items-center justify-center bg-white text-black rounded-full transition-opacity hover:opacity-85" title="Play / Pause">
                 <Icon :name="playerIsPlaying ? 'mdi:pause' : 'mdi:play'" class="w-6 h-6" :class="{ 'pl-0.5': !playerIsPlaying }" />
               </button>
 
               <!-- Skip 10s -->
-              <button @click="skipTime(10)" class="text-slate-300 hover:text-white focus:outline-none" title="Forward 10s">
+              <button @click="skipTime(10)" class="text-white hover:text-white" title="Forward 10s">
                 <Icon name="mdi:forward-10" class="w-6 h-6" />
               </button>
 
               <!-- Volume Control -->
               <div class="flex items-center gap-2 group/volume ml-4">
-                <button @click="toggleMute" class="text-slate-300 hover:text-white focus:outline-none">
+                <button @click="toggleMute" class="text-white hover:text-white">
                   <Icon :name="playerMuted ? 'mdi:volume-off' : playerVolume > 0.5 ? 'mdi:volume-high' : 'mdi:volume-medium'" class="w-5 h-5" />
                 </button>
                 <input 
@@ -1208,7 +1192,7 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
                   step="0.05" 
                   :value="playerMuted ? 0 : playerVolume" 
                   @input="changeVolume"
-                  class="range range-primary range-xs w-16 h-1 opacity-0 group-hover/volume:opacity-100 focus:opacity-100 transition-opacity duration-200 rounded-lg cursor-pointer"
+                  class="range range-xs w-16 h-1 opacity-0 group-hover/volume:opacity-100 focus:opacity-100 transition-opacity duration-200 rounded-lg cursor-pointer"
                 />
               </div>
             </div>
@@ -1217,10 +1201,10 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
             <div class="flex items-center gap-4">
               <!-- Playback Rate selection -->
               <div class="dropdown dropdown-top dropdown-end">
-                <label tabindex="0" class="btn btn-xs bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-md font-bold tracking-widest text-[9px]">
+                <label tabindex="0" class="btn btn-xs !bg-transparent !text-white !border-white/20 hover:!bg-white/10">
                   SPEED: {{ playerPlaybackRate }}x
                 </label>
-                <ul tabindex="0" class="dropdown-content menu p-1 shadow bg-neutral-900 border border-neutral-800 rounded-lg w-24 text-[10px] text-left font-bold text-slate-300">
+                <ul tabindex="0" class="dropdown-content menu p-1 bg-black border border-white/15 rounded-lg w-24 text-[13px] text-left text-white">
                   <li><a @click="setPlaybackRate(0.5)">0.5x</a></li>
                   <li><a @click="setPlaybackRate(1)">Normal</a></li>
                   <li><a @click="setPlaybackRate(1.25)">1.25x</a></li>
@@ -1230,7 +1214,7 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
               </div>
 
               <!-- Fullscreen -->
-              <button @click="toggleFullscreen" class="text-slate-300 hover:text-white focus:outline-none" title="Toggle Fullscreen">
+              <button @click="toggleFullscreen" class="text-white hover:text-white" title="Toggle Fullscreen">
                 <Icon name="mdi:fullscreen" class="w-6 h-6" />
               </button>
             </div>
@@ -1252,11 +1236,11 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--line-strong);
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--line-strong);
 }
 
 .line-clamp-3 {
@@ -1269,12 +1253,11 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
 /* Animations for Player Controls */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-  transition: all 0.3s ease;
+  transition: opacity 120ms ease-out;
 }
 
 .fade-slide-enter-from,
 .fade-slide-leave-to {
   opacity: 0;
-  transform: translateY(10px);
 }
 </style>

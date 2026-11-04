@@ -58,6 +58,15 @@ function getOrGenerateJwtSecret(usersFilePath: string, currentSecret: string): s
 export default defineNitroPlugin(async (nitroApp) => {
     const config = useRuntimeConfig()
     console.info("Running server init...")
+    console.info("Environment: ")
+    console.info("Data Storage Path: " + config.storagePath)
+    console.info("Movies Path: " + config.moviesPath)
+    console.info("Shows Path: " + config.showsPath)
+    console.info("Thumbnail Storage Path: " + config.thumbnailPath)
+    console.info("Preview Storage Path: " + config.previewPath)
+    console.info("Users JSON Path: " + config.usersFilePath)
+    console.info("Tags JSON Directory: " + path.dirname(config.tagsFilePath))
+    console.info("Devices JSON Path: " + config.devicesFilePath)
 
     const configDir = path.dirname(config.usersFilePath)
     const jwtSecretFile = path.join(configDir, 'jwt.secret')
@@ -86,16 +95,11 @@ export default defineNitroPlugin(async (nitroApp) => {
     }
 
     console.info("Initializing media backend...")
-    console.info("Environment: ")
-    console.info("Data Storage Path: " + config.storagePath)
     createDirIfNotExists(config.storagePath)
-    console.info("Thumbnail Storage Path: " + config.thumbnailPath)
     createDirIfNotExists(config.thumbnailPath)
-    console.info("Users JSON Path: " + config.usersFilePath)
     const usernames = checkUserFile(config.usersFilePath) || []
-    
+
     const tagsDir = path.dirname(config.tagsFilePath)
-    console.info("Tags JSON Directory: " + tagsDir)
     for (const username of usernames) {
         const userTagsPath = path.join(tagsDir, `tags_${username}.json`)
         checkUserTagsFile(userTagsPath, username)

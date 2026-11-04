@@ -148,8 +148,8 @@ onUnmounted(() => {
       <div
         v-for="(_, index) in media.images"
         :key="index"
-        class="w-1.5 h-1.5 rounded-full transition-all duration-300"
-        :class="index === currentIndex ? 'bg-white scale-125 shadow-lg' : 'bg-white/30 scale-100'"
+        class="w-1.5 h-1.5 rounded-full transition-colors"
+        :class="index === currentIndex ? 'bg-white' : 'bg-white/30'"
       ></div>
     </div>
 
@@ -158,38 +158,28 @@ onUnmounted(() => {
     <div class="absolute inset-y-0 right-0 w-2/3 cursor-pointer z-10 hidden md:block"></div>
     
     <!-- Navigation Buttons (Desktop) -->
-    <button @click.stop="prevImage" class="absolute left-4 top-1/2 -translate-y-1/2 btn btn-circle btn-ghost bg-black/20 text-white opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex z-30">
+    <button @click.stop="prevImage" class="absolute left-4 top-1/2 -translate-y-1/2 btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex z-30">
       <Icon name="mdi:chevron-left" class="w-8 h-8" />
     </button>
-    <button @click.stop="nextImage" class="absolute right-4 top-1/2 -translate-y-1/2 btn btn-circle btn-ghost bg-black/20 text-white opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex z-30">
+    <button @click.stop="nextImage" class="absolute right-4 top-1/2 -translate-y-1/2 btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex z-30">
       <Icon name="mdi:chevron-right" class="w-8 h-8" />
     </button>
   </div>
 </template>
 
 <style scoped>
+/* Colour and opacity only: images cross-fade instead of sliding */
 .slide-right-enter-active,
 .slide-right-leave-active,
 .slide-left-enter-active,
 .slide-left-leave-active {
-  transition: all 0.3s ease-out;
+  transition: opacity 120ms ease-out;
 }
 
-.slide-right-enter-from {
-  opacity: 0;
-  transform: translateX(20px);
-}
-.slide-right-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
-}
-
-.slide-left-enter-from {
-  opacity: 0;
-  transform: translateX(-20px);
-}
+.slide-right-enter-from,
+.slide-right-leave-to,
+.slide-left-enter-from,
 .slide-left-leave-to {
   opacity: 0;
-  transform: translateX(20px);
 }
 </style>

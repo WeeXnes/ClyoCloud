@@ -13,7 +13,7 @@ export function SetMetadata(
             },
             {
                 name: "theme-color",
-                content: "#e73c7e"
+                content: "#000000"
             },
             // Open Graph meta tags
             {

@@ -232,28 +232,25 @@ async function cleanSelected() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
-    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
-      <div class="w-full px-6 py-4">
+  <div class="min-h-screen bg-base-100 flex flex-col font-sans">
+    <header class="page-bar">
+      <div class="page-wrap py-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="Open navigation">
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Icon name="mdi:content-copy" class="text-primary w-5 h-5" />
-              </div>
               <div>
-                <h1 class="text-base font-extrabold tracking-tight">Duplicate Scanner</h1>
-                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">Identify & Remove Redundant Data</p>
+                <h1 class="text-[15px] font-medium tracking-section text-fg leading-tight">Duplicate Scanner</h1>
+                <p class="hidden sm:block text-[13px] text-fg-3 leading-tight">Identify & Remove Redundant Data</p>
               </div>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 md:gap-3">
              <button 
-               class="btn btn-xs md:btn-sm btn-primary h-8 md:h-10 rounded-lg px-4 md:px-6 shadow-sm gap-2 font-bold text-[9px] md:text-[10px] uppercase tracking-widest" 
+               class="btn btn-sm btn-primary gap-2" 
                @click="fetchDuplicates"
                :disabled="isLoading"
              >
@@ -266,33 +263,33 @@ async function cleanSelected() {
       </div>
     </header>
 
-    <main class="w-full max-w-[1400px] mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <main class="w-full page-wrap py-10 space-y-8">
       
       <!-- Stats Summary -->
-      <div v-if="duplicateGroups.length > 0" class="grid grid-cols-1 sm:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
-        <div class="bg-base-100 p-6 rounded-xl border border-base-content/10 shadow-sm flex flex-col gap-1">
-          <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Total Redundancy</span>
-          <span class="text-xl font-bold tracking-tight text-error">{{ formatSize(totalRedundantSize) }}</span>
+      <div v-if="duplicateGroups.length > 0" class="grid grid-cols-1 sm:grid-cols-3 gap-px bg-line border-y border-line">
+        <div class="bg-base-100 py-6 sm:pr-6 flex flex-col gap-2">
+          <span class="num text-3xl font-medium tracking-title text-fg leading-none">{{ formatSize(totalRedundantSize) }}</span>
+          <span class="micro">Redundant</span>
         </div>
-        <div class="bg-base-100 p-6 rounded-xl border border-base-content/10 shadow-sm flex flex-col gap-1">
-          <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Selected to Reclaim</span>
-          <span class="text-xl font-bold tracking-tight text-primary">{{ formatSize(selectedSizeToReclaim) }}</span>
+        <div class="bg-base-100 py-6 sm:px-6 flex flex-col gap-2">
+          <span class="num text-3xl font-medium tracking-title text-fg leading-none">{{ formatSize(selectedSizeToReclaim) }}</span>
+          <span class="micro">Selected to reclaim</span>
         </div>
-        <div class="bg-base-100 p-6 rounded-xl border border-base-content/10 shadow-sm flex flex-col gap-1">
-          <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Resolution Count</span>
-          <span class="text-xl font-bold tracking-tight text-base-content">{{ totalSelectedCount }} <span class="text-[10px] text-base-content/30 uppercase tracking-widest">files</span></span>
+        <div class="bg-base-100 py-6 sm:px-6 flex flex-col gap-2">
+          <span class="num text-3xl font-medium tracking-title text-fg leading-none">{{ totalSelectedCount }}</span>
+          <span class="micro">Files selected</span>
         </div>
       </div>
 
       <!-- Action Bar -->
-      <div v-if="duplicateGroups.length > 0" class="flex flex-wrap items-center justify-between gap-4 p-4 bg-base-100 rounded-xl border border-base-content/10 shadow-sm">
+      <div v-if="duplicateGroups.length > 0" class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-2">
-          <button class="btn btn-ghost btn-xs text-[9px] font-bold uppercase tracking-widest rounded-md border border-base-content/10 h-8 px-3" @click="selectAllButNewest">Keep Newest</button>
-          <button class="btn btn-ghost btn-xs text-[9px] font-bold uppercase tracking-widest rounded-md border border-base-content/10 h-8 px-3" @click="selectAllButOldest">Keep Oldest</button>
-          <button class="btn btn-ghost btn-xs text-[9px] font-bold uppercase tracking-widest rounded-md h-8 px-3" @click="clearSelections">Clear</button>
+          <button class="btn btn-sm" @click="selectAllButNewest">Keep newest</button>
+          <button class="btn btn-sm" @click="selectAllButOldest">Keep oldest</button>
+          <button class="btn btn-ghost btn-sm" @click="clearSelections">Clear</button>
         </div>
         <button 
-          class="btn btn-error btn-sm h-10 rounded-lg px-8 shadow-sm gap-2 font-bold text-[10px] uppercase tracking-widest"
+          class="btn btn-error btn-sm gap-2"
           @click="cleanSelected"
           :disabled="isDeleting || totalSelectedCount === 0"
         >
@@ -304,19 +301,16 @@ async function cleanSelected() {
 
       <!-- Duplicate Groups -->
       <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 gap-8 max-w-md mx-auto">
-         <div class="relative">
-           <div class="w-20 h-20 rounded-full border-4 border-primary/10 border-t-primary animate-spin"></div>
-           <Icon name="mdi:magnify-scan" class="w-8 h-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
-         </div>
+         <span class="loading loading-spinner loading-md"></span>
          
          <div class="w-full space-y-4">
             <div class="text-center">
-               <h3 class="text-lg font-bold tracking-tight text-base-content capitalize">
+               <h3 class="section-title">
                  {{ scanStatus?.phase === 'indexing' ? 'Indexing Storage...' : 
                     scanStatus?.phase === 'hashing' ? 'Comparing Signatures...' : 
                     scanStatus?.phase === 'sorting' ? 'Finalizing Results...' : 'Analyzing...' }}
                </h3>
-               <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">
+               <p class="num text-[13px] text-fg-3 mt-1">
                  {{ scanStatus?.phase === 'indexing' ? `Discovered ${scanStatus?.totalFiles || 0} files` : 
                     scanStatus?.phase === 'hashing' ? `Processed ${scanStatus?.processedFiles || 0} / ${scanStatus?.totalFiles || 0} candidates` : 
                     'Byte-by-byte verification in progress' }}
@@ -324,41 +318,36 @@ async function cleanSelected() {
             </div>
 
             <div v-if="scanStatus?.phase === 'hashing'" class="space-y-2">
-              <div class="h-2 w-full bg-base-300 rounded-full overflow-hidden">
-                <div class="h-full bg-primary transition-all duration-500 ease-out" :style="{ width: `${scanStatus?.progress || 0}%` }"></div>
+              <div class="h-1 w-full bg-surface-2 rounded-full overflow-hidden">
+                <div class="h-full bg-invert" :style="{ width: `${scanStatus?.progress || 0}%` }"></div>
               </div>
               <div class="flex justify-between items-center px-1">
-                <span class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">{{ scanStatus?.progress || 0 }}% Complete</span>
-                <span class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">{{ scanStatus?.processedFiles || 0 }} files</span>
+                <span class="micro num">{{ scanStatus?.progress || 0 }}% complete</span>
+                <span class="micro num">{{ scanStatus?.processedFiles || 0 }} files</span>
               </div>
             </div>
          </div>
       </div>
 
       <div v-else-if="duplicateGroups.length > 0" class="space-y-6">
-        <div v-for="(group, idx) in duplicateGroups" :key="idx" class="bg-base-100 rounded-xl shadow-sm border border-base-content/10 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300" :style="{ animationDelay: `${idx * 50}ms` }">
-           <div class="p-5 bg-base-200/30 border-b border-base-content/10 flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                 <div class="w-9 h-9 rounded-lg bg-error/10 flex items-center justify-center border border-error/10">
-                    <Icon name="mdi:content-copy" class="w-4 h-4 text-error" />
-                 </div>
-                 <div>
-                    <h3 class="text-xs font-bold uppercase tracking-tight text-base-content">Duplicate Cluster #{{ idx + 1 }}</h3>
-                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">{{ group.files.length }} redundant copies identified</p>
-                 </div>
+        <div v-for="(group, idx) in duplicateGroups" :key="idx" class="bg-base-100 rounded-xl border border-line overflow-hidden">
+           <div class="px-4 py-3 bg-base-200 border-b border-line flex items-center justify-between gap-4">
+              <div>
+                 <h3 class="text-[14px] text-fg">Group <span class="num">{{ idx + 1 }}</span></h3>
+                 <p class="num text-[13px] text-fg-3">{{ group.files.length }} copies</p>
               </div>
               <div class="text-right">
-                 <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/30 mb-0.5">Wasted Space</p>
-                 <p class="text-base font-bold tracking-tight text-error">{{ formatSize(group.redundantSize) }}</p>
+                 <p class="num text-[14px] text-fg">{{ formatSize(group.redundantSize) }}</p>
+                 <p class="micro">Wasted</p>
               </div>
            </div>
 
-           <div class="divide-y divide-base-content/5">
+           <div class="divide-y divide-line">
               <div 
                 v-for="file in group.files" 
                 :key="file.fullPath"
-                class="flex items-center gap-4 p-4 hover:bg-base-200/50 transition-all group/row h-[72px]"
-                :class="{ 'bg-error/5': file.selectedForDeletion }"
+                class="flex items-center gap-4 px-4 py-3 hover:bg-surface-2 transition-colors group/row min-h-[68px]"
+                :class="{ 'bg-surface-2': file.selectedForDeletion }"
               >
                 <div class="flex items-center justify-center shrink-0">
                   <input 
@@ -370,7 +359,7 @@ async function cleanSelected() {
                 </div>
 
                 <!-- Media Preview -->
-                <div class="relative w-11 h-11 rounded-md bg-base-300 overflow-hidden shrink-0 group/preview"
+                <div class="relative w-11 h-11 rounded-md bg-surface-2 overflow-hidden shrink-0 group/preview"
                      @mouseenter="hoveredFile = file.fullPath"
                      @mouseleave="hoveredFile = null">
                   <img v-if="isImage(file.name) || isVideo(file.name)"
@@ -378,12 +367,12 @@ async function cleanSelected() {
                        class="w-full h-full object-cover"
                        alt="" />
                   <div v-else class="w-full h-full flex items-center justify-center">
-                    <Icon name="mdi:file-outline" class="w-5 h-5 text-base-content/20" />
+                    <Icon name="mdi:file-outline" class="w-5 h-5 text-fg-3" />
                   </div>
                   
                   <!-- Animated Preview for Videos -->
                   <div v-if="isVideo(file.name) && hoveredFile === file.fullPath"
-                       class="absolute inset-0 z-10 animate-in fade-in duration-200">
+                       class="absolute inset-0 z-10 duration-200">
                     <img :src="getPreviewUrl(file.fullPath)" 
                          class="w-full h-full object-cover"
                          alt="Preview" />
@@ -392,21 +381,21 @@ async function cleanSelected() {
 
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2">
-                    <p class="text-xs font-bold truncate text-base-content">{{ file.name }}</p>
-                    <span v-if="!file.selectedForDeletion" class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-success/10 text-success border border-success/20">KEEP</span>
-                    <span v-else class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-error/10 text-error border border-error/20">DELETE</span>
+                    <p class="text-[14px] truncate text-fg">{{ file.name }}</p>
+                    <span v-if="!file.selectedForDeletion" class="flex items-center gap-1.5 text-[12px] text-fg-2 shrink-0"><span class="dot text-success"></span>Keep</span>
+                    <span v-else class="flex items-center gap-1.5 text-[12px] text-fg-2 shrink-0"><span class="dot text-error"></span>Delete</span>
                   </div>
-                  <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-wide truncate mt-0.5">{{ file.fullPath }}</p>
+                  <p class="text-[13px] text-fg-3 truncate mt-0.5">{{ file.fullPath }}</p>
                 </div>
 
-                <div class="flex items-center gap-8 text-right shrink-0">
+                <div class="hidden sm:flex items-center gap-8 text-right shrink-0">
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Modified</span>
-                    <span class="text-[10px] font-bold text-base-content/60">{{ formatDate(file.lastModified).split(',')[0] }}</span>
+                    <span class="micro">Modified</span>
+                    <span class="num text-[13px] text-fg-2">{{ formatDate(file.lastModified).split(',')[0] }}</span>
                   </div>
                   <div class="flex flex-col gap-0.5 w-16">
-                    <span class="text-[8px] font-bold uppercase tracking-widest text-base-content/30">Size</span>
-                    <span class="text-[10px] font-bold text-base-content">{{ formatSize(file.size) }}</span>
+                    <span class="micro">Size</span>
+                    <span class="num text-[13px] text-fg">{{ formatSize(file.size) }}</span>
                   </div>
                 </div>
               </div>
@@ -414,18 +403,9 @@ async function cleanSelected() {
         </div>
       </div>
 
-      <div v-else-if="!isLoading" class="flex flex-col items-center justify-center py-32 text-center gap-6">
-        <div class="w-24 h-24 rounded-xl bg-base-100 flex items-center justify-center shadow-sm border border-base-content/10">
-           <Icon name="mdi:content-copy" class="w-12 h-12 text-base-content/10" />
-        </div>
-        <div>
-           <h3 class="text-lg font-bold tracking-tight text-base-content">Duplicate Scanner</h3>
-           <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest max-w-xs mt-2 mx-auto leading-relaxed">Scan your storage to identify and remove identical files.</p>
-        </div>
-        <button class="btn btn-primary btn-wide btn-sm h-11 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="fetchDuplicates">
-           <Icon name="mdi:magnify-scan" class="w-4 h-4" />
-           Scan Storage
-        </button>
+      <div v-else-if="!isLoading" class="py-24 text-center">
+        <p class="text-[15px] text-fg">No scan results yet.</p>
+        <p class="text-[14px] text-fg-3 mt-1">Run a scan to find identical files in your storage.</p>
       </div>
     </main>
   </div>
@@ -439,7 +419,7 @@ async function cleanSelected() {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--line-strong);
   border-radius: 10px;
 }
 </style>

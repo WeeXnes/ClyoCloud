@@ -105,26 +105,17 @@ const getActionIcon = (action: string) => {
   }
 }
 
+// Colour only where the action means something: failures, warnings, sharing
 const getActionColor = (action: string) => {
   switch (action) {
-    case 'UPLOAD': return 'text-blue-500 bg-blue-500/10'
-    case 'DOWNLOAD':
-    case 'ZIP_DOWNLOAD':
-    case 'PUBLIC_ZIP_DOWNLOAD': return 'text-sky-500 bg-sky-500/10'
-    case 'DELETE': return 'text-red-500 bg-red-500/10'
-    case 'RENAME':
-    case 'MOVE': return 'text-orange-500 bg-orange-500/10'
-    case 'MKDIR': return 'text-purple-500 bg-purple-500/10'
-    case 'TAG': return 'text-primary bg-primary/10'
-    case 'SHARE':
-    case 'PUBLIC_ACCESS': return 'text-success bg-success/10'
-    case 'FAVORITE': return 'text-orange-400 bg-orange-400/10'
-    case 'LOGIN_SUCCESS': return 'text-success bg-success/10'
+    case 'DELETE':
     case 'LOGIN_FAIL':
-    case '2FA_FAIL': return 'text-error bg-error/10'
-    case 'LOGIN_STEP1': return 'text-primary bg-primary/10'
-    case 'PASSWORD_CHANGE': return 'text-warning bg-warning/10'
-    default: return 'text-base-content/40 bg-base-content/5'
+    case '2FA_FAIL': return 'text-error'
+    case 'PASSWORD_CHANGE': return 'text-warning'
+    case 'SHARE':
+    case 'PUBLIC_ACCESS':
+    case 'LOGIN_SUCCESS': return 'text-success'
+    default: return 'text-fg-3'
   }
 }
 
@@ -172,21 +163,18 @@ onMounted(fetchLogs)
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/50">
-    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
-      <div class="w-full px-6 py-4">
+  <div class="min-h-screen bg-base-100">
+    <header class="page-bar">
+      <div class="page-wrap py-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="Open navigation">
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Icon name="mdi:history" class="text-primary w-5 h-5" />
-              </div>
               <div>
-                <h1 class="text-base font-extrabold tracking-tight">Activity Logs</h1>
-                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">Security and Operation Audit</p>
+                <h1 class="text-[15px] font-medium tracking-section text-fg leading-tight">Activity Logs</h1>
+                <p class="hidden sm:block text-[13px] text-fg-3 leading-tight">Security and Operation Audit</p>
               </div>
             </div>
           </div>
@@ -194,13 +182,13 @@ onMounted(fetchLogs)
           <div class="flex flex-wrap items-center gap-2 md:gap-3">
              <div class="relative flex-1 md:flex-none md:min-w-[240px]">
                 <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                  <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
+                  <Icon name="mdi:magnify" class="w-4 h-4 text-fg-3" />
                 </div>
                 <input
                   v-model="searchQuery"
                   type="text"
                   placeholder="Filter by path, action, or IP..."
-                  class="input input-xs md:input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs h-8 md:h-10"
+                  class="input input-xs md:input-sm input-bordered w-full !pl-9 transition font-medium text-xs "
                 />
              </div>
           </div>
@@ -208,54 +196,52 @@ onMounted(fetchLogs)
       </div>
     </header>
 
-    <main class="max-w-[1200px] mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <main class="page-wrap py-10">
       <div v-if="isLoading" class="space-y-8">
         <div v-for="j in 3" :key="j" class="space-y-4">
-          <div class="h-4 w-32 bg-base-300 animate-pulse rounded"></div>
-          <div class="bg-base-100 rounded-xl border border-base-content/10 shadow-sm overflow-hidden divide-y divide-base-content/5">
+          <div class="h-4 w-32 bg-base-200 animate-pulse rounded"></div>
+          <div class="bg-base-100 rounded-xl border border-line overflow-hidden divide-y divide-line">
             <div v-for="i in 4" :key="i" class="h-16 w-full bg-base-200 animate-pulse"></div>
           </div>
         </div>
       </div>
       
-      <div v-else-if="groupedActivities.length" class="space-y-8">
+      <div v-else-if="groupedActivities.length" class="space-y-12">
         <div v-for="group in groupedActivities" :key="group.dateStr" class="space-y-3">
-          <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-base-content/30 pl-1 flex items-center gap-2">
-             <Icon name="mdi:calendar" class="w-3 h-3" />
+          <h2 class="micro">
              {{ group.dateStr }}
           </h2>
           
-          <div class="bg-base-100 rounded-xl border border-base-content/10 shadow-sm overflow-hidden divide-y divide-base-content/5">
+          <div class="bg-base-100 rounded-xl border border-line overflow-hidden divide-y divide-line">
             <div v-for="activity in group.items" :key="activity.id" class="transition-colors group/row">
               <div 
-                class="p-3 sm:p-4 flex items-center gap-4 hover:bg-base-200/50 cursor-pointer"
+                class="px-4 py-3 flex items-center gap-4 hover:bg-surface-2 transition-colors cursor-pointer"
                 @click="toggleExpand(activity.id)"
               >
-                <div :class="`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${getActionColor(activity.action)}`">
-                  <Icon :name="getActionIcon(activity.action)" class="w-5 h-5" />
-                </div>
+                <Icon :name="getActionIcon(activity.action)" class="w-4 h-4 shrink-0 text-fg-3" />
                 
                 <div class="flex-grow min-w-0">
                   <div class="flex items-center justify-between gap-2 mb-0.5">
                     <button 
                       @click.stop="navigateToPath(activity)"
-                      class="text-xs font-bold truncate text-base-content leading-none hover:text-primary transition-colors text-left"
+                      class="text-[14px] truncate text-fg leading-snug hover:underline underline-offset-4 decoration-line-strong text-left"
                       :class="{'cursor-default pointer-events-none': ['Security', 'Login', 'Account'].includes(activity.path)}"
                     >
                       {{ activity.path }}
                     </button>
-                    <span class="text-[9px] font-bold text-base-content/30 whitespace-nowrap uppercase tracking-widest">{{ formatTime(activity.timestamp) }}</span>
+                    <span class="num text-[12px] text-fg-3 whitespace-nowrap">{{ formatTime(activity.timestamp) }}</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <span class="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-base-200 text-base-content/60 border border-base-content/5">{{ activity.action.replace(/_/g, ' ') }}</span>
-                    <p v-if="activity.details" class="text-[10px] font-bold text-base-content/40 truncate uppercase tracking-wide">
+                    <span class="dot" :class="getActionColor(activity.action)"></span>
+                    <span class="micro shrink-0">{{ activity.action.replace(/_/g, ' ') }}</span>
+                    <p v-if="activity.details" class="text-[13px] text-fg-3 truncate">
                        {{ activity.details }}
                     </p>
                     <div class="ml-auto flex items-center gap-2">
-                       <span v-if="activity.ip" class="text-[9px] font-bold text-base-content/20 hidden sm:block font-mono">{{ activity.ip }}</span>
+                       <span v-if="activity.ip" class="num text-[12px] text-fg-3 hidden sm:block">{{ activity.ip }}</span>
                        <Icon 
                         name="mdi:chevron-down" 
-                        class="w-4 h-4 text-base-content/20 transition-transform duration-300"
+                        class="w-4 h-4 text-fg-3"
                         :class="{'rotate-180': expandedId === activity.id}"
                        />
                     </div>
@@ -264,29 +250,29 @@ onMounted(fetchLogs)
               </div>
 
               <!-- Expanded Details -->
-              <div v-if="expandedId === activity.id" class="bg-base-200/30 p-4 border-t border-base-content/5 animate-in slide-in-from-top-2 duration-200">
+              <div v-if="expandedId === activity.id" class="bg-base-200 px-4 py-4 border-t border-line">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div class="space-y-3">
                     <div>
-                      <span class="text-[8px] font-black uppercase tracking-widest text-base-content/30 block mb-1">Log ID</span>
-                      <code class="text-[10px] text-base-content/60 bg-base-300/50 px-2 py-1 rounded select-all">{{ activity.id }}</code>
+                      <span class="micro block mb-1">Log ID</span>
+                      <code class="text-[11px] text-fg-2 num select-all">{{ activity.id }}</code>
                     </div>
                     <div>
-                      <span class="text-[8px] font-black uppercase tracking-widest text-base-content/30 block mb-1">User Agent</span>
-                      <p class="text-[10px] text-base-content/60 leading-relaxed max-w-md">
+                      <span class="micro block mb-1">User Agent</span>
+                      <p class="text-[11px] text-fg-2 leading-relaxed max-w-md">
                         {{ activity.userAgent || 'No User-Agent data available' }}
                       </p>
                     </div>
                   </div>
                   <div class="space-y-3">
                     <div v-if="activity.ip">
-                      <span class="text-[8px] font-black uppercase tracking-widest text-base-content/30 block mb-1">Client IP</span>
-                      <code class="text-[10px] text-base-content/60 bg-base-300/50 px-2 py-1 rounded select-all">{{ activity.ip }}</code>
+                      <span class="micro block mb-1">Client IP</span>
+                      <code class="text-[11px] text-fg-2 num select-all">{{ activity.ip }}</code>
                     </div>
                     <div v-if="activity.metadata && Object.keys(activity.metadata).length">
-                      <span class="text-[8px] font-black uppercase tracking-widest text-base-content/30 block mb-1">Action Metadata</span>
-                      <div class="bg-base-300/30 rounded-lg p-2 overflow-x-auto">
-                        <pre class="text-[10px] text-base-content/60"><code>{{ JSON.stringify(activity.metadata, null, 2) }}</code></pre>
+                      <span class="micro block mb-1">Action Metadata</span>
+                      <div class="border border-line rounded-lg p-2 overflow-x-auto">
+                        <pre class="text-[11px] text-fg-2"><code>{{ JSON.stringify(activity.metadata, null, 2) }}</code></pre>
                       </div>
                     </div>
                   </div>
@@ -298,29 +284,9 @@ onMounted(fetchLogs)
       </div>
 
       <div v-else class="py-24 text-center">
-        <div class="bg-base-200/50 p-6 rounded-xl inline-block mb-4 border border-base-content/5">
-          <Icon name="mdi:tray-blank-outline" class="w-12 h-12 text-base-content/10" />
-        </div>
-        <h3 class="text-base font-bold tracking-tight text-base-content">No logs found</h3>
-        <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest mt-1">Try adjusting filter parameters</p>
+        <p class="text-[15px] text-fg">No logs found</p>
+        <p class="text-[14px] text-fg-3 mt-1">Try a different filter.</p>
       </div>
     </main>
   </div>
 </template>
-
-<style scoped>
-.animate-in {
-  animation-duration: 0.2s;
-  animation-fill-mode: both;
-}
-@keyframes slide-in-from-top-2 {
-  from {
-    opacity: 0;
-    transform: translateY(-0.5rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-</style>

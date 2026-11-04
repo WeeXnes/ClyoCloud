@@ -1,6 +1,7 @@
-import * as path from 'path'
-import * as os from "node:os";
+import { fileURLToPath } from 'node:url'
 import pkg from './package.json'
+
+const pathEnvPreload = fileURLToPath(new URL('./server/pathEnv.preload.ts', import.meta.url))
 
 export default defineNuxtConfig({
     compatibilityDate: '2024-11-01',
@@ -9,6 +10,12 @@ export default defineNuxtConfig({
         head: {
             title: 'ClyoCloud',
             titleTemplate: '%s - ClyoCloud',
+            htmlAttrs: {
+                'data-theme': 'dark'
+            },
+            meta: [
+                { name: 'theme-color', content: '#000000' }
+            ],
             link: [
                 { rel: 'icon', type: 'image/png', href: '/clyo.png' }
             ]
@@ -22,37 +29,16 @@ export default defineNuxtConfig({
         public: {
             version: pkg.version || '1.0.0'
         },
-        storagePath:
-            process.env.STORAGE_PATH ||
-            path.join(os.homedir(), '.clyo', 'data'),
-
-        moviesPath:
-            process.env.MOVIES_PATH ||
-            path.join(os.homedir(), '.clyo', 'movies'),
-
-        showsPath:
-            process.env.SHOWS_PATH ||
-            path.join(os.homedir(), '.clyo', 'shows'),
-
-        thumbnailPath:
-            process.env.THUMBNAIL_PATH ||
-            path.join(os.homedir(), '.clyo', 'thumbs'),
-
-        previewPath:
-            process.env.PREVIEW_PATH ||
-            path.join(os.homedir(), '.clyo', 'previews'),
-
-        usersFilePath:
-            process.env.USERS_FILE_PATH ||
-            path.join(os.homedir(), '.clyo', 'users.json'),
-
-        tagsFilePath:
-            process.env.TAGS_FILE_PATH ||
-            path.join(os.homedir(), '.clyo', 'tags.json'),
-
-        devicesFilePath:
-            process.env.DEVICES_FILE_PATH ||
-            path.join(os.homedir(), '.clyo', 'devices.json'),
+        // Paths are resolved when the server starts, see server/pathEnv.ts.
+        // Anything computed here would be baked into the build.
+        storagePath: '',
+        moviesPath: '',
+        showsPath: '',
+        thumbnailPath: '',
+        previewPath: '',
+        usersFilePath: '',
+        tagsFilePath: '',
+        devicesFilePath: '',
 
         maxFileSize: 100 * 1024  * 1024 * 1024,
         jwtSecret: 'jei0ghjesi0ogj8ie0jg8093jg8390',
@@ -65,11 +51,16 @@ export default defineNuxtConfig({
     ssr: true,
     tailwindcss: {
         viewer: false,
+        cssPath: '~/assets/css/main.css',
     },
     build: {
         transpile: ['otplib']
     },
     nitro: {
+      unenv: {
+        polyfill: [pathEnvPreload]
+      },
+      moduleSideEffects: [pathEnvPreload],
       externals: {
         inline: ['otplib']
       }

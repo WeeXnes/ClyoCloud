@@ -204,7 +204,7 @@ watch(currentMedia, () => {
     <!-- Back Button -->
     <button 
       @click="navigateTo('/files')" 
-      class="absolute top-6 left-6 z-50 btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10 hover:bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+      class="absolute top-6 left-6 z-50 btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity" aria-label="Back"
     >
       <Icon name="mdi:arrow-left" class="w-6 h-6" />
     </button>
@@ -213,20 +213,20 @@ watch(currentMedia, () => {
     <div class="absolute top-6 right-6 z-50 flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
       <button 
         @click="openPicker" 
-        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        class="btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60"
         title="Add Folder"
       >
         <Icon name="mdi:folder-plus" class="w-6 h-6" />
       </button>
       <button 
         @click="toggleFullscreen" 
-        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        class="btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60"
       >
         <Icon :name="isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'" class="w-6 h-6" />
       </button>
       <button 
         @click="isMuted = !isMuted" 
-        class="btn btn-circle btn-ghost bg-black/20 backdrop-blur-md text-white border-white/10"
+        class="btn btn-circle btn-ghost bg-black/40 text-white hover:!bg-black/60"
       >
         <Icon :name="isMuted ? 'mdi:volume-off' : 'mdi:volume-high'" class="w-6 h-6" />
       </button>
@@ -235,8 +235,8 @@ watch(currentMedia, () => {
 
     <!-- Media Content -->
     <div v-if="isLoading" class="flex flex-col items-center gap-4 text-white">
-      <span class="loading loading-spinner loading-lg text-primary"></span>
-      <p class="text-[10px] font-bold uppercase tracking-widest opacity-50">Calibrating Projection...</p>
+      <span class="loading loading-spinner loading-lg !text-white/70"></span>
+      <p class="text-[14px] text-white/60">Loading…</p>
     </div>
 
     <div v-else-if="currentMedia" class="w-full h-full flex items-center justify-center">
@@ -245,7 +245,7 @@ watch(currentMedia, () => {
           <img 
             v-if="currentMedia.type === 'image'" 
             :src="getImageUrl(currentMedia.fullPath)" 
-            class="max-w-full max-h-full object-contain shadow-2xl"
+            class="max-w-full max-h-full object-contain"
           />
           <video 
             v-else-if="currentMedia.type === 'video'" 
@@ -261,25 +261,22 @@ watch(currentMedia, () => {
       </transition>
     </div>
 
-    <div v-else class="text-white text-center space-y-6">
-      <Icon name="mdi:image-multiple-outline" class="w-24 h-24 opacity-10" />
-      <div>
-        <h2 class="text-xl font-bold uppercase tracking-widest">No Content Loaded</h2>
-        <p class="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-2">Add folders to start the sequence</p>
-      </div>
-      <button @click="openPicker" class="btn btn-primary btn-sm rounded-lg px-8 font-bold uppercase text-[10px] tracking-widest">Add Folders</button>
+    <div v-else class="text-center px-8">
+      <p class="text-[15px] text-white">Nothing to show yet.</p>
+      <p class="text-[14px] text-white/60 mt-1">Add a folder to start the slideshow.</p>
+      <button @click="openPicker" class="btn btn-sm mt-6 !bg-white !border-white !text-black">Add folder</button>
     </div>
 
     <!-- Bottom Navigation Bar -->
-    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-6 px-8 py-3.5 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-[50]">
-      <button @click="prevMedia" class="btn btn-ghost btn-circle text-white hover:bg-white/10 btn-sm md:btn-md">
-        <Icon name="mdi:skip-previous" class="w-6 h-6 md:w-8 md:h-8" />
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 sm:gap-6 px-4 sm:px-6 py-3 bg-black/70 rounded-full border border-white/15 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity z-[50] max-w-[calc(100vw-32px)]">
+      <button @click="prevMedia" class="btn btn-ghost btn-circle text-white hover:!bg-white/10 btn-sm">
+        <Icon name="mdi:skip-previous" class="w-5 h-5" />
       </button>
-      <button @click="togglePlayPause" class="btn btn-circle btn-primary shadow-lg shadow-primary/20 btn-sm md:btn-md">
-        <Icon :name="isPaused ? 'mdi:play' : 'mdi:pause'" class="w-6 h-6 md:w-8 md:h-8" />
+      <button @click="togglePlayPause" class="btn btn-circle btn-sm !bg-white !border-white !text-black" :aria-label="isPaused ? 'Play' : 'Pause'">
+        <Icon :name="isPaused ? 'mdi:play' : 'mdi:pause'" class="w-5 h-5" />
       </button>
-      <button @click="nextMedia" class="btn btn-ghost btn-circle text-white hover:bg-white/10 btn-sm md:btn-md">
-        <Icon name="mdi:skip-next" class="w-6 h-6 md:w-8 md:h-8" />
+      <button @click="nextMedia" class="btn btn-ghost btn-circle text-white hover:!bg-white/10 btn-sm">
+        <Icon name="mdi:skip-next" class="w-5 h-5" />
       </button>
       
       <div class="h-8 w-px bg-white/10"></div>
@@ -293,68 +290,68 @@ watch(currentMedia, () => {
            max="30" 
            v-model.number="slideshowInterval" 
            class="w-20 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer focus:outline-none" 
-           style="accent-color: var(--p);"
+           style="accent-color: #fafafa;"
            @input="resetTimer"
          />
-         <span class="text-[9px] font-bold text-white/50 w-6 uppercase tracking-widest">{{ slideshowInterval }}s</span>
+         <span class="num text-[12px] text-white/70 w-7">{{ slideshowInterval }}s</span>
       </div>
 
       <div class="h-8 w-px bg-white/10"></div>
       
-      <div class="text-white text-[10px] font-bold uppercase tracking-widest tabular-nums">
+      <div class="num text-white/80 text-[12px] whitespace-nowrap">
         {{ currentIndex + 1 }} / {{ mediaItems.length }}
       </div>
     </div>
 
     <!-- Info Box -->
-    <div class="absolute bottom-6 left-6 z-[40] max-w-sm pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-      <h3 class="text-white font-bold text-sm tracking-tight truncate drop-shadow-lg">{{ currentMedia?.name }}</h3>
+    <div class="absolute top-6 left-20 z-[40] max-w-sm pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-xl px-3 py-2">
+      <h3 class="text-white text-[14px] truncate">{{ currentMedia?.name }}</h3>
       <div class="flex gap-2 mt-2">
-        <span v-for="tag in currentMedia?.meta.tags" :key="tag.name" class="badge badge-xs border-none text-white font-bold py-2" :style="{ backgroundColor: tag.color }">
+        <span v-for="tag in currentMedia?.meta.tags" :key="tag.name" class="tag-chip tag-chip-media">
+          <span class="dot" :style="{ backgroundColor: tag.color }"></span>
           {{ tag.name }}
         </span>
       </div>
     </div>
 
     <!-- Folder Picker Modal -->
-    <div class="modal backdrop-blur-md" :class="{ 'modal-open': showPicker }">
-      <div class="modal-box rounded-xl bg-[#0d1117] text-white border border-white/10 p-0 max-w-md overflow-hidden flex flex-col max-h-[80vh]">
-        <div class="p-6 border-b border-white/10 shrink-0">
-          <h3 class="font-bold text-base tracking-tight">Add Folder to Playlist</h3>
-          <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-1">Select a directory to include in the slideshow</p>
+    <div class="modal" :class="{ 'modal-open': showPicker }">
+      <div class="modal-box p-0 max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+        <div class="p-6 border-b border-line shrink-0">
+          <h3 class="section-title">Add a folder</h3>
+          <p class="text-[14px] text-fg-3 mt-1">Its images and videos join the slideshow.</p>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto p-4 ">
           <!-- Breadcrumbs -->
-          <div class="flex items-center gap-1.5 mb-4 text-[9px] font-bold uppercase tracking-widest text-white/30 overflow-x-auto no-scrollbar whitespace-nowrap">
-            <span class="cursor-pointer hover:text-primary" @click="fetchPickerFolders('')">Root</span>
+          <div class="flex items-center gap-1.5 mb-4 micro overflow-x-auto no-scrollbar whitespace-nowrap">
+            <span class="cursor-pointer hover:text-fg" @click="fetchPickerFolders('')">Root</span>
             <template v-for="(part, idx) in pickerCurrentPath.split('/')" :key="idx">
               <span v-if="part">
                 <Icon name="mdi:chevron-right" class="w-3 h-3 mx-1" />
-                <span class="cursor-pointer hover:text-primary" @click="fetchPickerFolders(pickerCurrentPath.split('/').slice(0, idx + 1).join('/'))">{{ part }}</span>
+                <span class="cursor-pointer hover:text-fg" @click="fetchPickerFolders(pickerCurrentPath.split('/').slice(0, idx + 1).join('/'))">{{ part }}</span>
               </span>
             </template>
           </div>
 
           <div class="space-y-1">
-            <div v-if="pickerCurrentPath" @click="navigatePickerUp" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors group">
-              <Icon name="mdi:folder-upload-outline" class="w-5 h-5 text-primary/60 group-hover:text-primary" />
-              <span class="text-xs font-bold uppercase tracking-widest">.. Back</span>
+            <div v-if="pickerCurrentPath" @click="navigatePickerUp" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-2 cursor-pointer transition-colors group">
+              <Icon name="mdi:folder-upload-outline" class="w-5 h-5 text-fg-3" />
+              <span class="text-[14px] text-fg-2">Up one level</span>
             </div>
-            <div v-for="folder in pickerFolders" :key="folder.name" @click="navigatePicker(folder.name)" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors group">
+            <div v-for="folder in pickerFolders" :key="folder.name" @click="navigatePicker(folder.name)" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-2 cursor-pointer transition-colors group">
               <Icon name="vscode-icons:default-folder" class="w-5 h-5" />
-              <span class="text-xs font-bold truncate group-hover:text-primary">{{ folder.name }}</span>
+              <span class="text-[14px] text-fg truncate">{{ folder.name }}</span>
             </div>
-            <div v-if="pickerFolders.length === 0" class="py-12 text-center opacity-30">
-               <Icon name="mdi:folder-outline" class="w-12 h-12 mx-auto mb-2" />
-               <p class="text-[9px] font-bold uppercase tracking-widest">No subfolders found</p>
+            <div v-if="pickerFolders.length === 0" class="py-12 text-center">
+               <p class="text-[14px] text-fg-3">No subfolders here.</p>
             </div>
           </div>
         </div>
 
-        <div class="p-6 bg-white/5 border-t border-white/10 shrink-0 flex gap-3">
-          <button @click="showPicker = false" class="btn btn-ghost flex-1 h-11 rounded-lg font-bold text-[10px] uppercase tracking-widest">Cancel</button>
-          <button @click="addFolderToPlaylist" class="btn btn-primary flex-1 h-11 rounded-lg shadow-sm font-bold text-[10px] uppercase tracking-widest">Add Selected</button>
+        <div class="p-4 border-t border-line shrink-0 flex justify-end gap-2">
+          <button @click="showPicker = false" class="btn btn-ghost btn-sm">Cancel</button>
+          <button @click="addFolderToPlaylist" class="btn btn-primary btn-sm">Add folder</button>
         </div>
       </div>
     </div>
@@ -363,7 +360,7 @@ watch(currentMedia, () => {
 
 <style scoped>
 .fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s ease;
+  transition: opacity 120ms ease;
 }
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
@@ -376,7 +373,7 @@ watch(currentMedia, () => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--line-strong);
   border-radius: 4px;
 }
 .no-scrollbar::-webkit-scrollbar {

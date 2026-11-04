@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { getIconForExtension } from '~/core/fileIcons'
 
 definePageMeta({
   layout: false
@@ -102,123 +101,85 @@ if (fileInfo.value) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/50 font-sans flex flex-col">
-    <!-- Compact Header -->
-    <header class="w-full bg-base-100/80 backdrop-blur-md border-b border-base-content/5 py-3 px-6 sticky top-0 z-50">
-      <div class="max-w-3xl mx-auto flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-md shadow-primary/20">
-            <img src="/clyo.png" class="w-4 h-4 object-contain" alt="Clyo Logo" />
-          </div>
-          <div>
-            <h1 class="font-black text-sm tracking-tight leading-none">ClyoCloud</h1>
-            <span class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Secure Share</span>
-          </div>
-        </div>
-        
-        <NuxtLink to="/login" class="btn btn-ghost btn-xs h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider">
-          Sign In
-        </NuxtLink>
+  <div class="min-h-screen bg-base-100 font-sans flex flex-col">
+    <header class="h-header border-b border-line sticky top-0 z-50 bg-base-100">
+      <div class="max-w-form mx-auto h-full px-4 flex items-center justify-between">
+        <span class="text-[15px] leading-none whitespace-nowrap">
+          <span class="font-semibold text-fg tracking-section">ClyoCloud</span><span class="text-fg-3"> / Share</span>
+        </span>
+        <NuxtLink to="/login" class="text-[14px] text-fg-2 hover:text-fg transition-colors">Sign in</NuxtLink>
       </div>
     </header>
 
-    <main class="flex-1 max-w-3xl mx-auto w-full px-4 py-8 sm:py-12 flex flex-col items-center justify-center">
-      
+    <main class="flex-1 max-w-form mx-auto w-full px-4 py-12 sm:py-16">
+
       <!-- Loading State -->
-      <div v-if="isLoading" class="flex flex-col items-center gap-4">
-        <div class="loading loading-spinner loading-md text-primary"></div>
-        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-base-content/30">Decrypting Link</p>
+      <div v-if="isLoading" class="flex items-center gap-3 text-[14px] text-fg-3">
+        <span class="loading loading-spinner loading-sm"></span>
+        Loading…
       </div>
-      
+
       <!-- Error State -->
-      <div v-else-if="error" class="w-full max-w-sm bg-base-100 rounded-3xl shadow-xl border border-base-content/5 p-8 text-center">
-        <div class="bg-error/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5">
-          <Icon name="mdi:alert-circle" class="w-8 h-8 text-error" />
-        </div>
-        <h2 class="text-xl font-black tracking-tight mb-2">Access Denied</h2>
-        <p class="text-xs font-medium text-base-content/50 mb-6 leading-relaxed">{{ error }}</p>
-        <NuxtLink to="/" class="btn btn-primary btn-sm btn-block rounded-xl h-11 shadow-lg">Return Home</NuxtLink>
+      <div v-else-if="error">
+        <p class="flex items-center gap-2 text-[13px] text-fg-2 mb-3"><span class="dot text-error"></span>Not available</p>
+        <h1 class="page-title mb-2">This link doesn’t work</h1>
+        <p class="text-fg-2">{{ error }}</p>
+        <NuxtLink to="/" class="btn btn-sm mt-8">Go to ClyoCloud</NuxtLink>
       </div>
 
-      <!-- Minimal Shared Card -->
-      <div v-else-if="fileInfo" class="w-full bg-base-100 rounded-[1.5rem] shadow-2xl shadow-base-content/5 border border-base-content/5 overflow-hidden flex flex-col">
-        
-        <!-- Integrated Preview -->
-        <div v-if="isImageFile(fileInfo.name) || isVideoFile(fileInfo.name)" class="w-full bg-black/5 border-b border-base-content/5">
-           <div class="flex items-center justify-center bg-black/95">
-              <img v-if="isImageFile(fileInfo.name)" :src="getPublicFileUrl()" class="max-h-[50vh] w-full object-contain" :alt="fileInfo.name" />
-              <video v-else-if="isVideoFile(fileInfo.name)" controls class="w-full aspect-video">
-                <source :src="getPublicStreamUrl()" type="video/mp4" />
-              </video>
-           </div>
+      <!-- Shared item -->
+      <article v-else-if="fileInfo">
+        <div v-if="isImageFile(fileInfo.name) || isVideoFile(fileInfo.name)" class="rounded-xl overflow-hidden border border-line bg-black mb-10">
+          <img v-if="isImageFile(fileInfo.name)" :src="getPublicFileUrl()" class="max-h-[60vh] w-full object-contain" :alt="fileInfo.name" />
+          <video v-else-if="isVideoFile(fileInfo.name)" controls class="w-full aspect-video">
+            <source :src="getPublicStreamUrl()" type="video/mp4" />
+          </video>
         </div>
 
-        <!-- Content Area -->
-        <div class="p-6 sm:p-8">
-          <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
-            <div class="flex items-center gap-4 min-w-0">
-              <div class="bg-base-200 w-16 h-16 rounded-2xl shadow-inner shrink-0 ring-1 ring-base-content/5 flex items-center justify-center">
-                <Icon :name="fileInfo.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(fileInfo.name)" class="w-9 h-9" />
-              </div>
-              <div class="min-w-0">
-                <h2 class="text-lg font-black tracking-tight truncate leading-tight mb-0.5" :title="fileInfo.isFolder ? `${fileInfo.name}.zip` : fileInfo.name">
-                  {{ fileInfo.isFolder ? `${fileInfo.name}.zip` : fileInfo.name }}
-                </h2>
-                <div class="flex items-center gap-3 text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
-                  <span>{{ formatFileSize(fileInfo.size) }}</span>
-                  <span class="w-1 h-1 rounded-full bg-base-content/20"></span>
-                  <span>{{ new Date(fileInfo.lastModified).toLocaleDateString() }}</span>
-                  <span v-if="fileInfo.isFolder" class="badge badge-ghost badge-xs text-[9px] font-black tracking-widest py-2">Bundle</span>
-                </div>
-              </div>
-            </div>
+        <p class="micro mb-3">{{ fileInfo.isFolder ? 'Shared folder' : 'Shared file' }}</p>
+        <h1 class="text-[1.75rem] sm:text-[2rem] font-medium tracking-title text-fg leading-tight break-words" :title="fileInfo.isFolder ? `${fileInfo.name}.zip` : fileInfo.name">
+          {{ fileInfo.isFolder ? `${fileInfo.name}.zip` : fileInfo.name }}
+        </h1>
 
-            <div class="shrink-0">
-              <a :href="getPublicFileUrl()" download class="btn btn-primary rounded-xl px-6 h-12 shadow-lg shadow-primary/20 gap-2 w-full sm:w-auto">
-                <Icon name="mdi:download" class="w-4 h-4" />
-                <span class="font-bold text-xs uppercase tracking-wider">Download</span>
-              </a>
-            </div>
+        <dl class="grid grid-cols-2 border-y border-line mt-8">
+          <div class="py-4 pr-4">
+            <dt class="micro">Size</dt>
+            <dd class="num text-[15px] text-fg mt-1">{{ formatFileSize(fileInfo.size) }}</dd>
           </div>
+          <div class="py-4 pl-4 border-l border-line">
+            <dt class="micro">Modified</dt>
+            <dd class="num text-[15px] text-fg mt-1">{{ new Date(fileInfo.lastModified).toLocaleDateString() }}</dd>
+          </div>
+        </dl>
 
-          <!-- Tags -->
-          <div v-if="fileInfo.meta?.tags?.length" class="flex flex-wrap gap-1.5 mt-6">
-            <NuxtLink v-for="tag in fileInfo.meta.tags" 
-                  :key="tag.name" 
-                  :to="`/collections/${encodeURIComponent(tag.name)}`"
-                  class="badge badge-xs border-none text-white font-bold py-2.5 px-3 hover:scale-105 transition-transform cursor-pointer" 
-                  :style="{ backgroundColor: tag.color }">
-              {{ tag.name }}
-            </NuxtLink>
-          </div>
-
-          <!-- Description -->
-          <div v-if="fileInfo.meta?.description" class="mt-6 bg-base-200/50 p-4 sm:p-5 rounded-2xl border border-base-content/5">
-            <h3 class="text-[9px] font-black uppercase tracking-[0.2em] text-base-content/30 mb-2">Note from owner</h3>
-            <p class="text-xs font-medium text-base-content/70 leading-relaxed whitespace-pre-line">
-              {{ fileInfo.meta.description }}
-            </p>
-          </div>
+        <div v-if="fileInfo.meta?.tags?.length" class="flex flex-wrap gap-1.5 mt-6">
+          <NuxtLink
+            v-for="tag in fileInfo.meta.tags"
+            :key="tag.name"
+            :to="`/collections/${encodeURIComponent(tag.name)}`"
+            class="tag-chip"
+          >
+            <span class="dot" :style="{ backgroundColor: tag.color }"></span>
+            {{ tag.name }}
+          </NuxtLink>
         </div>
 
-        <div class="bg-base-200/30 px-6 py-3 border-t border-base-content/5 flex items-center justify-between">
-           <div class="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-base-content/30">
-             <Icon name="mdi:shield-check" class="text-success w-3 h-3" />
-             Verified Link
-           </div>
-           <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/20">ClyoCloud Secure</span>
-        </div>
-      </div>
+        <section v-if="fileInfo.meta?.description" class="mt-10">
+          <h2 class="micro mb-2">Note from the owner</h2>
+          <p class="text-fg-2 whitespace-pre-line">{{ fileInfo.meta.description }}</p>
+        </section>
 
-      <!-- Footer Info -->
-      <p class="mt-8 text-[9px] font-bold uppercase tracking-[0.3em] text-base-content/20">ClyoCloud - v{{ useRuntimeConfig().public.version }}</p>
+        <a :href="getPublicFileUrl()" download class="btn btn-primary gap-2 mt-10 w-full sm:w-auto">
+          <Icon name="mdi:download" class="w-4 h-4" />
+          Download{{ fileInfo.isFolder ? ' as .zip' : '' }}
+        </a>
+      </article>
     </main>
+
+    <footer class="border-t border-line">
+      <div class="max-w-form mx-auto px-4 py-4 text-[13px] text-fg-3">
+        Shared with ClyoCloud <span class="num">v{{ useRuntimeConfig().public.version }}</span>
+      </div>
+    </footer>
   </div>
 </template>
-
-<style scoped>
-.btn:focus-visible {
-  outline: 2px solid hsl(var(--p));
-  outline-offset: 2px;
-}
-</style>

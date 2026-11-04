@@ -1806,10 +1806,10 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-200/50" :class="{ 'select-none': isSelecting }" @mousedown="handleMouseDown">
+  <div class="min-h-screen bg-base-100" :class="{ 'select-none': isSelecting }" @mousedown="handleMouseDown">
     <!-- Selection Box -->
     <div v-if="isSelecting" 
-         class="fixed border-2 border-primary bg-primary/10 z-[100] pointer-events-none"
+         class="fixed border-2 border-fg bg-surface-2 z-[100] pointer-events-none"
          :style="{
            left: selectionBox.x + 'px',
            top: selectionBox.y + 'px',
@@ -1818,29 +1818,26 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
          }">
     </div>
     <!-- Edge-to-Edge Sticky Header -->
-    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
-      <div class="w-full px-4 md:px-6 py-3 md:py-4">
+    <header class="page-bar">
+      <div class="page-wrap py-3">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
 
           <!-- Title and Breadcrumbs -->
           <div class="flex items-center gap-3">
-            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="Open navigation">
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Icon name="mdi:folder-multiple" class="text-primary w-5 h-5" />
-              </div>
               <div>
-                <h1 class="text-base font-extrabold tracking-tight">Files</h1>
+                <h1 class="text-[15px] font-medium tracking-section text-fg leading-tight">Files</h1>
                 <!-- Breadcrumbs -->
-                <div class="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-base-content/30 leading-none mt-0.5">
-                  <NuxtLink to="/files" class="hover:text-primary transition-colors">Root</NuxtLink>
+                <div class="flex items-center gap-1.5 text-[11px] uppercase tracking-micro font-mono text-fg-3 leading-none mt-0.5">
+                  <NuxtLink to="/files" class="hover:text-fg transition-colors">Root</NuxtLink>
                   <template v-for="(folder, index) in useRoute().params.path" :key="index">
                     <Icon name="mdi:chevron-right" class="w-3 h-3 opacity-50" />
                     <NuxtLink
                       :to="`/files/${useRoute().params.path.slice(0, index + 1).map(encodeURIComponent).join('/')}`"
-                      class="hover:text-primary transition-colors truncate max-w-[100px] md:max-w-[120px]"
+                      class="hover:text-fg transition-colors truncate max-w-[100px] md:max-w-[120px]"
                     >
                       {{ folder }}
                     </NuxtLink>
@@ -1855,63 +1852,63 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
              <!-- Search -->
              <div class="relative w-full sm:w-64">
                 <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                  <Icon name="mdi:magnify" class="w-4 h-4 text-base-content/30" />
+                  <Icon name="mdi:magnify" class="w-4 h-4 text-fg-3" />
                 </div>
                 <input
                   v-model="searchQuery"
                   type="text"
                   placeholder="Quick search..."
-                  class="input input-xs md:input-sm input-bordered w-full pl-9 bg-base-100/50 focus:bg-base-100 transition-all border-base-content/10 font-bold text-xs h-8 md:h-10"
+                  class="input input-xs md:input-sm input-bordered w-full !pl-9 transition font-medium text-xs "
                 />
              </div>
 
              <div class="flex flex-wrap items-center gap-1.5 md:gap-2 justify-end w-full sm:w-auto">
                 <button 
-                 class="btn btn-xs md:btn-sm btn-ghost border border-base-content/10 bg-base-100/50 transition-all duration-200" 
-                 :class="{ 'text-orange-500 bg-orange-500/10 border-orange-500/20 shadow-sm': showFavouritesOnly }"
+                 class="btn btn-xs md:btn-sm transition duration-200" 
+                 :class="{ 'text-fg bg-surface-2 border-line-strong ': showFavouritesOnly }"
                  @click="showFavouritesOnly = !showFavouritesOnly"
                  title="Show Favourites Only"
                 >
                   <Icon :name="showFavouritesOnly ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
-                  <span class="hidden xl:inline ml-1 font-bold text-[10px] uppercase tracking-widest">Favorites</span>
+                  <span class="hidden xl:inline ml-1">Favorites</span>
                 </button>
 
                 <div class="dropdown dropdown-end">
-                  <button tabindex="0" class="btn btn-xs md:btn-sm btn-ghost gap-2 border border-base-content/10 bg-base-100/50 font-bold text-[10px] uppercase tracking-widest">
+                  <button tabindex="0" class="btn btn-xs md:btn-sm gap-2">
                      <Icon name="mdi:sort-variant" class="w-4 h-4" />
                      <span class="hidden sm:inline">Sort</span>
                   </button>
-                  <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-lg w-40 border border-base-content/10 mt-2 font-bold text-[10px] uppercase tracking-widest">
+                  <ul tabindex="0" class="dropdown-content z-[1] menu p-2 bg-base-100 rounded-lg w-40 border border-line mt-2 text-[13px]">
                     <li><a @click="sortOption = 'name'" :class="{ 'active': sortOption === 'name' }">Name</a></li>
                     <li><a @click="sortOption = 'size'" :class="{ 'active': sortOption === 'size' }">Size</a></li>
                     <li><a @click="sortOption = 'date'" :class="{ 'active': sortOption === 'date' }">Date</a></li>
                   </ul>
                 </div>
 
-                <button class="btn btn-xs md:btn-sm btn-ghost border border-base-content/10 bg-base-100/50" @click="openCreateFolderModal" title="Create Folder">
+                <button class="btn btn-xs md:btn-sm" @click="openCreateFolderModal" title="Create Folder">
                   <Icon name="mdi:folder-plus" class="w-4 h-4" />
                 </button>
 
-                <div class="h-6 w-px bg-base-content/10 mx-0.5 md:mx-1"></div>
+                <div class="h-6 w-px bg-surface-2 mx-0.5 md:mx-1"></div>
 
-                <div class="flex bg-base-200/50 p-1 rounded-lg border border-base-content/10">
+                <div class="flex bg-base-200 p-1 rounded-lg border border-line">
                   <button 
-                   class="btn btn-xs btn-ghost rounded-md px-1.5" 
-                   :class="{ 'bg-base-100 shadow-sm text-primary': !isGridView }"
+                   class="btn btn-xs btn-ghost px-1.5" 
+                   :class="{ 'bg-base-100 text-fg': !isGridView }"
                    @click="isGridView = false"
                   >
                     <Icon name="mdi:view-list" class="w-4 h-4" />
                   </button>
                   <button 
-                   class="btn btn-xs btn-ghost rounded-md px-1.5" 
-                   :class="{ 'bg-base-100 shadow-sm text-primary': isGridView }"
+                   class="btn btn-xs btn-ghost px-1.5" 
+                   :class="{ 'bg-base-100 text-fg': isGridView }"
                    @click="isGridView = true"
                   >
                     <Icon name="mdi:view-grid" class="w-4 h-4" />
                   </button>
                 </div>
 
-                <label class="btn btn-xs md:btn-sm btn-primary px-3 md:px-5 shadow-sm rounded-lg font-bold text-[9px] md:text-[10px] uppercase tracking-widest" for="upload-modal">
+                <label class="btn btn-xs md:btn-sm btn-primary px-3 md:px-5" for="upload-modal">
                   Upload
                 </label>
              </div>
@@ -1922,35 +1919,35 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
     <!-- Bulk Action Bar -->
     <transition name="slide-down">
-      <div v-if="selectedFiles.size > 0" class="sticky top-[111px] md:top-[80px] z-[50] w-full bg-primary text-primary-content shadow-lg py-2 md:py-2.5 px-4 sm:px-8">
-        <div class="max-w-[1600px] mx-auto flex flex-nowrap items-center justify-between gap-4 overflow-x-auto no-scrollbar">
+      <div v-if="selectedFiles.size > 0" class="sticky top-[111px] md:top-[60px] z-[50] w-full bg-base-200 border-b border-line text-fg py-2">
+        <div class="page-wrap flex flex-nowrap items-center justify-between gap-4 overflow-x-auto no-scrollbar">
           <div class="flex items-center gap-4 shrink-0">
-            <button class="btn btn-xs btn-outline btn-ghost border-white/30 text-white rounded-md font-bold" @click="toggleSelectAll">
+            <button class="btn btn-xs" @click="toggleSelectAll">
               {{ selectedFiles.size === sortedFiles.length ? 'Deselect All' : 'Select All' }}
             </button>
-            <span class="text-[10px] font-bold uppercase tracking-widest">{{ selectedFiles.size }} selected</span>
+            <span class="num text-[13px] text-fg-2">{{ selectedFiles.size }} selected</span>
           </div>
           
           <div class="flex items-center gap-2 shrink-0">
-            <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="bulkDownload">
+            <button class="btn btn-xs btn-ghost gap-2" @click="bulkDownload">
               <Icon name="mdi:download" class="w-3.5 h-3.5" /> Download
             </button>
-            <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="startSlideshow()">
+            <button class="btn btn-xs btn-ghost gap-2" @click="startSlideshow()">
               <Icon name="mdi:image-multiple-outline" class="w-3.5 h-3.5" /> Slideshow
             </button>
-            <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="bulkFavourite">
+            <button class="btn btn-xs btn-ghost gap-2" @click="bulkFavourite">
               <Icon name="mdi:star" class="w-3.5 h-3.5" /> Favorite
             </button>
-            <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="openBulkRenameModal">
+            <button class="btn btn-xs btn-ghost gap-2" @click="openBulkRenameModal">
               <Icon name="mdi:pencil" class="w-3.5 h-3.5" /> Rename
             </button>
-            <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="openBulkTagModal">
+            <button class="btn btn-xs btn-ghost gap-2" @click="openBulkTagModal">
               <Icon name="mdi:tag-plus" class="w-3.5 h-3.5" /> Tags
             </button>
-            <button class="btn btn-xs bg-white/10 hover:bg-white/20 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="openMoveModal()">
+            <button class="btn btn-xs btn-ghost gap-2" @click="openMoveModal()">
               <Icon name="mdi:folder-move" class="w-3.5 h-3.5" /> Move
             </button>
-            <button class="btn btn-xs bg-error/20 hover:bg-error/40 border-none text-white gap-2 font-bold uppercase tracking-wider rounded-md" @click="bulkDelete">
+            <button class="btn btn-xs btn-error gap-2" @click="bulkDelete">
               <Icon name="mdi:delete" class="w-3.5 h-3.5" /> Delete
             </button>
           </div>
@@ -1958,15 +1955,15 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
       </div>
     </transition>
 
-    <main class="max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 min-h-[70vh]"
+    <main class="page-wrap py-10 min-h-[70vh]"
           @dragover.prevent 
           @drop.prevent="handleDrop">
       
       <!-- Skeleton Loading -->
       <div v-if="isLoading" :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'space-y-3'">
         <div v-for="i in 12" :key="i" class="flex flex-col gap-3">
-          <div :class="isGridView ? 'aspect-square rounded-lg bg-base-300 animate-pulse' : 'h-14 rounded-lg bg-base-300 animate-pulse'"></div>
-          <div v-if="isGridView" class="h-3.5 w-3/4 bg-base-300 animate-pulse rounded mx-auto"></div>
+          <div :class="isGridView ? 'aspect-square rounded-lg bg-base-200 animate-pulse' : 'h-[52px] bg-base-200 animate-pulse'"></div>
+          <div v-if="isGridView" class="h-3.5 w-3/4 bg-base-200 animate-pulse rounded mx-auto"></div>
         </div>
       </div>
 
@@ -1974,7 +1971,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
       <div 
         v-else-if="sortedFiles.length"
         id="file-grid-container"
-        :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-2.5'"
+        :class="isGridView ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col border border-line rounded-xl overflow-hidden divide-y divide-line'"
       >
         <div 
           v-for="(file, index) in sortedFiles" 
@@ -1990,15 +1987,15 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           <template v-if="isFileVisible(index)">
             <!-- Grid Item -->
             <div v-if="isGridView" 
-                 class="flex flex-col gap-2 transition-all duration-300"
+                 class="flex flex-col gap-2 transition duration-150"
             >
               <!-- Thumbnail Container -->
               <div 
-                class="relative aspect-square rounded-lg bg-base-100 border border-base-content/10 shadow-sm hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden flex items-center justify-center group/item ring-primary/30"
+                class="relative aspect-square rounded-lg bg-base-100 border border-line hover:border-line-strong transition duration-200 cursor-pointer overflow-hidden flex items-center justify-center group/item"
                 :class="{ 
-                  'ring-1': selectedFiles.has(file.name),
+                  'ring-2 ring-fg': selectedFiles.has(file.name),
                   'video-thumbnail-container': isVideoFile(file.name),
-                  'ring-2 ring-primary scale-105 border-primary shadow-lg': dragTarget === file.name && file.isFolder
+                  'ring-2 ring-fg border-fg': dragTarget === file.name && file.isFolder
                 }"
                 :data-file-name="file.name"
                 @click="onFileClick($event, file)" 
@@ -2013,7 +2010,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 <div class="absolute top-2 left-2 z-10 opacity-0 group-hover/item:opacity-100 transition-opacity" :class="{ 'opacity-100': selectedFiles.size > 0 }">
                   <input
                     type="checkbox"
-                    class="checkbox checkbox-xs checkbox-primary bg-base-100/80 backdrop-blur-md rounded-sm"
+                    class="checkbox checkbox-xs checkbox-primary bg-base-100 rounded-sm"
                     :checked="selectedFiles.has(file.name)"
                     @change="toggleSelection(file.name)"
                     @click.stop
@@ -2023,19 +2020,19 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 <!-- Shared Indicator (Top Right) -->
                 <div class="absolute top-2 right-2 z-10 flex flex-col gap-1.5">
                   <div v-if="file.meta.isPublic"
-                       class="bg-success text-success-content w-6 h-6 flex items-center justify-center rounded shadow-sm backdrop-blur-md hover:scale-105 transition-all"
+                       class="bg-base-100 text-success border border-line w-6 h-6 flex items-center justify-center rounded-md transition-colors"
                        title="Copy Shared Link"
                        @click.stop="copyPublicLinkForFile(file)">
                     <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
                   </div>
-                  <div class="bg-base-100/80 text-orange-500 w-6 h-6 flex items-center justify-center rounded shadow-sm backdrop-blur-md hover:scale-105 transition-all"
+                  <div class="bg-base-100 text-fg border border-line w-6 h-6 flex items-center justify-center rounded-md transition-opacity"
                        :class="{ 'opacity-0 group-hover/item:opacity-100': !file.meta.isFavourite }"
                        title="Toggle Favorite"
                        @click.stop="toggleFavourite(file)">
                     <Icon :name="file.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-3.5 h-3.5" />
                   </div>
                   <div v-if="!file.isFolder && isImageFile(file.name)"
-                       class="bg-base-100/80 text-purple-500 w-6 h-6 flex items-center justify-center rounded shadow-sm backdrop-blur-md hover:scale-105 transition-all"
+                       class="bg-base-100 text-fg border border-line w-6 h-6 flex items-center justify-center rounded-md transition-opacity"
                        :class="{ 'opacity-0 group-hover/item:opacity-100': !file.meta.isWallpaper }"
                        title="Toggle Wallpaper"
                        @click.stop="toggleWallpaper(file)">
@@ -2047,33 +2044,33 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 <template v-if="file.isFolder">
                   <img v-if="file.meta?.previewImage"
                        :src="getThumbnailUrl(file.name + '/' + file.meta.previewImage)"
-                       class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105"
+                       class="w-full h-full object-cover transition-transform duration-150"
                        alt=""
                        data-is-thumbnail="true"
                        loading="lazy" />
-                  <Icon v-else name="vscode-icons:default-folder" class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300" />
+                  <Icon v-else name="vscode-icons:default-folder" class="w-12 h-12 transition-transform duration-150" />
                   <!-- Folder indicator in corner if there's a custom preview image -->
-                  <div v-if="file.meta?.previewImage" class="absolute bottom-2 right-2 bg-base-100/90 backdrop-blur-md border border-base-content/10 p-1.5 rounded shadow-lg flex items-center justify-center pointer-events-none z-10">
+                  <div v-if="file.meta?.previewImage" class="absolute bottom-2 right-2 bg-base-100 border border-line p-1.5 rounded flex items-center justify-center pointer-events-none z-10">
                     <Icon name="vscode-icons:default-folder" class="w-4 h-4" />
                   </div>
                 </template>
                 <template v-else>
                   <img v-if="hasThumbnail(file.name)"
                        :src="getThumbnailUrl(file.name)"
-                       class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105"
+                       class="w-full h-full object-cover transition-transform duration-150"
                        alt=""
                        data-is-thumbnail="true"
                        loading="lazy" />
                   <Icon v-else
-                        class="w-12 h-12 group-hover/item:scale-105 transition-transform duration-300"
+                        class="w-12 h-12 transition-transform duration-150"
                         :name="getIconForExtension(file.name)"
                         data-is-thumbnail="true" />
 
                   <!-- Video Preview Overlay -->
                   <div v-if="isVideoFile(file.name) && (hoveredFile === file.name || (isMobile && visibleFiles.has(file.name)))"
-                       class="absolute inset-0 animate-in fade-in duration-200">
+                       class="absolute inset-0 duration-200">
                     <img :src="getPreviewUrl(file.name)"
-                         class="w-full h-full object-cover opacity-0 transition-opacity duration-300"
+                         class="w-full h-full object-cover opacity-0 transition-opacity duration-150"
                          @load="$event.target.classList.remove('opacity-0')"
                          alt="Preview" />
                   </div>
@@ -2087,12 +2084,12 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 <div class="min-w-0 px-1">
                   <input v-if="editingName === file.name" 
                          v-model="newName" 
-                         class="input input-xs input-bordered w-full text-center font-bold" 
+                         class="input input-xs input-bordered w-full text-center font-medium" 
                          @keyup.enter="saveRename(file.name)" 
                          @blur="saveRename(file.name)" 
                          @click.stop />
-                  <h3 v-else class="text-[11px] font-bold truncate block group-hover:text-primary transition-colors leading-tight text-base-content">{{ file.name }}</h3>
-                  <div class="text-[9px] font-bold text-base-content/40 uppercase tracking-wider mt-0.5">
+                  <h3 v-else class="text-[13px] truncate block leading-tight text-fg">{{ file.name }}</h3>
+                  <div class="text-[11px] text-fg-3 uppercase tracking-micro font-mono mt-0.5">
                     <span v-if="!file.isFolder">{{ formatSize(file.size) }}</span>
                     <span v-else>&nbsp;</span>
                   </div>
@@ -2102,10 +2099,10 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
             <!-- Modernized List Item -->
             <div v-else 
-                 class="flex items-center gap-4 p-2.5 bg-base-100 rounded-lg border border-base-content/10 hover:border-primary/30 transition-all cursor-pointer group/row ring-primary/30 h-[56px]"
+                 class="flex items-center gap-4 px-4 bg-base-100 hover:bg-surface-2 transition-colors cursor-pointer group/row h-[52px]"
                  :class="{ 
-                   'ring-1 border-primary/30': selectedFiles.has(file.name),
-                   'ring-2 ring-primary border-primary shadow-md translate-x-1': dragTarget === file.name && file.isFolder
+                   'bg-surface-2': selectedFiles.has(file.name),
+                   'bg-surface-2 outline outline-1 outline-fg -outline-offset-1': dragTarget === file.name && file.isFolder
                  }"
                  @click="onFileClick($event, file)" 
                  @contextmenu.prevent="handleContextMenu($event, file)"
@@ -2130,31 +2127,31 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 <div class="flex-grow min-w-0 mr-4 flex items-center">
                   <input v-if="editingName === file.name" 
                          v-model="newName" 
-                         class="input input-sm input-bordered w-full font-bold h-8 text-xs" 
+                         class="input input-sm input-bordered w-full font-medium h-8 text-xs" 
                          @keyup.enter="saveRename(file.name)" 
                          @blur="saveRename(file.name)" 
                          @click.stop />
-                  <h3 v-else class="text-xs font-bold truncate group-hover/row:text-primary transition-colors m-0 leading-none text-base-content">{{ file.name }}</h3>
+                  <h3 v-else class="text-[14px] truncate m-0 leading-none text-fg">{{ file.name }}</h3>
                 </div>
                 
                 <!-- Metadata Group -->
-                <div class="flex items-center gap-6 text-[9px] font-bold text-base-content/40 uppercase tracking-widest shrink-0">
+                <div class="flex items-center gap-6 num text-[13px] text-fg-3 shrink-0">
                   <div class="flex items-center gap-2">
                     <div v-if="file.meta.isPublic" 
-                         class="flex items-center justify-center w-6 h-6 rounded bg-success/10 text-success hover:bg-success hover:text-white transition-all"
+                         class="flex items-center justify-center w-6 h-6 rounded bg-surface-2 text-success hover:bg-base-300 transition"
                          title="Copy Shared Link"
                          @click.stop="copyPublicLinkForFile(file)">
                       <Icon name="mdi:share-variant" class="w-3.5 h-3.5" />
                     </div>
-                    <div class="flex items-center justify-center w-6 h-6 rounded hover:bg-orange-500 hover:text-white transition-all"
-                         :class="file.meta.isFavourite ? 'bg-orange-500/10 text-orange-500' : 'opacity-0 group-hover/row:opacity-100 bg-base-content/5'"
+                    <div class="flex items-center justify-center w-6 h-6 rounded hover:bg-base-300 hover:text-fg transition"
+                         :class="file.meta.isFavourite ? 'bg-surface-2 text-fg' : 'opacity-0 group-hover/row:opacity-100 bg-surface-2'"
                          title="Toggle Favorite"
                          @click.stop="toggleFavourite(file)">
                       <Icon :name="file.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-3.5 h-3.5" />
                     </div>
                     <div v-if="!file.isFolder && isImageFile(file.name)"
-                         class="flex items-center justify-center w-6 h-6 rounded hover:bg-purple-500 hover:text-white transition-all"
-                         :class="file.meta.isWallpaper ? 'bg-purple-500/10 text-purple-500' : 'opacity-0 group-hover/row:opacity-100 bg-base-content/5'"
+                         class="flex items-center justify-center w-6 h-6 rounded hover:bg-base-300 hover:text-fg transition"
+                         :class="file.meta.isWallpaper ? 'bg-surface-2 text-fg' : 'opacity-0 group-hover/row:opacity-100 bg-surface-2'"
                          title="Toggle Wallpaper"
                          @click.stop="toggleWallpaper(file)">
                       <Icon :name="file.meta.isWallpaper ? 'mdi:wallpaper' : 'mdi:image-outline'" class="w-3.5 h-3.5" />
@@ -2171,8 +2168,8 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           </template>
 
           <!-- Placeholder -->
-          <div v-else :class="isGridView ? 'flex flex-col gap-2' : 'h-[56px] bg-base-100/30 rounded-lg border border-dashed border-base-content/10'">
-            <div v-if="isGridView" class="aspect-square bg-base-100/30 rounded-lg border border-dashed border-base-content/10"></div>
+          <div v-else :class="isGridView ? 'flex flex-col gap-2' : 'h-[52px]'">
+            <div v-if="isGridView" class="aspect-square bg-base-100 rounded-lg border border-dashed border-line"></div>
             <div v-if="isGridView" class="h-[40px]"></div>
           </div>
         </div>
@@ -2180,30 +2177,24 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
       <!-- Empty State -->
       <div v-else class="flex flex-col items-center justify-center py-24 text-center">
-        <div class="bg-base-200/50 p-6 rounded-xl mb-6">
-          <Icon 
-            :name="showFavouritesOnly ? 'mdi:star-outline' : 'mdi:folder-open-outline'" 
-            class="w-16 h-16 text-base-content/10" 
-          />
-        </div>
         <template v-if="showFavouritesOnly">
-          <h3 class="text-xl font-bold tracking-tight text-base-content">No favorites here</h3>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-2">You haven't starred any items in this directory yet.</p>
-          <button @click="showFavouritesOnly = false" class="btn btn-primary btn-sm mt-8 px-8 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]">
+          <h3 class="text-[15px] text-fg">No favorites here</h3>
+          <p class="text-[14px] text-fg-3 mt-1 max-w-sm mx-auto">You haven't starred any items in this directory yet.</p>
+          <button @click="showFavouritesOnly = false" class="btn btn-sm mt-6">
             Show all files
           </button>
         </template>
         <template v-else-if="searchQuery">
-          <h3 class="text-xl font-bold tracking-tight text-base-content">No results found</h3>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-2">We couldn't find anything matching "{{ searchQuery }}"</p>
-          <button @click="searchQuery = ''" class="btn btn-primary btn-sm mt-8 px-8 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]">
+          <h3 class="text-[15px] text-fg">No results found</h3>
+          <p class="text-[14px] text-fg-3 mt-1 max-w-sm mx-auto">We couldn't find anything matching "{{ searchQuery }}"</p>
+          <button @click="searchQuery = ''" class="btn btn-sm mt-6">
             Clear search
           </button>
         </template>
         <template v-else>
-          <h3 class="text-xl font-bold tracking-tight text-base-content">Empty folder</h3>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-2">Upload files to get started</p>
-          <label class="btn btn-primary btn-sm mt-8 px-8 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" for="upload-modal">
+          <h3 class="text-[15px] text-fg">Empty folder</h3>
+          <p class="text-[14px] text-fg-3 mt-1 max-w-sm mx-auto">Upload files to get started</p>
+          <label class="btn btn-sm mt-6" for="upload-modal">
             Upload Files
           </label>
         </template>
@@ -2213,76 +2204,76 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
     <!-- Context Menu -->
     <transition name="fade">
       <div v-if="showContextMenu" 
-           class="fixed bg-base-100 shadow-xl rounded-lg border border-base-content/10 z-[100] py-1.5 min-w-[180px] backdrop-blur-xl bg-base-100/90"
+           class="fixed bg-base-100 rounded-lg border border-line z-[100] py-1.5 min-w-[180px] bg-base-100"
            :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }"
            @click.stop>
-        <ul class="menu menu-compact p-0 font-bold text-[10px] uppercase tracking-wider">
-          <li><a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('open')"><Icon name="mdi:open-in-new" class="w-4 h-4" /> Open</a></li>
+        <ul class="menu menu-compact p-0 text-[13px]">
+          <li><a class="py-2.5 px-4 hover:text-fg transition-colors" @click="handleContextAction('open')"><Icon name="mdi:open-in-new" class="w-4 h-4" /> Open</a></li>
           <li v-if="contextMenuFile?.isFolder">
-            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('slideshow')">
+            <a class="py-2.5 px-4 hover:text-fg transition-colors" @click="handleContextAction('slideshow')">
               <Icon name="mdi:image-multiple-outline" class="w-4 h-4" /> Slideshow
             </a>
           </li>
           <li v-if="contextMenuFile?.isFolder">
-            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('toggle-shorts')">
-              <Icon :name="isInShorts(contextMenuFile) ? 'mdi:folder-remove-outline' : 'mdi:folder-plus-outline'" class="w-4 h-4 text-primary" />
+            <a class="py-2.5 px-4 hover:text-fg transition-colors" @click="handleContextAction('toggle-shorts')">
+              <Icon :name="isInShorts(contextMenuFile) ? 'mdi:folder-remove-outline' : 'mdi:folder-plus-outline'" class="w-4 h-4 text-fg" />
               {{ isInShorts(contextMenuFile) ? 'Remove from Shorts' : 'Add to Shorts' }}
             </a>
           </li>
           <li v-if="contextMenuFile?.isFolder && contextMenuFile.meta?.previewImage">
-            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('reset-folder-icon')">
+            <a class="py-2.5 px-4 hover:text-fg transition-colors" @click="handleContextAction('reset-folder-icon')">
               <Icon name="mdi:folder-refresh-outline" class="w-4 h-4" /> Reset Folder Icon
             </a>
           </li>
           <li v-if="contextMenuFile && !contextMenuFile.isFolder && isImageFile(contextMenuFile.name) && currentFolder">
-            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('set-folder-icon')">
-              <Icon name="mdi:folder-image" class="w-4 h-4 text-primary" /> Set As Folder Icon
+            <a class="py-2.5 px-4 hover:text-fg transition-colors" @click="handleContextAction('set-folder-icon')">
+              <Icon name="mdi:folder-image" class="w-4 h-4 text-fg" /> Set As Folder Icon
             </a>
           </li>
           <li v-if="contextMenuFile && isVideoFile(contextMenuFile.name)">
-            <a class="py-2.5 px-4 hover:text-primary transition-colors" @click="handleContextAction('media')">
+            <a class="py-2.5 px-4 hover:text-fg transition-colors" @click="handleContextAction('media')">
               <Icon name="mdi:play-box-multiple-outline" class="w-4 h-4" /> Media Tab
             </a>
           </li>
-          <div class="h-px bg-base-content/5 mx-2 my-1"></div>
-          <li><a class="py-2.5 px-4" @click="handleContextAction('rename')"><Icon name="mdi:pencil" class="w-4 h-4 text-blue-500" /> Rename</a></li>
-          <li><a class="py-2.5 px-4" @click="handleContextAction('move')"><Icon name="mdi:folder-move" class="w-4 h-4 text-primary" /> Move</a></li>
-          <li><a class="py-2.5 px-4" @click="handleContextAction('description')"><Icon name="mdi:text-box-edit-outline" class="w-4 h-4 text-orange-500" /> Edit Notes</a></li>
-          <li><a class="py-2.5 px-4" @click="handleContextAction('info')"><Icon name="mdi:information" class="w-4 h-4 text-primary" /> Details</a></li>
+          <div class="h-px bg-surface-2 mx-2 my-1"></div>
+          <li><a class="py-2.5 px-4" @click="handleContextAction('rename')"><Icon name="mdi:pencil" class="w-4 h-4 text-fg" /> Rename</a></li>
+          <li><a class="py-2.5 px-4" @click="handleContextAction('move')"><Icon name="mdi:folder-move" class="w-4 h-4 text-fg" /> Move</a></li>
+          <li><a class="py-2.5 px-4" @click="handleContextAction('description')"><Icon name="mdi:text-box-edit-outline" class="w-4 h-4 text-fg" /> Edit Notes</a></li>
+          <li><a class="py-2.5 px-4" @click="handleContextAction('info')"><Icon name="mdi:information" class="w-4 h-4 text-fg" /> Details</a></li>
           <li><a class="py-2.5 px-4" @click="handleContextAction('favourite')">
-            <Icon :name="contextMenuFile?.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4 text-orange-500" />
+            <Icon :name="contextMenuFile?.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4 text-fg" />
             {{ contextMenuFile?.meta.isFavourite ? 'Unstar' : 'Star' }}
           </a></li>
           <li v-if="contextMenuFile && !contextMenuFile.isFolder && isImageFile(contextMenuFile.name)">
-            <a class="py-2.5 px-4 hover:text-primary transition-colors cursor-pointer" @click="handleContextAction('wallpaper')">
-              <Icon :name="contextMenuFile?.meta.isWallpaper ? 'mdi:wallpaper' : 'mdi:image-outline'" class="w-4 h-4 text-purple-500" />
+            <a class="py-2.5 px-4 hover:text-fg transition-colors cursor-pointer" @click="handleContextAction('wallpaper')">
+              <Icon :name="contextMenuFile?.meta.isWallpaper ? 'mdi:wallpaper' : 'mdi:image-outline'" class="w-4 h-4 text-fg" />
               {{ contextMenuFile?.meta.isWallpaper ? 'Remove from Wallpapers' : 'Select as Wallpaper' }}
             </a>
           </li>
           <li><a class="py-2.5 px-4" @click="handleContextAction('download')"><Icon name="mdi:download" class="w-4 h-4 text-success" /> Download</a></li>
-          <div class="h-px bg-base-content/5 mx-2 my-1"></div>
+          <div class="h-px bg-surface-2 mx-2 my-1"></div>
           <li><a class="py-2.5 px-4 text-error" @click="handleContextAction('delete')"><Icon name="mdi:delete" class="w-4 h-4" /> Delete</a></li>
         </ul>
       </div>
     </transition>
 
     <!-- File Info Modal -->
-    <div class="modal backdrop-blur-md" :class="{ 'modal-open': showFileInfoModal }" @click="closeFileModal">
-      <div class="modal-box rounded-xl shadow-xl p-0 max-w-2xl border border-base-content/10 overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
+    <div class="modal" :class="{ 'modal-open': showFileInfoModal }" @click="closeFileModal">
+      <div class="modal-box p-0 max-w-2xl overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
         <!-- Modal Header -->
-        <div class="bg-base-200/30 p-6 border-b border-base-content/10 shrink-0">
+        <div class="px-6 py-5 border-b border-line shrink-0">
           <div class="flex items-center gap-4">
-            <div class="bg-base-100 p-3 rounded-lg border border-base-content/10 shrink-0">
+            <div class="shrink-0">
               <Icon
                   :name="selectedFile?.isFolder ? 'vscode-icons:default-folder' : getIconForExtension(selectedFile?.name || '')"
-                  class="w-10 h-10"
+                  class="w-8 h-8"
               />
             </div>
             <div class="min-w-0">
-              <h3 class="font-bold text-lg tracking-tight truncate text-base-content">{{ selectedFile?.name }}</h3>
+              <h3 class="section-title truncate">{{ selectedFile?.name }}</h3>
               <div class="flex items-center gap-2 mt-0.5">
-                <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/40">
-                  {{ selectedFile?.isFolder ? 'Folder' : 'Document' }}
+                <span class="micro">
+                  {{ selectedFile?.isFolder ? 'Folder' : 'File' }}
                 </span>
               </div>
             </div>
@@ -2290,33 +2281,33 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
         </div>
 
         <!-- Scrollable Content -->
-        <div v-if="selectedFile" class="p-6 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
+        <div v-if="selectedFile" class="p-6 space-y-8 overflow-y-auto flex-1">
           <!-- Main Visual Preview -->
           <div v-if="!selectedFile.isFolder && (isVideoFile(selectedFile.name) || isImageFile(selectedFile.name))" class="w-full">
              <div class="flex items-center gap-2 mb-3">
-                <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">File Preview</span>
+                <span class="micro">Preview</span>
              </div>
-             <div :key="selectedFile.name" class="rounded-lg overflow-hidden border border-base-content/10 bg-black flex items-center justify-center aspect-video group/preview relative">
+             <div :key="selectedFile.name" class="rounded-lg overflow-hidden border border-line bg-black flex items-center justify-center aspect-video group/preview relative">
                 <video v-if="isVideoFile(selectedFile.name)" id="previewVideo" controls class="w-full h-full object-contain">
                   <source :src="getStaticUrl(selectedFile)" type="video/mp4" />
                 </video>
-                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-contain transition-transform duration-300 group-hover/preview:scale-105 cursor-pointer" @click="openMediaViewer(selectedFile)" />
+                <img v-else-if="isImageFile(selectedFile.name)" :src="getStaticUrl(selectedFile)" class="w-full h-full object-contain cursor-pointer" @click="openMediaViewer(selectedFile)" />
              </div>
           </div>
 
           <!-- Stats Grid -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <div v-if="!selectedFile.isFolder" class="bg-base-200/50 p-4 rounded-lg flex flex-col gap-0.5 border border-base-content/10">
-              <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Size</span>
-              <span class="text-sm font-bold text-base-content">{{ formatSize(selectedFile.size) }}</span>
+          <div class="grid grid-cols-3 border-y border-line">
+            <div v-if="!selectedFile.isFolder" class="py-4 pr-4 flex flex-col gap-1">
+              <span class="text-[11px] uppercase tracking-micro font-mono text-fg-3">Size</span>
+              <span class="num text-[14px] text-fg">{{ formatSize(selectedFile.size) }}</span>
             </div>
-            <div class="bg-base-200/50 p-4 rounded-lg flex flex-col gap-0.5 border border-base-content/10" :class="{ 'col-span-2': selectedFile.isFolder }">
-              <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Modified</span>
-              <span class="text-sm font-bold text-base-content">{{ new Date(selectedFile.lastModified).toLocaleDateString() }}</span>
+            <div class="py-4 px-4 flex flex-col gap-1" :class="selectedFile.isFolder ? 'col-span-2 !pl-0' : 'border-l border-line'">
+              <span class="text-[11px] uppercase tracking-micro font-mono text-fg-3">Modified</span>
+              <span class="num text-[14px] text-fg">{{ new Date(selectedFile.lastModified).toLocaleDateString() }}</span>
             </div>
-            <div class="bg-base-200/50 p-4 rounded-lg flex flex-col gap-0.5 border border-base-content/10">
-              <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Access</span>
-              <span class="text-sm font-bold text-success uppercase tracking-wider">Writeable</span>
+            <div class="py-4 pl-4 flex flex-col gap-1 border-l border-line">
+              <span class="micro">Access</span>
+              <span class="flex items-center gap-1.5 text-[14px] text-fg"><span class="dot text-success"></span>Writable</span>
             </div>
           </div>
 
@@ -2325,8 +2316,8 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
             <div class="space-y-6">
               <div>
                 <div class="flex items-center justify-between mb-3">
-                  <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30">Description / Notes</span>
-                  <button v-if="!isEditingDescription" class="btn btn-ghost btn-xs rounded-md h-6 font-bold text-[9px] uppercase tracking-wider" @click="startEditDescription">
+                  <span class="micro">Notes</span>
+                  <button v-if="!isEditingDescription" class="btn btn-ghost btn-xs" @click="startEditDescription">
                     Edit
                   </button>
                 </div>
@@ -2334,32 +2325,31 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 <div v-if="isEditingDescription" class="space-y-3">
                   <textarea
                       v-model="editableDescription"
-                      class="textarea textarea-bordered w-full h-24 bg-base-100 focus:bg-base-100 transition-all font-bold text-xs rounded-lg"
+                      class="textarea w-full h-24"
                       placeholder="Add some notes about this file..."
                   ></textarea>
                   <div class="flex justify-end gap-2">
-                    <button class="btn btn-ghost btn-xs h-7 rounded-md px-3 font-bold text-[9px] uppercase" @click="isEditingDescription = false">Cancel</button>
-                    <button class="btn btn-primary btn-xs h-7 rounded-md px-4 font-bold text-[9px] uppercase" @click="saveDescription">Save</button>
+                    <button class="btn btn-ghost btn-xs" @click="isEditingDescription = false">Cancel</button>
+                    <button class="btn btn-xs" @click="saveDescription">Save</button>
                   </div>
                 </div>
                 <div v-else>
-                  <div v-if="selectedFile.meta.description" class="bg-base-200/30 p-4 rounded-lg text-xs font-bold leading-relaxed text-base-content/70 border border-base-content/10">
+                  <div v-if="selectedFile.meta.description" class="text-[14px] leading-relaxed text-fg-2 whitespace-pre-line">
                     {{ selectedFile.meta.description }}
                   </div>
-                  <button v-else class="w-full border border-dashed border-base-content/20 rounded-lg py-6 font-bold text-base-content/30 text-[10px] uppercase tracking-widest hover:border-primary/30 hover:bg-primary/5 transition-all" @click="startEditDescription">
+                  <button v-else class="btn btn-sm" @click="startEditDescription">
                     Add description
                   </button>
                 </div>
               </div>
 
               <div>
-                <span class="text-[9px] font-bold uppercase tracking-widest text-base-content/30 mb-3 block">Tags</span>
-                <div class="flex flex-wrap gap-2 items-center bg-base-200/30 p-3 rounded-lg border border-base-content/10">
+                <span class="micro mb-3 block">Tags</span>
+                <div class="flex flex-wrap gap-2 items-center">
                     <NuxtLink v-for="tag in (selectedFile.meta.tags || [])"
                           :key="tag.name"
-                          :to="`/collections/${encodeURIComponent(tag.name)}`"
-                          class="badge badge-sm border-none text-white font-bold py-2.5 px-3 shadow-sm rounded-md hover:scale-105 transition-transform cursor-pointer"
-                          :style="{ backgroundColor: tag.color }"> 
+                          :to="`/collections/${encodeURIComponent(tag.name)}`" class="tag-chip cursor-pointer">
+                            <span class="dot" :style="{ backgroundColor: tag.color }"></span>
                       {{ tag.name }} 
                       <Icon name="mdi:close" 
                             class="w-3 h-3 ml-1.5 cursor-pointer opacity-50 hover:opacity-100" 
@@ -2367,10 +2357,10 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                     </NuxtLink>
                     
                     <button
-                      class="btn btn-ghost btn-xs bg-base-100 hover:bg-base-200 border border-base-content/10 rounded-md px-3 h-7 transition-all font-bold text-[9px] uppercase tracking-wider"
+                      class="btn btn-xs"
                       @click="openSingleTagModal"
                     >
-                      <Icon name="mdi:plus" class="w-3.5 h-3.5 mr-1 text-primary" /> 
+                      <Icon name="mdi:plus" class="w-3.5 h-3.5 mr-1" /> 
                       Add
                     </button>
                 </div>
@@ -2379,51 +2369,47 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
             <!-- Right Column: Settings -->
             <div class="space-y-6">
-              <div class="bg-base-100 rounded-lg p-5 border border-base-content/10 space-y-5">
-                <div class="flex items-center justify-between">
+              <div class="hair-list">
+                <div class="flex items-center justify-between px-4 py-3">
                   <div>
-                    <span class="text-xs font-bold tracking-tight text-base-content uppercase">Favorite</span>
-                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Pin for quick access</p>
+                    <span class="text-[14px] text-fg">Favorite</span>
+                    <p class="text-[13px] text-fg-3">Pin for quick access</p>
                   </div>
                   <button 
-                    class="btn btn-xs btn-ghost btn-circle rounded-md h-8 w-8 bg-base-200/50"
-                    :class="selectedFile.meta.isFavourite ? 'text-orange-500' : 'text-base-content/20'"
+                    class="btn btn-sm btn-ghost btn-circle"
+                    :class="selectedFile.meta.isFavourite ? 'text-fg' : 'text-fg-3'"
                     @click="toggleFavourite(selectedFile)"
                   >
                     <Icon :name="selectedFile.meta.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" />
                   </button>
                 </div>
 
-                <div v-if="!selectedFile.isFolder && isImageFile(selectedFile.name)" class="h-px bg-base-content/5"></div>
-
-                <div v-if="!selectedFile.isFolder && isImageFile(selectedFile.name)" class="flex items-center justify-between">
+                                <div v-if="!selectedFile.isFolder && isImageFile(selectedFile.name)" class="flex items-center justify-between px-4 py-3">
                   <div>
-                    <span class="text-xs font-bold tracking-tight text-base-content uppercase">Wallpaper</span>
-                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Available in Android App</p>
+                    <span class="text-[14px] text-fg">Wallpaper</span>
+                    <p class="text-[13px] text-fg-3">Available in Android App</p>
                   </div>
                   <button 
-                    class="btn btn-xs btn-ghost btn-circle rounded-md h-8 w-8 bg-base-200/50"
-                    :class="selectedFile.meta.isWallpaper ? 'text-purple-500' : 'text-base-content/20'"
+                    class="btn btn-sm btn-ghost btn-circle"
+                    :class="selectedFile.meta.isWallpaper ? 'text-fg' : 'text-fg-3'"
                     @click="toggleWallpaper(selectedFile)"
                   >
                     <Icon :name="selectedFile.meta.isWallpaper ? 'mdi:wallpaper' : 'mdi:image-outline'" class="w-4 h-4" />
                   </button>
                 </div>
 
-                <div class="h-px bg-base-content/5"></div>
-
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between px-4 py-3">
                   <div>
-                    <span class="text-xs font-bold tracking-tight text-base-content uppercase">Public Access</span>
-                    <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Share via link</p>
+                    <span class="text-[14px] text-fg">Public link</span>
+                    <p class="text-[13px] text-fg-3">Anyone with the link can download</p>
                   </div>
-                  <input type="checkbox" class="toggle toggle-success toggle-xs rounded-sm" :checked="selectedFile.meta.isPublic" @change="togglePublicAccess" />
+                  <input type="checkbox" class="toggle toggle-sm" aria-label="Public link" :checked="selectedFile.meta.isPublic" @change="togglePublicAccess" />
                 </div>
                 
                 <transition name="fade">
-                  <div v-if="selectedFile.meta.isPublic" class="bg-success/5 p-3 rounded-lg flex flex-col gap-2 border border-success/10">
-                    <p class="text-[9px] font-bold text-success uppercase tracking-widest">Link Active</p>
-                    <button class="btn btn-xs btn-success text-white w-full rounded-md font-bold uppercase tracking-wider h-8 shadow-sm" @click="copyPublicLink">
+                  <div v-if="selectedFile.meta.isPublic" class="px-4 py-3 flex items-center justify-between gap-3">
+                    <p class="flex items-center gap-1.5 text-[13px] text-fg-2"><span class="dot text-success"></span>Link active</p>
+                    <button class="btn btn-xs" @click="copyPublicLink">
                       <Icon name="mdi:content-copy" class="w-3.5 h-3.5 mr-1.5" />
                       Copy Link
                     </button>
@@ -2435,15 +2421,15 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
         </div>
 
         <!-- Sticky Footer -->
-        <div class="p-4 bg-base-100 border-t border-base-content/10 flex items-center justify-between gap-3 px-6 shrink-0">
-          <button class="btn btn-sm btn-error btn-ghost font-bold text-[10px] uppercase tracking-widest rounded-md px-4" @click="deleteFile(selectedFile)">
+        <div class="px-6 py-4 border-t border-line flex items-center justify-between gap-3 shrink-0">
+          <button class="btn btn-sm btn-error" @click="deleteFile(selectedFile)">
             Delete
           </button>
           <div class="flex gap-2">
-            <button class="btn btn-sm bg-base-200 hover:bg-base-300 border-none font-bold text-[10px] uppercase tracking-widest rounded-md px-4" @click="downloadFile(selectedFile)">
+            <button class="btn btn-sm" @click="downloadFile(selectedFile)">
               Download
             </button>
-            <button class="btn btn-sm btn-primary font-bold text-[10px] uppercase tracking-widest rounded-md px-8 shadow-sm" @click="closeFileModal">
+            <button class="btn btn-sm btn-primary" @click="closeFileModal">
               Close
             </button>
           </div>
@@ -2452,14 +2438,14 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
     </div>
 
     <!-- Image/Media Viewer -->
-    <div class="modal image-viewer-modal backdrop-blur-md" :class="{ 'modal-open': showImageViewerModal }" @click="closeImageViewer">
+    <div class="modal image-viewer-modal" :class="{ 'modal-open': showImageViewerModal }" @click="closeImageViewer">
       <div class="relative w-full h-full max-w-full max-h-full flex items-center justify-center p-4 md:p-12 overflow-hidden" @click.stop>
         
         <!-- Header Overlay -->
-        <div class="absolute top-0 left-0 right-0 p-3 md:p-4 bg-gradient-to-b from-black/85 to-transparent flex items-center justify-between text-white z-50">
+        <div class="absolute top-0 left-0 right-0 p-3 md:p-4 bg-black/60 flex items-center justify-between text-white z-50">
           <div class="min-w-0 flex-1 mr-2 md:mr-4">
-            <h3 class="font-extrabold text-xs md:text-sm truncate">{{ currentMediaFile?.name }}</h3>
-            <p class="text-[8px] md:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none mt-0.5 md:mt-1">
+            <h3 class="text-[14px] truncate">{{ currentMediaFile?.name }}</h3>
+            <p class="num text-[12px] text-white/60 leading-none mt-1">
               {{ currentFolder ? '/' + currentFolder : 'Root' }}
             </p>
           </div>
@@ -2468,16 +2454,16 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
             <button 
               v-if="currentMediaFile"
               @click="toggleFavourite(currentMediaFile)" 
-              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white animate-in fade-in duration-200"
+              class="btn btn-circle btn-sm !bg-white/10 hover:!bg-white/20 !border-transparent !text-white"
               title="Toggle Favorite"
             >
-              <Icon :name="currentMediaFile.meta?.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4" :class="{ 'text-orange-500': currentMediaFile.meta?.isFavourite }" />
+              <Icon :name="currentMediaFile.meta?.isFavourite ? 'mdi:star' : 'mdi:star-outline'" class="w-4 h-4"  />
             </button>
             <!-- Tag button -->
             <button 
               v-if="currentMediaFile"
               @click="showMobileTagDrawer = true" 
-              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white animate-in fade-in duration-200"
+              class="btn btn-circle btn-sm !bg-white/10 hover:!bg-white/20 !border-transparent !text-white"
               title="Manage Tags"
             >
               <Icon name="mdi:tag" class="w-4 h-4" />
@@ -2486,15 +2472,15 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
             <button 
               v-if="currentMediaFile"
               @click="downloadFile(currentMediaFile)" 
-              class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white animate-in fade-in duration-200"
+              class="btn btn-circle btn-sm !bg-white/10 hover:!bg-white/20 !border-transparent !text-white"
               title="Download File"
             >
               <Icon name="mdi:download" class="w-4 h-4" />
             </button>
-            <span class="text-[10px] font-bold bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block">
+            <span class="num text-[12px] text-white/80 px-2 hidden sm:inline-block">
               {{ currentMediaIndex + 1 }} / {{ mediaFilesList.length }}
             </span>
-            <button class="btn btn-circle btn-sm bg-white/10 hover:bg-white/20 border-none text-white font-bold" @click="closeImageViewer">✕</button>
+            <button class="btn btn-circle btn-sm !bg-white/10 hover:!bg-white/20 !border-transparent !text-white" @click="closeImageViewer" aria-label="Close"><Icon name="mdi:close" class="w-4 h-4" /></button>
           </div>
         </div>
 
@@ -2502,7 +2488,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
         <button 
           v-if="mediaFilesList.length > 1" 
           @click="prevMedia" 
-          class="hidden md:flex btn btn-circle btn-ghost bg-black/20 hover:bg-black/40 text-white absolute left-6 z-40 border-white/10 h-12 w-12 items-center justify-center animate-in fade-in duration-300"
+          class="hidden md:flex btn btn-circle !bg-black/40 hover:!bg-black/60 !text-white !border-white/15 absolute left-6 z-40 !h-12 !w-12 items-center justify-center" aria-label="Previous"
         >
           <Icon name="mdi:chevron-left" class="w-8 h-8" />
         </button>
@@ -2520,7 +2506,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
               :key="currentMediaFile.name"
               :src="selectedImageUrl" 
               alt="Full size preview" 
-              class="max-h-[60dvh] max-w-[90dvw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg shadow-2xl ring-1 ring-white/10 object-contain select-none pointer-events-none" 
+              class="max-h-[60dvh] max-w-[90dvw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg ring-1 ring-white/10 object-contain select-none pointer-events-none" 
             />
 
             <!-- Videos -->
@@ -2530,7 +2516,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
               :src="selectedImageUrl" 
               controls 
               autoplay 
-              class="max-h-[60dvh] max-w-[90dvw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg shadow-2xl ring-1 ring-white/10 object-contain"
+              class="max-h-[60dvh] max-w-[90dvw] md:max-h-[80vh] md:max-w-[75vw] rounded-lg ring-1 ring-white/10 object-contain"
             ></video>
           </transition>
         </div>
@@ -2539,20 +2525,20 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
         <button 
           v-if="mediaFilesList.length > 1" 
           @click="nextMedia" 
-          class="hidden md:flex btn btn-circle btn-ghost bg-black/20 hover:bg-black/40 text-white absolute right-6 z-40 border-white/10 h-12 w-12 items-center justify-center animate-in fade-in duration-300"
+          class="hidden md:flex btn btn-circle !bg-black/40 hover:!bg-black/60 !text-white !border-white/15 absolute right-6 z-40 !h-12 !w-12 items-center justify-center" aria-label="Next"
         >
           <Icon name="mdi:chevron-right" class="w-8 h-8" />
         </button>
 
         <!-- Mobile Touch Swipe Helper / Navigation Bar -->
         <div v-if="mediaFilesList.length > 1" class="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-6 md:hidden z-40">
-          <button @click="prevMedia" class="btn btn-circle btn-sm bg-black/30 text-white border-white/10 hover:bg-black/50">
+          <button @click="prevMedia" class="btn btn-circle btn-sm !bg-black/40 !text-white !border-white/15 hover:!bg-black/60">
             <Icon name="mdi:chevron-left" class="w-5 h-5" />
           </button>
-          <span class="text-[10px] font-bold bg-black/40 text-white px-3 py-1.5 rounded-full uppercase tracking-wider">
+          <span class="num text-[12px] bg-black/60 text-white px-3 py-1 rounded-full">
             {{ currentMediaIndex + 1 }} / {{ mediaFilesList.length }}
           </span>
-          <button @click="nextMedia" class="btn btn-circle btn-sm bg-black/30 text-white border-white/10 hover:bg-black/50">
+          <button @click="nextMedia" class="btn btn-circle btn-sm !bg-black/40 !text-white !border-white/15 hover:!bg-black/60">
             <Icon name="mdi:chevron-right" class="w-5 h-5" />
           </button>
         </div>
@@ -2560,34 +2546,31 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
         <!-- Backdrop overlay for mobile tags drawer (Placed outside the transformed container to prevent containing block and layout glitches) -->
         <div 
           v-if="showMobileTagDrawer" 
-          class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[99]" 
+          class="fixed inset-0 bg-black/60 z-[99]" 
           @click="showMobileTagDrawer = false"
         ></div>
 
         <!-- Mobile Tags Drawer (Placed directly in outer modal container to prevent containing block issue) -->
         <div 
-          class="fixed inset-x-0 bottom-0 z-[100] transition-transform duration-300 ease-out transform"
-          :class="showMobileTagDrawer ? 'translate-y-0' : 'translate-y-full'"
+          class="fixed inset-x-0 bottom-0 z-[100] transition-opacity"
+          :class="showMobileTagDrawer ? 'opacity-100' : 'opacity-0 pointer-events-none invisible'"
           @click.stop
         >
           <!-- Drawer Content (Glassy Card Wrapper with overflow-hidden to prevent black/rough corner renderings) -->
-          <div class="bg-slate-950/40 backdrop-blur-2xl border-t border-x border-white/15 rounded-t-3xl shadow-2xl overflow-hidden text-white max-h-[50vh] flex flex-col">
+          <div class="bg-base-100 border-t border-x border-line rounded-t-xl overflow-hidden max-h-[50vh] flex flex-col">
             <!-- Scrollable Content container (Uses flex-1 min-h-0 to immediately size scroll bounds properly without click/reflow glitch) -->
             <div class="p-6 overflow-y-auto flex-1 min-h-0 flex flex-col gap-4">
               <!-- Pull Handle bar -->
-              <div class="w-12 h-1 bg-white/20 rounded-full mx-auto cursor-pointer shrink-0" @click="showMobileTagDrawer = false"></div>
+              <div class="w-10 h-1 bg-line-strong rounded-full mx-auto cursor-pointer shrink-0" @click="showMobileTagDrawer = false"></div>
               
               <!-- Header -->
               <div class="flex items-center justify-between shrink-0">
                 <div>
-                  <h4 class="text-xs font-extrabold tracking-wide uppercase text-slate-300">File Tags</h4>
-                  <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-0.5">Toggle tags for this entry</p>
+                  <h4 class="section-title">Tags</h4>
+                  <p class="text-[14px] text-fg-3 mt-0.5">Turn tags on or off for this file.</p>
                 </div>
-                <button 
-                  class="btn btn-circle btn-xs bg-white/10 hover:bg-white/20 border-none text-white font-bold" 
-                  @click="showMobileTagDrawer = false"
-                >
-                  ✕
+                <button class="btn btn-circle btn-sm btn-ghost" aria-label="Close" @click="showMobileTagDrawer = false">
+                  <Icon name="mdi:close" class="w-4 h-4" />
                 </button>
               </div>
 
@@ -2596,29 +2579,29 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                 <button
                   v-for="tag in predefinedTags"
                   :key="tag.name"
-                  class="flex items-center justify-between gap-3 p-3 rounded-xl border transition-all duration-200"
-                  :class="isMediaFileTagSelected(tag) 
-                    ? 'bg-primary/20 border-primary text-white shadow-md shadow-primary/10' 
-                    : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'"
+                  class="flex items-center justify-between gap-3 px-3 h-10 rounded-lg border transition-colors"
+                  :class="isMediaFileTagSelected(tag)
+                    ? 'bg-surface-2 border-fg text-fg'
+                    : 'border-line text-fg-2 hover:border-line-strong'"
+                  :aria-pressed="isMediaFileTagSelected(tag)"
                   @click="toggleMediaFileTag(tag)"
                 >
                   <div class="flex items-center gap-2.5 min-w-0">
-                    <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: tag.color }"></span>
-                    <span class="text-[11px] font-bold truncate text-left">{{ tag.name }}</span>
+                    <span class="dot" :style="{ backgroundColor: tag.color }"></span>
+                    <span class="text-[13px] truncate text-left">{{ tag.name }}</span>
                   </div>
                   <Icon 
-                    :name="isMediaFileTagSelected(tag) ? 'mdi:check-circle' : 'mdi:circle-outline'" 
-                    class="w-4 h-4 shrink-0 transition-transform duration-200"
-                    :class="isMediaFileTagSelected(tag) ? 'text-primary' : 'text-white/20'"
+                    :name="isMediaFileTagSelected(tag) ? 'mdi:check' : 'mdi:circle-small'"
+                    class="w-4 h-4 shrink-0"
+                    :class="isMediaFileTagSelected(tag) ? 'text-fg' : 'text-fg-3'"
                   />
                 </button>
               </div>
 
               <!-- Fallback if no tags exist -->
-              <div v-if="predefinedTags.length === 0" class="text-center py-6 text-white/40 shrink-0">
-                <Icon name="mdi:tag-outline" class="w-8 h-8 mx-auto opacity-30 mb-2 animate-bounce" />
-                <p class="text-[10px] font-bold uppercase tracking-wider">No predefined tags found</p>
-                <p class="text-[9px] mt-1">Configure tags in Settings > Appearance</p>
+              <div v-if="predefinedTags.length === 0" class="text-center py-6 shrink-0">
+                <p class="text-[14px] text-fg-2">No tags yet.</p>
+                <p class="text-[13px] text-fg-3 mt-1">Add some in Settings → Appearance.</p>
               </div>
             </div>
           </div>
@@ -2628,27 +2611,24 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
     <!-- Upload Modal -->
     <input type="checkbox" id="upload-modal" class="modal-toggle" />
-    <div class="modal backdrop-blur-md">
-      <div class="modal-box rounded-xl shadow-xl p-6 max-w-sm border border-base-content/10">
+    <div class="modal">
+      <div class="modal-box p-6 max-w-sm">
         <div class="flex items-center gap-3 mb-6">
-           <div class="bg-primary/10 p-2.5 rounded-lg border border-primary/10">
-             <Icon name="mdi:cloud-upload" class="w-5 h-5 text-primary" />
-           </div>
            <div>
-             <h3 class="font-bold text-base tracking-tight text-base-content">Upload Files</h3>
-             <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Add content to cloud</p>
+             <h3 class="section-title">Upload Files</h3>
+             <p class="text-[13px] text-fg-3">Add content to cloud</p>
            </div>
         </div>
 
         <div class="form-control">
           <div 
-            class="border border-dashed border-base-content/20 rounded-xl p-8 text-center transition-all hover:border-primary/40 hover:bg-primary/5 cursor-pointer flex flex-col items-center gap-3"
+            class="border border-dashed border-line-strong rounded-xl p-8 text-center transition hover:border-line-strong hover:bg-surface-2 cursor-pointer flex flex-col items-center gap-3"
             @click="$refs.fileInput.click()"
           >
-            <Icon name="mdi:file-plus-outline" class="w-10 h-10 text-base-content/10" />
+            <Icon name="mdi:file-plus-outline" class="w-10 h-10 text-fg-3" />
             <div>
-              <p class="text-xs font-bold text-base-content">Drop files here</p>
-              <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest mt-1">or click to browse</p>
+              <p class="text-xs font-medium text-fg">Drop files here</p>
+              <p class="text-[13px] text-fg-3 mt-1">or click to browse</p>
             </div>
             <input 
               ref="fileInput"
@@ -2660,37 +2640,37 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           </div>
           
           <div v-if="selectedFilesForUpload?.length" class="mt-4 space-y-1.5">
-             <div v-for="file in Array.from(selectedFilesForUpload).slice(0, 3)" :key="file.name" class="flex items-center gap-2 p-1.5 bg-base-200/50 rounded-lg border border-base-content/5">
+             <div v-for="file in Array.from(selectedFilesForUpload).slice(0, 3)" :key="file.name" class="flex items-center gap-2 p-1.5 bg-base-200 rounded-lg border border-line">
                 <Icon :name="getIconForExtension(file.name)" class="w-3.5 h-3.5 opacity-50" />
-                <span class="text-[10px] font-bold truncate flex-grow text-base-content/70">{{ file.name }}</span>
+                <span class="text-[11px] font-medium truncate flex-grow text-fg-2">{{ file.name }}</span>
              </div>
-             <p v-if="selectedFilesForUpload.length > 3" class="text-[8px] font-bold text-base-content/30 uppercase tracking-widest text-center">
+             <p v-if="selectedFilesForUpload.length > 3" class="text-[11px] text-fg-3 uppercase tracking-micro font-mono text-center">
                + {{ selectedFilesForUpload.length - 3 }} more
              </p>
           </div>
         </div>
 
         <div v-if="isUploading" class="mt-6 space-y-2">
-          <div class="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-base-content/40">
+          <div class="flex justify-between items-center text-[11px] uppercase tracking-micro font-mono text-fg-3">
             <span>Progress</span>
             <span>{{ uploadProgress }}%</span>
           </div>
           <progress class="progress progress-primary w-full h-1.5 rounded-full" :value="uploadProgress" max="100"></progress>
         </div>
 
-        <div v-if="uploadError" class="alert alert-error text-[10px] font-bold mt-6 py-2.5 rounded-lg border-none shadow-sm text-white">
+        <div v-if="uploadError" class="alert alert-error text-[13px] mt-6 py-2.5">
           <Icon name="mdi:alert-circle" class="w-4 h-4" />
           {{ uploadError }}
         </div>
         
-        <div v-if="uploadSuccess" class="alert alert-success text-[10px] font-bold mt-6 py-2.5 rounded-lg border-none shadow-sm text-white">
+        <div v-if="uploadSuccess" class="alert alert-success text-[13px] mt-6 py-2.5">
           <Icon name="mdi:check-circle" class="w-4 h-4" />
           Upload complete
         </div>
 
         <div class="modal-action mt-8">
-          <label for="upload-modal" class="btn btn-ghost btn-sm rounded-md font-bold uppercase tracking-widest text-[10px]">Cancel</label>
-          <button class="btn btn-primary btn-sm rounded-md px-6 shadow-sm font-bold uppercase tracking-widest text-[10px]" :disabled="isUploading || !selectedFilesForUpload" @click="uploadFile">
+          <label for="upload-modal" class="btn btn-ghost btn-sm">Cancel</label>
+          <button class="btn btn-primary btn-sm px-6" :disabled="isUploading || !selectedFilesForUpload" @click="uploadFile">
             <span v-if="isUploading" class="loading loading-spinner loading-xs mr-1"></span>
             Start
           </button>
@@ -2699,48 +2679,45 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
     </div>
 
     <!-- Create Folder Modal -->
-    <div v-if="showCreateFolderModal" class="modal modal-open backdrop-blur-md">
-      <div class="modal-box rounded-xl shadow-xl p-6 max-w-xs border border-base-content/10">
+    <div v-if="showCreateFolderModal" class="modal modal-open">
+      <div class="modal-box p-6 max-w-xs">
         <div class="flex items-center gap-3 mb-6">
-          <div class="bg-primary/10 p-2.5 rounded-lg border border-primary/10 text-primary">
-            <Icon name="mdi:folder-plus" class="w-5 h-5" />
-          </div>
           <div>
-            <h3 class="font-bold text-base tracking-tight text-base-content">New Folder</h3>
-            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Add new workspace</p>
+            <h3 class="section-title">New Folder</h3>
+            <p class="text-[14px] text-fg-3">Add new workspace</p>
           </div>
         </div>
 
         <div class="form-control">
           <label class="label mb-0.5">
-            <span class="label-text font-bold text-[9px] uppercase tracking-widest text-base-content/40">Name</span>
+            <span class="label-text">Name</span>
           </label>
           <input
               v-model="newFolderName"
               type="text"
               placeholder="Documents, Images..."
-              class="input input-bordered w-full bg-base-100 font-bold text-xs h-10 rounded-lg"
+              class="input input-bordered w-full font-medium text-xs"
               @keyup.enter="executeCreateFolder"
               autoFocus
           />
         </div>
 
         <div class="flex flex-col gap-2 mt-8">
-          <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="executeCreateFolder">Create</button>
-          <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showCreateFolderModal = false">Cancel</button>
+          <button class="btn btn-primary btn-sm" @click="executeCreateFolder">Create</button>
+          <button class="btn btn-ghost btn-sm" @click="showCreateFolderModal = false">Cancel</button>
         </div>
       </div>
     </div>
 
     <!-- Move Modal -->
-    <div v-if="showMoveModal" class="modal modal-open backdrop-blur-md">
-      <div class="modal-box rounded-xl shadow-xl p-0 max-w-md border border-base-content/10 overflow-hidden flex flex-col max-h-[75vh]">
-        <div class="bg-base-200/30 p-5 border-b border-base-content/10 flex items-center justify-between shrink-0">
+    <div v-if="showMoveModal" class="modal modal-open">
+      <div class="modal-box p-0 max-w-md overflow-hidden flex flex-col max-h-[75vh]">
+        <div class="bg-base-200 p-5 border-b border-line flex items-center justify-between shrink-0">
           <div class="flex items-center gap-3">
-            <Icon name="mdi:folder-move" class="w-5 h-5 text-primary" />
+            <Icon name="mdi:folder-move" class="w-5 h-5 text-fg" />
             <div>
-              <h3 class="font-bold text-base tracking-tight text-base-content">Move Items</h3>
-              <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Select destination</p>
+              <h3 class="section-title">Move Items</h3>
+              <p class="text-[14px] text-fg-3">Select destination</p>
             </div>
           </div>
           <button class="btn btn-ghost btn-xs btn-circle" @click="showMoveModal = false">
@@ -2749,9 +2726,9 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
         </div>
 
         <!-- Breadcrumbs for picker -->
-        <div class="px-4 py-2.5 bg-base-100 border-b border-base-content/5 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+        <div class="px-4 py-2.5 bg-base-100 border-b border-line flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
           <button 
-            class="btn btn-xs btn-ghost gap-1 px-1.5 h-7 rounded-md font-bold text-[9px] uppercase tracking-wider"
+            class="btn btn-xs btn-ghost gap-1 px-1.5 h-7"
             @click="fetchPickerFolders('')"
           >
             Root
@@ -2760,7 +2737,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
             <Icon v-if="part" name="mdi:chevron-right" class="w-3 h-3 opacity-30" />
             <button 
               v-if="part"
-              class="btn btn-xs btn-ghost gap-1 px-1.5 h-7 rounded-md font-bold text-[9px] uppercase tracking-wider max-w-[100px] truncate"
+              class="btn btn-xs btn-ghost gap-1 px-1.5 h-7 max-w-[100px] truncate"
               @click="fetchPickerFolders(pickerCurrentPath.split('/').slice(0, index + 1).join('/'))"
             >
               {{ part }}
@@ -2770,33 +2747,33 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
         <div class="flex-1 overflow-y-auto p-2 min-h-[240px] custom-scrollbar">
           <div v-if="pickerCurrentPath" 
-               class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200/50 cursor-pointer group"
+               class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200 cursor-pointer group"
                @click="navigatePickerUp">
-            <Icon name="mdi:arrow-up" class="w-4 h-4 text-base-content/30 group-hover:text-primary" />
-            <span class="text-xs font-bold text-base-content/70">Go Up</span>
+            <Icon name="mdi:arrow-up" class="w-4 h-4 text-fg-3 group-hover:text-fg" />
+            <span class="text-xs font-medium text-fg-2">Go Up</span>
           </div>
 
           <div v-for="folder in pickerFolders" 
                :key="folder.name"
-               class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200/50 cursor-pointer group"
+               class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200 cursor-pointer group"
                @click="navigatePicker(folder.name)">
             <Icon name="vscode-icons:default-folder" class="w-4 h-4" />
             <div class="flex-grow min-w-0">
-              <span class="text-xs font-bold truncate block text-base-content">{{ folder.name }}</span>
+              <span class="text-xs font-medium truncate block text-fg">{{ folder.name }}</span>
             </div>
-            <Icon name="mdi:chevron-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+            <Icon name="mdi:chevron-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-fg transition-opacity" />
           </div>
         </div>
 
-        <div class="p-4 bg-base-100 border-t border-base-content/10 flex items-center justify-between gap-4 shrink-0">
+        <div class="p-4 bg-base-100 border-t border-line flex items-center justify-between gap-4 shrink-0">
           <div class="min-w-0 flex-1">
-            <p class="text-[8px] font-bold uppercase tracking-[0.2em] text-base-content/30 mb-0.5">Move to</p>
-            <p class="text-[10px] font-bold truncate text-primary uppercase tracking-wider">/{{ pickerCurrentPath || 'Root' }}</p>
+            <p class="text-[11px] uppercase tracking-micro font-mono text-fg-3 mb-0.5">Move to</p>
+            <p class="text-[11px] truncate text-fg uppercase tracking-micro font-mono">/{{ pickerCurrentPath || 'Root' }}</p>
           </div>
           <div class="flex gap-2">
-            <button class="btn btn-xs h-8 px-4 rounded-md font-bold uppercase tracking-widest text-[9px]" @click="showMoveModal = false">Cancel</button>
+            <button class="btn btn-xs h-8 px-4" @click="showMoveModal = false">Cancel</button>
             <button 
-              class="btn btn-xs btn-primary h-8 px-6 rounded-md font-bold uppercase tracking-widest text-[9px] shadow-sm"
+              class="btn btn-xs btn-primary h-8 px-6"
               @click="executeMove"
               :disabled="isMoving"
             >
@@ -2809,147 +2786,144 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
     </div>
 
     <!-- Bulk Rename Modal -->
-    <div v-if="showBulkRenameModal" class="modal modal-open backdrop-blur-md">
-      <div class="modal-box rounded-3xl shadow-2xl p-8 max-w-lg border border-base-content/5">
+    <div v-if="showBulkRenameModal" class="modal modal-open">
+      <div class="modal-box p-8 max-w-lg">
         <div class="flex items-center gap-3 mb-8">
-          <div class="bg-primary/10 p-3 rounded-2xl">
-            <Icon name="mdi:pencil-box-multiple" class="w-6 h-6 text-primary" />
+          <div class="bg-surface-2 p-3 rounded-xl">
+            <Icon name="mdi:pencil-box-multiple" class="w-6 h-6 text-fg" />
           </div>
           <div>
-            <h3 class="font-black text-xl tracking-tight">Bulk Rename</h3>
-            <p class="text-[11px] font-bold text-base-content/40 uppercase tracking-widest">Rename {{ selectedFiles.size }} items at once</p>
+            <h3 class="section-title">Bulk Rename</h3>
+            <p class="text-[13px] text-fg-3">Rename {{ selectedFiles.size }} items at once</p>
           </div>
         </div>
 
         <div class="space-y-6">
           <div class="form-control">
             <label class="label mb-1">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Base Name</span>
+              <span class="label-text">Base Name</span>
             </label>
             <input
                 v-model="bulkRenameBaseName"
                 type="text"
                 placeholder="Holiday_Photo"
-                class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+                class="input input-bordered w-full transition font-medium text-sm"
             />
           </div>
           <div class="form-control">
             <label class="label mb-1">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Extension (Optional)</span>
+              <span class="label-text">Extension (Optional)</span>
             </label>
             <input
                 v-model="bulkRenameExtension"
                 type="text"
                 placeholder=".jpg"
-                class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+                class="input input-bordered w-full transition font-medium text-sm"
             />
           </div>
           <div class="form-control">
             <label class="label mb-1">
-              <span class="label-text font-black text-[10px] uppercase tracking-widest text-base-content/40">Start Index</span>
+              <span class="label-text">Start Index</span>
             </label>
             <input
                 v-model.number="bulkRenameStartNumber"
                 type="number"
                 min="0"
-                class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-sm h-12 rounded-xl"
+                class="input input-bordered w-full transition font-medium text-sm"
             />
           </div>
 
-          <div class="bg-base-200/50 p-4 rounded-2xl border border-dashed border-base-content/10">
-            <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30 block mb-2">Preview Example</span>
-            <p class="text-sm font-bold text-primary truncate">
+          <div class="bg-base-200 p-4 rounded-xl border border-dashed border-line">
+            <span class="text-[11px] uppercase tracking-micro font-mono text-fg-3 block mb-2">Preview Example</span>
+            <p class="text-sm font-medium text-fg truncate">
               {{ bulkRenameBaseName || 'Name' }}_{{ bulkRenameStartNumber || 1 }}{{ bulkRenameExtension || '.ext' }}
             </p>
           </div>
 
           <div class="flex flex-col gap-3 mt-10">
             <button 
-              class="btn btn-primary h-12 rounded-xl shadow-lg" 
+              class="btn btn-primary" 
               @click="executeBulkRename"
               :disabled="isBulkRenaming"
             >
               <span v-if="isBulkRenaming" class="loading loading-spinner loading-xs"></span>
               Rename All
             </button>
-            <button class="btn btn-ghost h-12 rounded-xl" @click="showBulkRenameModal = false">Cancel</button>
+            <button class="btn btn-ghost" @click="showBulkRenameModal = false">Cancel</button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Tag Modal -->
-    <div v-if="showTagModal" class="modal modal-open backdrop-blur-md">
-      <div class="modal-box rounded-xl shadow-xl p-8 max-w-sm border border-base-content/10">
+    <div v-if="showTagModal" class="modal modal-open">
+      <div class="modal-box p-8 max-w-sm">
         <div class="flex items-center gap-3 mb-8">
-          <div class="bg-primary/10 p-2.5 rounded-lg border border-primary/10 text-primary">
-            <Icon name="mdi:tag-multiple" class="w-5 h-5" />
-          </div>
           <div>
-            <h3 class="font-bold text-base tracking-tight text-base-content">Manage Tags</h3>
-            <p class="text-[9px] font-bold text-base-content/40 uppercase tracking-widest">Add tags to your files</p>
+            <h3 class="section-title">Manage Tags</h3>
+            <p class="text-[13px] text-fg-3">Add tags to your files</p>
           </div>
         </div>
 
         <div v-if="showNewTagForm" class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Tag Name</span>
+              <span class="label-text">Tag Name</span>
             </label>
             <input
               v-model="newTagName"
               type="text"
               placeholder="Work, Personal, Favorites..."
-              class="input input-bordered w-full bg-base-200/50 focus:bg-base-100 transition-all font-bold text-xs h-11 rounded-lg border-base-content/10"
+              class="input input-bordered w-full transition font-medium text-xs"
             />
           </div>
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Tag Color</span>
+              <span class="label-text">Tag Color</span>
             </label>
             <div class="flex gap-3 items-center">
               <input
                 v-model="newTagColor"
                 type="color"
-                class="w-11 h-11 rounded-lg cursor-pointer border-none bg-base-200/50"
+                class="w-11 h-11 rounded-lg cursor-pointer border-none bg-base-200"
               />
-              <div class="flex-grow h-11 rounded-lg flex items-center px-4 font-bold text-[11px] bg-base-200/50 border border-dashed border-base-content/10 uppercase tracking-widest" :style="{ color: newTagColor }">
+              <div class="flex-grow h-11 rounded-lg flex items-center px-4 text-[11px] bg-base-200 border border-dashed border-line uppercase tracking-micro font-mono" :style="{ color: newTagColor }">
                  Color Preview
               </div>
             </div>
           </div>
           <div class="flex flex-col gap-2 mt-10">
-            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="bulkAddTags">Create & Apply</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = false">Existing Tags</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
+            <button class="btn btn-primary btn-sm" @click="bulkAddTags">Create & Apply</button>
+            <button class="btn btn-ghost btn-sm" @click="showNewTagForm = false">Existing Tags</button>
+            <button class="btn btn-ghost btn-sm text-error" @click="closeTagModal">Cancel</button>
           </div>
         </div>
 
         <div v-else class="space-y-5">
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text font-bold text-[10px] uppercase tracking-widest text-base-content/40">Select Existing Tags</span>
+              <span class="label-text">Select Existing Tags</span>
             </label>
             <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
               <div
                 v-for="tag in predefinedTags"
                 :key="tag.name"
-                class="p-3 rounded-lg cursor-pointer text-center font-bold text-[9px] uppercase tracking-wider transition-all border border-base-content/10"
-                :style="{ 
-                  borderColor: isTagSelected(tag) ? tag.color : '',
-                  backgroundColor: isTagSelected(tag) ? tag.color : 'transparent', 
-                  color: isTagSelected(tag) ? 'white' : tag.color
-                }"
+                class="flex items-center gap-2 px-3 h-9 rounded-lg border cursor-pointer text-[13px] transition-colors"
+                :class="isTagSelected(tag) ? 'border-fg text-fg bg-surface-2' : 'border-line text-fg-2 hover:border-line-strong'"
+                role="checkbox"
+                :aria-checked="isTagSelected(tag)"
                 @click="toggleTagSelection(tag)"
               >
-                {{ tag.name }}
+                <span class="dot" :style="{ backgroundColor: tag.color }"></span>
+                <span class="truncate flex-1 text-left">{{ tag.name }}</span>
+                <Icon v-if="isTagSelected(tag)" name="mdi:check" class="w-3.5 h-3.5 shrink-0" />
               </div>
             </div>
           </div>
           <div class="flex flex-col gap-2 mt-10">
-            <button class="btn btn-primary btn-sm h-10 rounded-lg shadow-sm font-bold uppercase tracking-widest text-[10px]" @click="bulkAddTags">Apply Selection</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px]" @click="showNewTagForm = true">New Tag</button>
-            <button class="btn btn-ghost btn-sm h-10 rounded-lg font-bold uppercase tracking-widest text-[10px] text-error/60" @click="closeTagModal">Cancel</button>
+            <button class="btn btn-primary btn-sm" @click="bulkAddTags">Apply Selection</button>
+            <button class="btn btn-ghost btn-sm" @click="showNewTagForm = true">New Tag</button>
+            <button class="btn btn-ghost btn-sm text-error" @click="closeTagModal">Cancel</button>
           </div>
         </div>
       </div>
@@ -2959,15 +2933,14 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 
 <style scoped>
 .slide-down-enter-active, .slide-down-leave-active {
-  transition: all 0.3s ease-out;
+  transition: opacity 120ms ease-out;
 }
 .slide-down-enter-from, .slide-down-leave-to {
-  transform: translateY(-100%);
   opacity: 0;
 }
 
 .fade-enter-active, .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 120ms ease;
 }
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
@@ -2980,7 +2953,7 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--line-strong);
   border-radius: 10px;
 }
 
@@ -3011,25 +2984,21 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
 .slide-right-leave-active,
 .slide-left-enter-active,
 .slide-left-leave-active {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 120ms ease-out;
 }
 
 .slide-right-enter-from {
   opacity: 0;
-  transform: translateX(30px);
 }
 .slide-right-leave-to {
   opacity: 0;
-  transform: translateX(-30px);
 }
 
 .slide-left-enter-from {
   opacity: 0;
-  transform: translateX(-30px);
 }
 .slide-left-leave-to {
   opacity: 0;
-  transform: translateX(30px);
 }
 
 .modal-box-image img {

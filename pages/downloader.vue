@@ -1,19 +1,16 @@
 <template>
-  <div class="min-h-screen bg-base-200/50 flex flex-col font-sans">
-    <header class="sticky top-0 z-[40] w-full bg-base-100/70 backdrop-blur-md border-b border-base-content/5">
-      <div class="w-full px-6 py-4">
+  <div class="min-h-screen bg-base-100 flex flex-col font-sans">
+    <header class="page-bar">
+      <div class="page-wrap py-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-content/10">
+            <label for="sidebar-drawer" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="Open navigation">
               <Icon name="mdi:menu" class="w-5 h-5" />
             </label>
             <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Icon name="mdi:cloud-download" class="text-primary w-5 h-5" />
-              </div>
               <div>
-                <h1 class="text-base font-extrabold tracking-tight">Downloader</h1>
-                <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest leading-none mt-0.5">yt-dlp Frontend</p>
+                <h1 class="text-[15px] font-medium tracking-section text-fg leading-tight">Downloader</h1>
+                <p class="hidden sm:block text-[13px] text-fg-3 leading-tight">yt-dlp Frontend</p>
               </div>
             </div>
           </div>
@@ -21,99 +18,87 @@
       </div>
     </header>
 
-    <main class="flex-1 p-4 sm:p-8 max-w-5xl mx-auto w-full space-y-6">
-      <!-- Input Section -->
-      <div class="p-6 bg-base-100 border border-base-content/10 rounded-xl shadow-sm">
-        <h3 class="text-base font-bold tracking-tight mb-4 text-base-content">Start New Download</h3>
+    <main class="flex-1 w-full page-wrap py-12 space-y-16">
+      <!-- New download -->
+      <section class="max-w-form">
+        <h2 class="page-title mb-2">Download from the web</h2>
+        <p class="text-fg-2 mb-8">Paste a link from YouTube, X or any site yt-dlp supports.</p>
+        <label for="download-url" class="block text-[13px] text-fg-2 mb-1.5">URL</label>
         <div class="flex flex-col sm:flex-row gap-3">
-          <input 
-            v-model="downloadUrl" 
-            type="text" 
-            placeholder="Paste YouTube, Twitter, or any supported URL..." 
-            class="input input-bordered flex-1 bg-base-200/50 focus:bg-base-100 transition-all rounded-lg font-bold text-xs"
+          <input
+            id="download-url"
+            v-model="downloadUrl"
+            type="text"
+            placeholder="https://"
+            class="input flex-1"
             :disabled="isDownloading"
             @keyup.enter="startDownload"
           />
-          <button 
+          <button
             v-if="!isDownloading"
-            @click="startDownload" 
-            class="btn btn-primary rounded-lg gap-2 shadow-sm font-bold text-[10px] uppercase tracking-widest px-6"
+            @click="startDownload"
+            class="btn btn-primary gap-2 h-10 min-h-10"
             :disabled="!downloadUrl"
           >
             <Icon name="mdi:download" class="w-4 h-4" />
             Download
           </button>
-          <div v-else class="flex gap-2">
-            <button 
-              @click="stopDownload" 
-              class="btn btn-error rounded-lg gap-2 shadow-sm font-bold text-[10px] uppercase tracking-widest px-6"
-            >
-              <Icon name="mdi:stop-circle" class="w-4 h-4" />
-              Stop
-            </button>
-          </div>
+          <button
+            v-else
+            @click="stopDownload"
+            class="btn btn-error gap-2 h-10 min-h-10"
+          >
+            <Icon name="mdi:stop" class="w-4 h-4" />
+            Stop
+          </button>
         </div>
-      </div>
+      </section>
 
-      <!-- Progress Section -->
-      <div v-if="isDownloading || lastDownloadStatus" class="p-6 bg-base-100 border border-base-content/10 rounded-xl shadow-sm space-y-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
-              <Icon :name="statusIcon" class="w-5 h-5" :class="{ 'animate-pulse': isDownloading }" />
-            </div>
-            <div>
-              <p class="font-bold text-xs uppercase tracking-wider text-base-content">Retrieving Content</p>
-              <p class="text-[9px] text-base-content/40 font-bold uppercase tracking-widest">Active Download Job</p>
-            </div>
+      <!-- Progress -->
+      <section v-if="isDownloading || lastDownloadStatus" class="border-y border-line py-6">
+        <div class="flex items-start justify-between gap-6">
+          <div class="min-w-0">
+            <p class="flex items-center gap-2 text-[14px] text-fg">
+              <span v-if="isDownloading" class="loading loading-spinner loading-xs"></span>
+              <span v-else class="dot" :class="lastDownloadStatus === 'success' ? 'text-success' : lastDownloadStatus === 'error' ? 'text-error' : 'text-fg-3'"></span>
+              {{ isDownloading ? 'Downloading' : lastDownloadStatus === 'success' ? 'Finished' : lastDownloadStatus === 'error' ? 'Failed' : 'Stopped' }}
+            </p>
+            <p v-if="detectedFilename" class="text-[13px] text-fg-3 truncate mt-0.5">{{ detectedFilename }}</p>
           </div>
-          <div class="flex items-center gap-6">
+          <div class="flex items-start gap-4 shrink-0">
             <div v-if="progressData.percent" class="text-right">
-              <p class="text-xl font-bold text-primary">{{ progressData.percent }}</p>
-              <p class="text-[9px] font-bold text-base-content/30 uppercase tracking-widest">{{ progressData.speed }} • {{ progressData.eta }}</p>
+              <p class="num text-4xl font-medium text-fg tracking-title leading-none">{{ progressData.percent }}</p>
+              <p class="micro num mt-2">{{ progressData.speed }} · {{ progressData.eta }}</p>
             </div>
-            <button v-if="!isDownloading" @click="clearJobState" class="btn btn-ghost btn-xs btn-circle" title="Dismiss">
+            <button v-if="!isDownloading" @click="clearJobState" class="btn btn-ghost btn-sm btn-circle" title="Dismiss" aria-label="Dismiss">
               <Icon name="mdi:close" class="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div v-if="isDownloading" class="w-full bg-base-200 rounded-full h-2 overflow-hidden">
-          <div 
-            class="bg-primary h-full transition-all duration-300 ease-out"
-            :style="{ width: progressData.percent || '0%' }"
-          ></div>
+        <div v-if="isDownloading" class="w-full bg-surface-2 rounded-full h-1 overflow-hidden mt-6">
+          <div class="bg-invert h-full" :style="{ width: progressData.percent || '0%' }"></div>
         </div>
-      </div>
+      </section>
 
-      <!-- Terminal / Logs -->
-      <div class="bg-[#0d1117] rounded-xl overflow-hidden shadow-lg border border-white/5 flex flex-col h-[500px]">
-        <div class="bg-white/5 px-6 py-2.5 flex items-center justify-between border-b border-white/5">
-          <div class="flex items-center gap-2">
-            <div class="flex gap-1.5">
-              <div class="w-2.5 h-2.5 rounded-full bg-error/50"></div>
-              <div class="w-2.5 h-2.5 rounded-full bg-warning/50"></div>
-              <div class="w-2.5 h-2.5 rounded-full bg-success/50"></div>
-            </div>
-            <span class="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em] ml-2">yt-dlp-output.log</span>
-          </div>
-          <button @click="logs = []" class="text-[9px] font-bold text-white/40 hover:text-white transition-colors uppercase tracking-widest">Clear</button>
+      <!-- Output -->
+      <section>
+        <div class="flex items-baseline justify-between mb-4">
+          <h2 class="section-title">Output</h2>
+          <button @click="logs = []" class="text-[13px] text-fg-2 hover:text-fg transition-colors">Clear</button>
         </div>
-        
-        <div ref="logContainer" class="flex-1 overflow-y-auto p-6 font-mono text-[11px] space-y-1 custom-scrollbar">
-          <div v-if="logs.length === 0" class="text-white/20 italic">Awaiting download...</div>
+        <div ref="logContainer" class="bg-base-200 border border-line rounded-xl h-[420px] overflow-y-auto p-4 font-mono text-[12px] leading-relaxed space-y-0.5">
+          <div v-if="logs.length === 0" class="text-fg-3">Waiting for a download.</div>
           <div v-for="(log, index) in logs" :key="index" :class="{
-            'text-blue-400': log.type === 'info',
-            'text-green-400': log.type === 'success',
-            'text-red-400': log.type === 'error',
-            'text-gray-400': log.type === 'log',
-            'text-yellow-400': log.type === 'warning'
+            'text-fg-2': log.type === 'info' || log.type === 'log',
+            'text-success': log.type === 'success',
+            'text-error': log.type === 'error',
+            'text-warning': log.type === 'warning'
           }" class="break-all">
-            <span class="opacity-30 mr-2">[{{ log.time }}]</span>
-            {{ log.message }}
+            <span class="text-fg-3 mr-2 num">{{ log.time }}</span>{{ log.message }}
           </div>
         </div>
-      </div>
+      </section>
     </main>
   </div>
 </template>
@@ -339,10 +324,10 @@ onUnmounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--line-strong);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--line-strong);
 }
 </style>

@@ -1,6 +1,6 @@
 {
   "name": "clyocloud",
-  "version": "2.19.1",
+  "version": "2.20.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,6 +13,8 @@
     "test:security": "vitest run tests/security.spec.ts"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
     "@nuxt/icon": "^1.10.3",
     "@nuxtjs/sitemap": "^7.4.3",
     "@nuxtjs/tailwindcss": "^6.13.1",

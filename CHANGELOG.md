@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.20.0] - 2026-11-04
+
+### Changed
+- **Redesign**: The whole web interface follows a new monochrome design: a true black page, hairline dividers instead of shadows and boxes, white primary buttons, and colour only where it means something (status, tag colour, favourite). Applies to every page, including login, files, media, theatre, shorts, slideshow, collections, favorites, shared, trash, settings, admin, logs, downloader, duplicates, wallpapers and the public share page.
+- **Themes**: There are now two themes, Dark (default) and Light, which is the same design inverted. The theme picker in Settings → Appearance has these two choices. Saved themes from earlier versions (`onedev`, `dracula`, …) show as Dark until you pick again.
+- **Fonts**: Geist and Geist Mono are bundled with the app (`@fontsource-variable/geist`, `@fontsource-variable/geist-mono`), so the browser makes no outside font requests. Numbers use tabular figures so columns line up.
+- **Navigation**: The sidebar is plain text with a ClyoCloud wordmark. Every page has the same 60px header and a centred content column up to 1120px wide.
+- **Dashboard**: Storage, CPU and memory are shown as large numbers with hairlines between them. Drives, largest folders, shortcuts and recent activity are hairline lists.
+- **Lists**: File lists, logs, shared files, collections, admin lists and duplicate groups use one bordered list with dividers between rows.
+- **Tags**: Tags show as a small colour dot next to the name instead of a filled coloured pill.
+- **Status**: Toasts, logs, the admin panel and the downloader show status as a small coloured dot next to text.
+- **Admin charts**: The traffic chart, status-code chart and connection map use the theme colours and no longer animate.
+- **Motion**: Transitions are 120ms fades on colour and opacity. Slide, scale and pulse effects are removed, and all motion is off when the system asks for reduced motion.
+- **Accessibility**: Visible focus outline on every control, icon-only buttons have labels, and the dimmest text colour meets WCAG AA in both themes.
+
+### Fixed
+- **Search fields**: The search icon no longer overlaps the placeholder text in page headers.
+- **Recycle Bin**: The page now has the menu button on phones, like every other page.
+
+## [2.19.2] - 2026-10-30
+
+### Fixed
+- **Runtime Paths**: `STORAGE_PATH`, `MOVIES_PATH`, `SHOWS_PATH`, `THUMBNAIL_PATH`, `PREVIEW_PATH`, `USERS_FILE_PATH`, `TAGS_FILE_PATH` and `DEVICES_FILE_PATH` are now read when the server starts, and defaults use the home directory of the user running it. The build no longer contains the builder's paths, which also fixes AUR packages built by a different user. `NUXT_*` overrides still work and take priority.
+- **PM2**: Removed the `undefined` path entries from `ecosystem.config.js`, which made PM2 drop those variables even when they were set in the shell.
+
+### Changed
+- All eight paths are now printed at startup, before anything is written.
+
+### Upgrade Note
+- Path variables set during `npm run build`, including from a `.env` file, are no longer used. If you relied on this, set them when starting the server (for example `node --env-file=.env .output/server/index.mjs`). Otherwise the server starts on an empty `~/.clyo` with a new admin account. Your existing data isn't touched.
+
 ## [2.19.1] - 2026-10-30
 
 ### Security
