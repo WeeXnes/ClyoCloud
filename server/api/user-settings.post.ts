@@ -5,6 +5,7 @@ import path from 'path'
 import { logActivity } from '../utils/activityLogger'
 import { isValidDownloadPath } from '../utils/fileUtils'
 import { withFileLock, writeFileAtomic } from '../utils/jsonStore'
+import { normalizeComfyUiUrl, isScenePreset, isValidUpscaleModelName } from '../utils/comfyui'
 
 // Compute CPU cores and max concurrency limit once at startup (caching the resource check)
 const CPU_CORES = os.cpus().length
@@ -12,7 +13,7 @@ const DYNAMIC_MAX_CONCURRENCY = Math.min(Math.max(CPU_CORES * 2, 4), 32)
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { downloadPath, mobileAutoPreview, imageViewerMobileFullscreen, maxConcurrentPreviews, experimentalMode, theme, slideshowFrequency, selectedShortsPaths, excludedMediaPaths, maxDuplicateResults } = body
+    const { downloadPath, mobileAutoPreview, imageViewerMobileFullscreen, maxConcurrentPreviews, experimentalMode, theme, slideshowFrequency, selectedShortsPaths, excludedMediaPaths, maxDuplicateResults, comfyuiUrl, defaultUpscaleModel, defaultScenePreset } = body
     const config = useRuntimeConfig()
     const user = event.context.user
 
@@ -27,6 +28,29 @@ export default defineEventHandler(async (event) => {
         throw createError({
             statusCode: 400,
             statusMessage: 'Download path must be a folder inside your storage',
+        })
+    }
+
+    let normalizedComfyUrl: string | null | undefined
+    if (comfyuiUrl !== undefined) {
+        normalizedComfyUrl = comfyuiUrl === '' ? '' : normalizeComfyUiUrl(comfyuiUrl)
+        if (normalizedComfyUrl === null) {
+            throw createError({
+                statusCode: 400,
+                statusMessage: 'ComfyUI URL must be an http(s) address without credentials',
+            })
+        }
+    }
+    if (defaultUpscaleModel !== undefined && !isValidUpscaleModelName(defaultUpscaleModel)) {
+        throw createError({
+            statusCode: 400,
+            statusMessage: 'Invalid upscale model name',
+        })
+    }
+    if (defaultScenePreset !== undefined && !isScenePreset(defaultScenePreset)) {
+        throw createError({
+            statusCode: 400,
+            statusMessage: 'Invalid scene preset',
         })
     }
 
@@ -77,6 +101,18 @@ export default defineEventHandler(async (event) => {
 
             if (typeof maxDuplicateResults === 'number') {
                 users[userIndex].maxDuplicateResults = Math.max(10, Math.min(1000, maxDuplicateResults))
+            }
+
+            if (normalizedComfyUrl !== undefined) {
+                users[userIndex].comfyuiUrl = normalizedComfyUrl
+            }
+
+            if (defaultUpscaleModel !== undefined) {
+                users[userIndex].defaultUpscaleModel = defaultUpscaleModel
+            }
+
+            if (defaultScenePreset !== undefined) {
+                users[userIndex].defaultScenePreset = defaultScenePreset
             }
 
             await writeFileAtomic(usersFilePath, JSON.stringify(users, null, 2))

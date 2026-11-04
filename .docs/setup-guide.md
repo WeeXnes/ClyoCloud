@@ -101,6 +101,7 @@ Setting a path variable during `npm run build` has no effect, and neither does a
 | `DEVICES_FILE_PATH` | `~/.clyo/devices.json` | Path to the JSON file listing authorized devices. |
 | `JWT_SECRET` | Random, regenerated on every start | Key used to sign JWT session cookies. Set it to keep sessions and devices valid across restarts. |
 | `TRUSTED_PROXIES` | Loopback only | Comma-separated IPs or CIDR ranges of reverse proxies allowed to set `X-Forwarded-For`. Set this if your proxy isn't on the same host (e.g. Docker: `172.16.0.0/12`), otherwise all clients share one rate limit. |
+| `COMFYUI_URL` | `http://localhost:8188` | Default ComfyUI endpoint for the AI Wallpaper Pipeline. A URL saved in a user's settings takes precedence. See the README section "ComfyUI Wallpaper Pipeline". |
 
 > [!IMPORTANT]
 > The folders defined in `STORAGE_PATH` and `THUMBNAIL_PATH` must be writeable by the process running ClyoCloud. On server startup, ClyoCloud will attempt to create these directories automatically if they do not exist.

@@ -1,6 +1,7 @@
 import { defineEventHandler, createError } from 'h3'
 import fs from 'fs/promises'
 import os from 'os'
+import { DEFAULT_COMFYUI_URL, normalizeComfyUiUrl, isScenePreset, isValidUpscaleModelName } from '../utils/comfyui'
 
 // Compute CPU cores and max concurrency limit once at startup (caching the resource check)
 const CPU_CORES = os.cpus().length
@@ -43,6 +44,9 @@ export default defineEventHandler(async (event) => {
             excludedMediaPaths: userData.excludedMediaPaths || [],
             maxDuplicateResults: userData.maxDuplicateResults || 50,
             storageQuota: userData.storageQuota || null,
+            comfyuiUrl: normalizeComfyUiUrl(userData.comfyuiUrl) || normalizeComfyUiUrl(process.env.COMFYUI_URL) || DEFAULT_COMFYUI_URL,
+            defaultUpscaleModel: isValidUpscaleModelName(userData.defaultUpscaleModel) ? userData.defaultUpscaleModel : '4x-UltraSharp.pth',
+            defaultScenePreset: isScenePreset(userData.defaultScenePreset) ? userData.defaultScenePreset : 'outdoor',
             cpuCores: CPU_CORES,
             serverMaxConcurrency: SERVER_MAX_CONCURRENCY
         }

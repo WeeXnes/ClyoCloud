@@ -1,0 +1,393 @@
+{
+  "257": {
+    "inputs": {
+      "left": 320,
+      "top": 0,
+      "right": 320,
+      "bottom": 0,
+      "feathering": 64,
+      "fill_mode": "mean",
+      "image": [
+        "274",
+        0
+      ]
+    },
+    "class_type": "SeamlessPadForOutpaint",
+    "_meta": {
+      "title": "Seamless Pad For Outpaint"
+    }
+  },
+  "258": {
+    "inputs": {
+      "image": "eghl6tvyvq-jpeg.6631289.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    },
+    "is_changed": [
+      "fef1ae202367f322f078ac702007e582ef04ded0b673d90a14ac06dd2744bc72"
+    ]
+  },
+  "264": {
+    "inputs": {
+      "seed": 328974802301821,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": [
+        "290",
+        0
+      ],
+      "positive": [
+        "273",
+        0
+      ],
+      "negative": [
+        "273",
+        1
+      ],
+      "latent_image": [
+        "273",
+        2
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "266": {
+    "inputs": {
+      "samples": [
+        "264",
+        0
+      ],
+      "vae": [
+        "289",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "268": {
+    "inputs": {
+      "ckpt_name": "Realistic_Vision_V5.1-inpainting.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "269": {
+    "inputs": {
+      "upscale_model": [
+        "277",
+        0
+      ],
+      "image": [
+        "266",
+        0
+      ]
+    },
+    "class_type": "ImageUpscaleWithModel",
+    "_meta": {
+      "title": "Upscale Image (using Model)"
+    }
+  },
+  "270": {
+    "inputs": {
+      "images": [
+        "257",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "271": {
+    "inputs": {
+      "text": "high quality 35mm photograph, master photography, seamless background continuation, extending the environment naturally, expansive scene, matching lighting and textures, wide angle lens, photorealistic, sharp focus, 8k uhd, dslr",
+      "clip": [
+        "268",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "272": {
+    "inputs": {
+      "text": "person, woman, girl, female, face, human, duplicate person, second woman, cloned subject, extra limbs, gray walls, dividing walls, concrete pillar, box, room enclosing, seam, border, frame, picture frame, edge, vertical line, dividing line, split screen, blur, blurry, foggy, hazy, washed out, low contrast, desaturated, drawing, cartoon, 3d render, watermark, text",
+      "clip": [
+        "268",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "273": {
+    "inputs": {
+      "noise_mask": true,
+      "positive": [
+        "271",
+        0
+      ],
+      "negative": [
+        "272",
+        0
+      ],
+      "vae": [
+        "289",
+        0
+      ],
+      "pixels": [
+        "257",
+        0
+      ],
+      "mask": [
+        "257",
+        1
+      ]
+    },
+    "class_type": "InpaintModelConditioning",
+    "_meta": {
+      "title": "InpaintModelConditioning"
+    }
+  },
+  "274": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 512,
+      "height": 720,
+      "crop": "center",
+      "image": [
+        "258",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "Upscale Image"
+    }
+  },
+  "275": {
+    "inputs": {
+      "filename_prefix": "Wallpaper_v2_2880x1800",
+      "images": [
+        "298",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "276": {
+    "inputs": {
+      "x": 320,
+      "y": 0,
+      "resize_source": false,
+      "destination": [
+        "291",
+        0
+      ],
+      "source": [
+        "274",
+        0
+      ],
+      "mask": [
+        "287",
+        0
+      ]
+    },
+    "class_type": "ImageCompositeMasked",
+    "_meta": {
+      "title": "Image Composite Masked"
+    }
+  },
+  "277": {
+    "inputs": {
+      "model_name": "4x-UltraSharp.pth"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": {
+      "title": "Load Upscale Model"
+    }
+  },
+  "280": {
+    "inputs": {
+      "images": [
+        "298",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "286": {
+    "inputs": {
+      "value": 1.0,
+      "width": 512,
+      "height": 720
+    },
+    "class_type": "SolidMask",
+    "_meta": {
+      "title": "Create Solid Mask"
+    }
+  },
+  "287": {
+    "inputs": {
+      "left": 64,
+      "top": 0,
+      "right": 64,
+      "bottom": 0,
+      "mask": [
+        "286",
+        0
+      ]
+    },
+    "class_type": "FeatherMask",
+    "_meta": {
+      "title": "Feather Mask"
+    }
+  },
+  "288": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 2880,
+      "height": 1800,
+      "crop": "disabled",
+      "image": [
+        "269",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "Upscale Image"
+    }
+  },
+  "289": {
+    "inputs": {
+      "vae_name": "vae-ft-mse-840000-ema-pruned.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "290": {
+    "inputs": {
+      "strength": 0.85,
+      "model": [
+        "268",
+        0
+      ]
+    },
+    "class_type": "DifferentialDiffusion",
+    "_meta": {
+      "title": "Differential Diffusion"
+    }
+  },
+  "291": {
+    "inputs": {
+      "method": "reinhard_lab",
+      "source_stats": "uniform",
+      "strength": 0.85,
+      "image_target": [
+        "266",
+        0
+      ],
+      "image_ref": [
+        "274",
+        0
+      ]
+    },
+    "class_type": "ColorTransfer",
+    "_meta": {
+      "title": "Transfer Color"
+    }
+  },
+  "295": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 1280,
+      "height": 1800,
+      "crop": "center",
+      "image": [
+        "258",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "Scale Source Image (Preserve High-Res Detail)"
+    }
+  },
+  "296": {
+    "inputs": {
+      "value": 1.0,
+      "width": 1280,
+      "height": 1800
+    },
+    "class_type": "SolidMask",
+    "_meta": {
+      "title": "Create High-Res Center Mask"
+    }
+  },
+  "297": {
+    "inputs": {
+      "left": 160,
+      "top": 0,
+      "right": 160,
+      "bottom": 0,
+      "mask": [
+        "296",
+        0
+      ]
+    },
+    "class_type": "FeatherMask",
+    "_meta": {
+      "title": "Feather High-Res Center Seam"
+    }
+  },
+  "298": {
+    "inputs": {
+      "x": 800,
+      "y": 0,
+      "resize_source": false,
+      "destination": [
+        "288",
+        0
+      ],
+      "source": [
+        "295",
+        0
+      ],
+      "mask": [
+        "297",
+        0
+      ]
+    },
+    "class_type": "ImageCompositeMasked",
+    "_meta": {
+      "title": "Composite High-Res Original Detail"
+    }
+  }
+}

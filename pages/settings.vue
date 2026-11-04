@@ -17,7 +17,7 @@ const router = useRouter()
 const activeCategory = computed<string | null>({
   get() {
     const cat = route.query.cat as string
-    if (cat && ['security', 'system', 'appearance', 'previews', 'directories'].includes(cat)) {
+    if (cat && ['security', 'system', 'appearance', 'previews', 'directories', 'pipeline'].includes(cat)) {
       return cat
     }
     return null
@@ -34,6 +34,7 @@ function getCategoryTitle(cat: string | null) {
     case 'appearance': return 'Appearance & Identity'
     case 'previews': return 'Media Processing'
     case 'directories': return 'Directory Rules'
+    case 'pipeline': return 'AI Wallpaper Pipeline'
     default: return 'Settings'
   }
 }
@@ -45,6 +46,7 @@ function getCategorySubtitle(cat: string | null) {
     case 'appearance': return 'Select visual themes and define labels for file classification'
     case 'previews': return 'Manage video and image preview settings'
     case 'directories': return 'Inclusion and exclusion patterns for file queries'
+    case 'pipeline': return 'Connect a ComfyUI GPU workstation to create 2880×1800 wallpapers'
     default: return 'Cloud Settings'
   }
 }
@@ -73,6 +75,56 @@ const themeOptions = [
 ]
 const isSavingSettings = ref(false)
 const isRebuildingCache = ref(false)
+
+// ComfyUI Wallpaper V2 pipeline
+const comfyuiUrl = ref('http://localhost:8188')
+const defaultUpscaleModel = ref('4x-UltraSharp.pth')
+const defaultScenePreset = ref('outdoor')
+const availableUpscaleModels = ref<{ id: string; name: string; scale: number }[]>([
+  { id: '4x-UltraSharp.pth', name: '4x-UltraSharp (Recommended)', scale: 4 },
+  { id: 'RealESRGAN_x2plus.pth', name: 'RealESRGAN 2x (Fast)', scale: 2 },
+  { id: '4x_foolhardy_Remacri.pth', name: '4x-Remacri (Smooth)', scale: 4 }
+])
+const isTestingComfyConnection = ref(false)
+const comfyConnectionResult = ref<{ ok?: boolean; version?: string; devices?: string[]; error?: string } | null>(null)
+
+async function fetchPipelineModels() {
+  try {
+    const res = await fetch('/api/pipeline/models', { credentials: 'include' })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.models?.length) availableUpscaleModels.value = data.models
+    }
+  } catch {}
+}
+
+async function testComfyConnection() {
+  isTestingComfyConnection.value = true
+  comfyConnectionResult.value = null
+  try {
+    const res = await fetch('/api/pipeline/test-connection', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: comfyuiUrl.value })
+    })
+    const data = await res.json()
+    comfyConnectionResult.value = data
+    if (data.ok) {
+      if (data.url) comfyuiUrl.value = data.url
+      createNotification(`Connected to ComfyUI ${data.version ? 'v' + data.version : ''}`.trim(), NotificationType.SUCCESS)
+      await saveUserSettings()
+      await fetchPipelineModels()
+    } else {
+      createNotification(data.error || 'Connection failed', NotificationType.ERROR)
+    }
+  } catch (err: any) {
+    comfyConnectionResult.value = { ok: false, error: err?.message || 'Connection error' }
+    createNotification('Failed to reach ComfyUI', NotificationType.ERROR)
+  } finally {
+    isTestingComfyConnection.value = false
+  }
+}
 
 const removeSelectedPath = async (index: number) => {
   selectedShortsPaths.value.splice(index, 1)
@@ -363,6 +415,9 @@ async function fetchUserSettings() {
       excludedMediaPaths.value = data.excludedMediaPaths || []
       theme.value = data.theme === 'light' ? 'light' : 'dark'
       maxDuplicateResults.value = data.maxDuplicateResults || 50
+      comfyuiUrl.value = data.comfyuiUrl || 'http://localhost:8188'
+      defaultUpscaleModel.value = data.defaultUpscaleModel || '4x-UltraSharp.pth'
+      defaultScenePreset.value = data.defaultScenePreset || 'outdoor'
 
     }
   } catch (err) {
@@ -375,6 +430,7 @@ async function fetchUserSettings() {
 onMounted(() => {
   fetchTags()
   fetchUserSettings()
+  fetchPipelineModels()
   fetch2faStatus()
   fetchDevices()
   fetchGenerationStatus() // Check if a task is already running
@@ -403,14 +459,19 @@ async function saveUserSettings() {
         excludedMediaPaths: excludedMediaPaths.value,
         theme: theme.value,
         maxDuplicateResults: maxDuplicateResults.value,
-
+        comfyuiUrl: comfyuiUrl.value.trim(),
+        defaultUpscaleModel: defaultUpscaleModel.value,
+        defaultScenePreset: defaultScenePreset.value,
       }),
     })
 
-    if (!response.ok) throw new Error('Failed to save settings')
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.statusMessage || 'Failed to save settings')
+    }
     createNotification('Settings updated', NotificationType.SUCCESS)
-  } catch (err) {
-    createNotification('Failed to save settings', NotificationType.ERROR)
+  } catch (err: any) {
+    createNotification(err?.message || 'Failed to save settings', NotificationType.ERROR)
   } finally {
     isSavingSettings.value = false
   }
@@ -724,6 +785,20 @@ async function logout() {
               <div>
                 <h3 class="text-[15px] text-fg">Directory Rules</h3>
                 <p class="text-[13px] text-fg-3 mt-0.5">Shorts preferences, folders and exclusions</p>
+              </div>
+            </div>
+            <Icon name="mdi:arrow-right" class="w-4 h-4 text-fg-3 group-hover:text-fg transition-colors" />
+          </button>
+
+          <!-- 6. AI Wallpaper Pipeline -->
+          <button 
+            @click="activeCategory = 'pipeline'"
+            class="w-full flex items-center justify-between px-4 py-4 hover:bg-surface-2 transition-colors text-left group"
+          >
+            <div class="flex items-center gap-4">
+              <div>
+                <h3 class="text-[15px] text-fg">AI Wallpaper Pipeline</h3>
+                <p class="text-[13px] text-fg-3 mt-0.5">ComfyUI connection, upscale model and scene defaults</p>
               </div>
             </div>
             <Icon name="mdi:arrow-right" class="w-4 h-4 text-fg-3 group-hover:text-fg transition-colors" />
@@ -1540,6 +1615,92 @@ async function logout() {
               </div>
               <div v-if="excludedMediaPaths.length === 0" class="text-center py-6 text-[11px] text-fg-3 uppercase tracking-micro font-mono italic">No exclusions configured</div>
             </div>
+          </div>
+        </div>
+
+        <!-- 6. AI WALLPAPER PIPELINE SUB-MENU -->
+        <div v-if="activeCategory === 'pipeline'" class="space-y-12">
+          <!-- ComfyUI connection -->
+          <div class="border-t border-line pt-8 space-y-4">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="section-title">ComfyUI Connection</h3>
+              <span v-if="comfyConnectionResult?.ok" class="flex items-center gap-1.5 text-[13px] text-fg-2"><span class="dot text-success"></span>Connected</span>
+            </div>
+            <p class="text-[13px] text-fg-3 leading-relaxed">
+              The server sends images to this ComfyUI instance and saves the finished 2880×1800 wallpaper next to the original.
+              Use <span class="font-mono text-fg-2">http://localhost:8188</span> when ComfyUI runs on the same machine, or a LAN, Tailscale or tunnel address otherwise.
+            </p>
+
+            <div class="space-y-2 pt-2">
+              <label for="comfyui-url" class="micro block">Endpoint</label>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input
+                  id="comfyui-url"
+                  v-model="comfyuiUrl"
+                  type="url"
+                  inputmode="url"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="http://localhost:8188"
+                  class="input input-sm flex-1 font-mono text-[13px]"
+                  @keydown.enter.prevent="testComfyConnection"
+                />
+                <button class="btn btn-sm btn-primary gap-1.5 shrink-0" :disabled="isTestingComfyConnection || !comfyuiUrl.trim()" @click="testComfyConnection">
+                  <span v-if="isTestingComfyConnection" class="loading loading-spinner loading-xs"></span>
+                  <Icon v-else name="mdi:lan-connect" class="w-4 h-4" />
+                  {{ isTestingComfyConnection ? 'Testing' : 'Test & save' }}
+                </button>
+              </div>
+            </div>
+
+            <div v-if="comfyConnectionResult" class="hair-list">
+              <div class="flex items-center gap-2 px-4 py-3 text-[14px] text-fg">
+                <Icon :name="comfyConnectionResult.ok ? 'mdi:check-circle-outline' : 'mdi:alert-circle-outline'" class="w-4 h-4 shrink-0" :class="comfyConnectionResult.ok ? 'text-success' : 'text-error'" />
+                {{ comfyConnectionResult.ok ? 'Connection established' : 'Connection failed' }}
+              </div>
+              <template v-if="comfyConnectionResult.ok">
+                <div class="flex items-center justify-between gap-4 px-4 py-3 text-[13px]">
+                  <span class="text-fg-3">ComfyUI version</span>
+                  <span class="num text-fg">{{ comfyConnectionResult.version }}</span>
+                </div>
+                <div v-if="comfyConnectionResult.devices?.length" class="flex items-start justify-between gap-4 px-4 py-3 text-[13px]">
+                  <span class="text-fg-3 shrink-0">Devices</span>
+                  <span class="text-fg text-right break-words min-w-0">{{ comfyConnectionResult.devices.join(', ') }}</span>
+                </div>
+              </template>
+              <p v-else class="px-4 py-3 text-[13px] text-fg-2 break-words">{{ comfyConnectionResult.error }}</p>
+            </div>
+          </div>
+
+          <!-- Defaults -->
+          <div class="border-t border-line pt-8 space-y-4">
+            <h3 class="section-title">Defaults</h3>
+            <p class="text-[13px] text-fg-3 leading-relaxed">Preselected in the wallpaper dialog. You can still change them per image.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div class="space-y-2">
+                <label for="default-upscale-model" class="micro block">Upscale model</label>
+                <select id="default-upscale-model" v-model="defaultUpscaleModel" class="select select-sm w-full" @change="saveUserSettings">
+                  <option v-for="model in availableUpscaleModels" :key="model.id" :value="model.id">{{ model.name }}</option>
+                </select>
+              </div>
+              <div class="space-y-2">
+                <label for="default-scene-preset" class="micro block">Scene preset</label>
+                <select id="default-scene-preset" v-model="defaultScenePreset" class="select select-sm w-full" @change="saveUserSettings">
+                  <option value="indoor">Indoor (Room / Bed / Interior)</option>
+                  <option value="outdoor">Outdoor (Nature / Landscape / Scenery)</option>
+                  <option value="studio">Studio (Neutral / Minimalist Backdrop)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Requirements -->
+          <div class="border-t border-line pt-8 space-y-4">
+            <h3 class="section-title">Requirements</h3>
+            <p class="text-[13px] text-fg-3 leading-relaxed">
+              The workstation needs the Realistic Vision V5.1 inpainting checkpoint, the SD 1.5 MSE VAE, at least one upscale model and the bundled
+              <span class="font-mono text-fg-2">ComfyUI-EdgePad-Outpaint</span> custom node. The README section "ComfyUI Wallpaper Pipeline" lists every file and where it goes.
+            </p>
           </div>
         </div>
 

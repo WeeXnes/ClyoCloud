@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.0] - 2026-11-04
+
+### Added
+- **AI Wallpaper Pipeline (ComfyUI)**: Brought back the Wallpaper V2 pipeline from the `upscaling-pipeline` branch, rebuilt for the new design. ClyoCloud sends a JPG, PNG or WebP to a ComfyUI workstation, which outpaints it to 16:10, upscales it and keeps the original sharp in the centre. The 2880×1800 result is saved next to the source, tagged, and added to Wallpapers right away.
+  - Uses the unchanged `wallpaper_v2_2880x1800` workflow (Realistic Vision V5.1 Inpainting, `SeamlessPadForOutpaint`, `ColorTransfer`, ESRGAN upscale, high-res centre composite) in `server/workflows/`.
+  - Files: **Create Wallpaper (2880×1800)** in the context menu and file details; **Wallpaper** in the selection bar runs several images one at a time, with an option to apply the same settings to all remaining images, skip, and retry.
+  - Scene presets (Indoor, Outdoor, Studio), selectable upscale model (read live from ComfyUI) and editable prompts.
+  - **Settings → AI Wallpaper Pipeline**: ComfyUI URL with connection test (version, GPU), default model and scene. `COMFYUI_URL` sets a server-wide default.
+  - API: `/api/pipeline/wallpaper-v2`, `/api/pipeline/status`, `/api/pipeline/models`, `/api/pipeline/test-connection`.
+  - The `ComfyUI-EdgePad-Outpaint` custom node is bundled in `comfyui/custom_nodes/`, and the README explains the ComfyUI, model and network setup. `scripts/clyo_comfy_bridge.py` checks connectivity.
+
+### Security
+- The ComfyUI URL must be a plain `http(s)` address without credentials, query or fragment; redirects are not followed and error bodies are truncated.
+- Source images must be inside the user's storage and outside the trash. Model names, scene presets and prompt lengths are validated on the server.
+- One active job per user; outputs are size-limited, checked against the storage quota and disk headroom, and never overwrite an existing file.
+- Job status is only visible to its owner (or an admin); other users get "not found".
+
 ## [2.20.0] - 2026-11-04
 
 ### Changed

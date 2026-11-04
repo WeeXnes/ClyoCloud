@@ -50,6 +50,12 @@ const protectedEndpoints = [
   '/api/thumbnails-status',
   '/api/trash',
   '/api/trash-restore',
+
+  // Pipeline & Upscaling (ComfyUI)
+  '/api/pipeline/wallpaper-v2',
+  '/api/pipeline/status',
+  '/api/pipeline/test-connection',
+  '/api/pipeline/models',
   
   // 2FA Management
   '/api/2fa/disable',

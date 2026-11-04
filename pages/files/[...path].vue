@@ -120,6 +120,268 @@ const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 const contextMenuFile = ref<File | null>(null)
 
+// ComfyUI Wallpaper V2 pipeline
+type ScenePresetId = 'indoor' | 'outdoor' | 'studio'
+interface PipelinePreset { id: ScenePresetId; name: string; description: string; positive: string; negative: string }
+interface UpscaleModelOption { id: string; name: string; scale: number }
+
+const isUpscaling = ref(false)
+const upscaleJob = ref<any>(null)
+const showUpscaleModal = ref(false)
+const upscaleTargetFile = ref<File | null>(null)
+let upscalePollingInterval: ReturnType<typeof setInterval> | null = null
+const selectedUpscaleModel = ref('4x-UltraSharp.pth')
+const selectedScenePreset = ref<ScenePresetId>('indoor')
+const showAdvancedPrompts = ref(false)
+const customPositivePrompt = ref('')
+const customNegativePrompt = ref('')
+
+// Bulk queue: images are processed strictly one after another
+const bulkUpscaleQueue = ref<File[]>([])
+const bulkUpscaleIndex = ref(0)
+const bulkApplyToAll = ref(false)
+const bulkSavedSettings = ref<{
+  modelName: string
+  scenePreset: ScenePresetId
+  promptOverride?: string
+  negativeOverride?: string
+} | null>(null)
+const bulkCompletedCount = ref(0)
+
+const pipelineModelsList = ref<UpscaleModelOption[]>([
+  { id: '4x-UltraSharp.pth', name: '4x-UltraSharp (Recommended)', scale: 4 },
+  { id: 'RealESRGAN_x2plus.pth', name: 'RealESRGAN 2x (Fast)', scale: 2 },
+  { id: '4x_foolhardy_Remacri.pth', name: '4x-Remacri (Smooth)', scale: 4 }
+])
+
+const pipelinePresetsList = ref<PipelinePreset[]>([])
+
+const scenePresetCards: { id: ScenePresetId; label: string; icon: string; hint: string }[] = [
+  { id: 'indoor', label: 'Indoor', icon: 'mdi:sofa-outline', hint: 'Extends room walls, bedding and ambient light. No curtains or clutter.' },
+  { id: 'outdoor', label: 'Outdoor', icon: 'mdi:pine-tree', hint: 'Natural scenery and soft bokeh. Avoids paths and roads.' },
+  { id: 'studio', label: 'Studio', icon: 'mdi:camera-iris', hint: 'Seamless backdrop, smooth gradient, neutral light.' }
+]
+
+const sceneLabel = (id: string) => scenePresetCards.find(p => p.id === id)?.label || id
+const modelLabel = (id: string) => id.replace(/\.(pth|safetensors|pt|bin)$/i, '')
+
+const isUpscaleSupportedFile = (file: File | null) => {
+  if (!file || file.isFolder) return false
+  const ext = file.name.split('.').pop()?.toLowerCase() || ''
+  return ['jpg', 'jpeg', 'png', 'webp'].includes(ext)
+}
+
+const syncPromptsWithPreset = (presetId?: ScenePresetId) => {
+  const preset = pipelinePresetsList.value.find(p => p.id === (presetId || selectedScenePreset.value))
+  if (preset) {
+    customPositivePrompt.value = preset.positive
+    customNegativePrompt.value = preset.negative
+  }
+}
+
+const selectScenePreset = (presetId: ScenePresetId) => {
+  selectedScenePreset.value = presetId
+  syncPromptsWithPreset(presetId)
+}
+
+const fetchPipelineModels = async () => {
+  try {
+    const res = await fetch('/api/pipeline/models', { credentials: 'include' })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.models?.length) {
+        pipelineModelsList.value = data.models
+        if (!data.models.some((m: UpscaleModelOption) => m.id === selectedUpscaleModel.value)) {
+          selectedUpscaleModel.value = data.models[0].id
+        }
+      }
+      if (data.presets?.length) {
+        pipelinePresetsList.value = data.presets
+        syncPromptsWithPreset()
+      }
+    }
+  } catch {}
+}
+
+const stopUpscalePolling = () => {
+  if (upscalePollingInterval) {
+    clearInterval(upscalePollingInterval)
+    upscalePollingInterval = null
+  }
+}
+
+const openUpscaleQueue = (queue: File[]) => {
+  bulkUpscaleQueue.value = queue
+  bulkUpscaleIndex.value = 0
+  bulkApplyToAll.value = false
+  bulkSavedSettings.value = null
+  bulkCompletedCount.value = 0
+  upscaleTargetFile.value = queue[0]
+  upscaleJob.value = null
+  isUpscaling.value = false
+  showUpscaleModal.value = true
+  showContextMenu.value = false
+  if (showFileInfoModal.value) showFileInfoModal.value = false
+  syncPromptsWithPreset()
+}
+
+const triggerWallpaperV2Pipeline = (file: File) => {
+  if (!isUpscaleSupportedFile(file)) return
+  openUpscaleQueue([file])
+}
+
+const openBulkUpscaleModal = () => {
+  if (selectedUpscaleFiles.value.length === 0) {
+    createNotification('No supported images (JPG, PNG, WEBP) selected', NotificationType.WARNING)
+    return
+  }
+  openUpscaleQueue([...selectedUpscaleFiles.value])
+}
+
+const advanceUpscaleQueue = () => {
+  bulkUpscaleIndex.value++
+  upscaleTargetFile.value = bulkUpscaleQueue.value[bulkUpscaleIndex.value]
+  upscaleJob.value = null
+}
+
+const hasNextUpscaleItem = computed(() => bulkUpscaleIndex.value < bulkUpscaleQueue.value.length - 1)
+
+const skipCurrentBulkItem = () => {
+  if (!hasNextUpscaleItem.value) return
+  advanceUpscaleQueue()
+  isUpscaling.value = false
+  syncPromptsWithPreset()
+}
+
+const skipAndContinueBulk = () => {
+  if (!hasNextUpscaleItem.value) return
+  advanceUpscaleQueue()
+  if (bulkApplyToAll.value) {
+    startUpscaleExecution()
+  } else {
+    isUpscaling.value = false
+    syncPromptsWithPreset()
+  }
+}
+
+const startUpscaleExecution = async () => {
+  if (!upscaleTargetFile.value) return
+  const file = upscaleTargetFile.value
+  isUpscaling.value = true
+  upscaleJob.value = null
+
+  // With "apply to all", the first run freezes the chosen settings for the rest of the queue
+  if (bulkApplyToAll.value && !bulkSavedSettings.value) {
+    bulkSavedSettings.value = {
+      modelName: selectedUpscaleModel.value,
+      scenePreset: selectedScenePreset.value,
+      promptOverride: showAdvancedPrompts.value ? customPositivePrompt.value : undefined,
+      negativeOverride: showAdvancedPrompts.value ? customNegativePrompt.value : undefined
+    }
+  }
+
+  const frozen = bulkApplyToAll.value ? bulkSavedSettings.value : null
+  const payload = {
+    filePath: getFolderRelativePath(file),
+    modelName: frozen ? frozen.modelName : selectedUpscaleModel.value,
+    scenePreset: frozen ? frozen.scenePreset : selectedScenePreset.value,
+    promptOverride: frozen ? frozen.promptOverride : (showAdvancedPrompts.value ? customPositivePrompt.value : undefined),
+    negativeOverride: frozen ? frozen.negativeOverride : (showAdvancedPrompts.value ? customNegativePrompt.value : undefined)
+  }
+
+  try {
+    const res = await fetch('/api/pipeline/wallpaper-v2', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.statusMessage || err.message || 'Failed to start pipeline')
+    }
+
+    const data = await res.json()
+    upscaleJob.value = data.job
+
+    stopUpscalePolling()
+    upscalePollingInterval = setInterval(async () => {
+      try {
+        const statusRes = await fetch(`/api/pipeline/status?jobId=${encodeURIComponent(data.job.id)}`, { credentials: 'include' })
+        if (statusRes.status === 404) {
+          stopUpscalePolling()
+          isUpscaling.value = false
+          upscaleJob.value = { status: 'failed', progress: 0, message: 'Job expired', error: 'The job is no longer known to the server.' }
+          return
+        }
+        if (!statusRes.ok) return
+        const statusData = await statusRes.json()
+        upscaleJob.value = statusData.job
+
+        if (statusData.job.status === 'completed') {
+          stopUpscalePolling()
+          bulkCompletedCount.value++
+          await fetchFiles()
+
+          if (hasNextUpscaleItem.value) {
+            if (bulkApplyToAll.value) {
+              advanceUpscaleQueue()
+              upscaleJob.value = {
+                status: 'starting',
+                progress: 5,
+                message: `Starting image ${bulkUpscaleIndex.value + 1} of ${bulkUpscaleQueue.value.length}...`
+              }
+              setTimeout(() => startUpscaleExecution(), 600)
+            } else {
+              isUpscaling.value = false
+              advanceUpscaleQueue()
+              createNotification(
+                `Saved ${statusData.job.outputName}. Configure image ${bulkUpscaleIndex.value + 1} of ${bulkUpscaleQueue.value.length}.`,
+                NotificationType.SUCCESS
+              )
+              syncPromptsWithPreset()
+            }
+          } else {
+            isUpscaling.value = false
+            createNotification(
+              bulkUpscaleQueue.value.length > 1
+                ? `Batch complete. Generated ${bulkCompletedCount.value} wallpaper(s).`
+                : `Wallpaper saved: ${statusData.job.outputName}`,
+              NotificationType.SUCCESS
+            )
+            if (bulkUpscaleQueue.value.length > 1) selectedFiles.value.clear()
+          }
+        } else if (statusData.job.status === 'failed') {
+          stopUpscalePolling()
+          isUpscaling.value = false
+          createNotification(statusData.job.error || 'Wallpaper generation failed', NotificationType.ERROR)
+        }
+      } catch {}
+    }, 1500)
+  } catch (err: any) {
+    isUpscaling.value = false
+    const message = err?.message || 'Could not connect to ComfyUI'
+    upscaleJob.value = { status: 'failed', progress: 0, message, error: message }
+    createNotification(message, NotificationType.ERROR)
+  }
+}
+
+const closeUpscaleModal = () => {
+  if (isUpscaling.value && !confirm('A wallpaper is still being generated. It keeps running on the server, but this batch will stop. Close anyway?')) {
+    return
+  }
+  stopUpscalePolling()
+  showUpscaleModal.value = false
+  upscaleJob.value = null
+  isUpscaling.value = false
+  bulkUpscaleQueue.value = []
+  bulkUpscaleIndex.value = 0
+  bulkApplyToAll.value = false
+  bulkSavedSettings.value = null
+  bulkCompletedCount.value = 0
+}
+
 const openCreateFolderModal = () => {
   newFolderName.value = ''
   showCreateFolderModal.value = true
@@ -175,6 +437,12 @@ const sortedFiles = computed(() => {
     return a.name.localeCompare(b.name)
   })
 })
+
+const selectedUpscaleFiles = computed(() => {
+  if (selectedFiles.value.size === 0) return []
+  return sortedFiles.value.filter(f => selectedFiles.value.has(f.name) && isUpscaleSupportedFile(f))
+})
+
 const toggleSelection = (fileName: string) => {
   if (selectedFiles.value.has(fileName)) {
     selectedFiles.value.delete(fileName)
@@ -419,6 +687,8 @@ const fetchUserSettings = async () => {
       mobileAutoPreview.value = data.mobileAutoPreview ?? true
       selectedShortsPaths.value = data.selectedShortsPaths || []
       imageViewerMobileFullscreen.value = data.imageViewerMobileFullscreen ?? false
+      if (data.defaultUpscaleModel) selectedUpscaleModel.value = data.defaultUpscaleModel
+      if (['indoor', 'outdoor', 'studio'].includes(data.defaultScenePreset)) selectedScenePreset.value = data.defaultScenePreset
     }
   } catch (err) {
     console.error('Error fetching user settings:', err)
@@ -1102,6 +1372,13 @@ const handleContextAction = (action: string) => {
     case 'wallpaper':
       toggleWallpaper(file)
       break
+    case 'wallpaper-v2':
+      if (selectedFiles.value.has(file.name) && selectedUpscaleFiles.value.length > 1) {
+        openBulkUpscaleModal()
+      } else {
+        triggerWallpaperV2Pipeline(file)
+      }
+      break
     case 'delete':
       deleteFile(file)
       break
@@ -1170,6 +1447,7 @@ onMounted(async () => {
   await fetchFiles()
   await fetchPredefinedTags()
   await fetchUserSettings()
+  await fetchPipelineModels()
   updateItemsPerRow()
   checkMobile()
   if (isMobile.value && mobileAutoPreview.value) setupObserver()
@@ -1191,6 +1469,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleMainScroll)
   window.removeEventListener('keydown', handleKeydown)
   if (observer) observer.disconnect()
+  stopUpscalePolling()
   if (document.fullscreenElement && document.exitFullscreen) {
     document.exitFullscreen().catch(() => {})
   }
@@ -1929,6 +2208,14 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
           </div>
           
           <div class="flex items-center gap-2 shrink-0">
+            <button
+              v-if="selectedUpscaleFiles.length > 0"
+              class="btn btn-xs btn-ghost gap-2"
+              title="Create 2880x1800 wallpapers from the selected images"
+              @click="openBulkUpscaleModal"
+            >
+              <Icon name="mdi:auto-fix" class="w-3.5 h-3.5" /> Wallpaper <span class="num text-fg-3">{{ selectedUpscaleFiles.length }}</span>
+            </button>
             <button class="btn btn-xs btn-ghost gap-2" @click="bulkDownload">
               <Icon name="mdi:download" class="w-3.5 h-3.5" /> Download
             </button>
@@ -2250,6 +2537,12 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
               {{ contextMenuFile?.meta.isWallpaper ? 'Remove from Wallpapers' : 'Select as Wallpaper' }}
             </a>
           </li>
+          <li v-if="isUpscaleSupportedFile(contextMenuFile)">
+            <a class="py-2.5 px-4 hover:text-fg transition-colors cursor-pointer" @click="handleContextAction('wallpaper-v2')">
+              <Icon name="mdi:auto-fix" class="w-4 h-4 text-fg" />
+              {{ contextMenuFile && selectedFiles.has(contextMenuFile.name) && selectedUpscaleFiles.length > 1 ? `Create ${selectedUpscaleFiles.length} Wallpapers` : 'Create Wallpaper (2880×1800)' }}
+            </a>
+          </li>
           <li><a class="py-2.5 px-4" @click="handleContextAction('download')"><Icon name="mdi:download" class="w-4 h-4 text-success" /> Download</a></li>
           <div class="h-px bg-surface-2 mx-2 my-1"></div>
           <li><a class="py-2.5 px-4 text-error" @click="handleContextAction('delete')"><Icon name="mdi:delete" class="w-4 h-4" /> Delete</a></li>
@@ -2395,6 +2688,18 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
                     @click="toggleWallpaper(selectedFile)"
                   >
                     <Icon :name="selectedFile.meta.isWallpaper ? 'mdi:wallpaper' : 'mdi:image-outline'" class="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div v-if="isUpscaleSupportedFile(selectedFile)" class="flex items-center justify-between gap-3 px-4 py-3">
+                  <div>
+                    <span class="text-[14px] text-fg">Wallpaper V2</span>
+                    <p class="text-[13px] text-fg-3">Outpaint and upscale to 2880×1800 with ComfyUI</p>
+                  </div>
+                  <button class="btn btn-xs gap-1.5 shrink-0" :disabled="isUpscaling" @click="triggerWallpaperV2Pipeline(selectedFile)">
+                    <span v-if="isUpscaling" class="loading loading-spinner loading-xs"></span>
+                    <Icon v-else name="mdi:auto-fix" class="w-3.5 h-3.5" />
+                    {{ isUpscaling ? 'Running' : 'Create' }}
                   </button>
                 </div>
 
@@ -2924,6 +3229,214 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
             <button class="btn btn-primary btn-sm" @click="bulkAddTags">Apply Selection</button>
             <button class="btn btn-ghost btn-sm" @click="showNewTagForm = true">New Tag</button>
             <button class="btn btn-ghost btn-sm text-error" @click="closeTagModal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ComfyUI Wallpaper V2 Pipeline Modal -->
+    <div v-if="showUpscaleModal" class="modal modal-open" @click="!isUpscaling && closeUpscaleModal()">
+      <div class="modal-box p-0 max-w-lg overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-line flex items-start justify-between gap-4 shrink-0">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h3 class="section-title">Wallpaper V2</h3>
+              <span class="badge num">2880×1800</span>
+              <span v-if="bulkUpscaleQueue.length > 1" class="badge num">{{ bulkUpscaleIndex + 1 }} / {{ bulkUpscaleQueue.length }}</span>
+            </div>
+            <p class="text-[13px] text-fg-3 truncate mt-0.5">{{ upscaleTargetFile?.name }}</p>
+          </div>
+          <button class="btn btn-ghost btn-xs btn-circle shrink-0" aria-label="Close" @click="closeUpscaleModal">
+            <Icon name="mdi:close" class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-6 overflow-y-auto flex-1">
+          <!-- Source preview -->
+          <div class="rounded-lg overflow-hidden border border-line bg-black aspect-video relative">
+            <img v-if="upscaleTargetFile" :src="getStaticUrl(upscaleTargetFile)" class="w-full h-full object-contain" alt="" />
+            <div class="absolute inset-x-0 bottom-0 px-3 py-2 flex items-center justify-between gap-2 bg-gradient-to-t from-black/80 to-transparent">
+              <span class="micro !text-white/80">Source</span>
+              <span class="micro !text-white/80 truncate">{{ sceneLabel(selectedScenePreset) }} · {{ modelLabel(selectedUpscaleModel) }}</span>
+            </div>
+          </div>
+
+          <!-- Settings (before generation) -->
+          <div v-if="!isUpscaling && !upscaleJob" class="space-y-6">
+            <label v-if="bulkUpscaleQueue.length > 1" for="bulk-apply-all-checkbox" class="hair-list flex items-start gap-3 px-4 py-3 cursor-pointer select-none">
+              <input id="bulk-apply-all-checkbox" v-model="bulkApplyToAll" type="checkbox" class="checkbox checkbox-sm mt-0.5" />
+              <span class="flex-1 min-w-0">
+                <span class="flex items-center justify-between gap-2">
+                  <span class="text-[14px] text-fg">Apply to all remaining images</span>
+                  <span class="num text-[12px] text-fg-3">{{ bulkUpscaleQueue.length - bulkUpscaleIndex }} left</span>
+                </span>
+                <span class="block text-[13px] text-fg-3">Runs the rest of the queue one by one with these settings.</span>
+              </span>
+            </label>
+
+            <!-- Scene -->
+            <div class="space-y-3">
+              <span class="micro block">Scene</span>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  v-for="preset in scenePresetCards"
+                  :key="preset.id"
+                  type="button"
+                  class="text-left p-3 rounded-lg border transition-colors"
+                  :class="selectedScenePreset === preset.id ? 'border-fg bg-surface-2' : 'border-line hover:border-line-strong'"
+                  :aria-pressed="selectedScenePreset === preset.id"
+                  @click="selectScenePreset(preset.id)"
+                >
+                  <span class="flex items-center justify-between gap-2">
+                    <span class="flex items-center gap-1.5 text-[14px] text-fg">
+                      <Icon :name="preset.icon" class="w-4 h-4" />
+                      {{ preset.label }}
+                    </span>
+                    <Icon v-if="selectedScenePreset === preset.id" name="mdi:check" class="w-4 h-4 text-fg" />
+                  </span>
+                  <span class="block text-[12px] leading-snug text-fg-3 mt-1">{{ preset.hint }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Upscale model -->
+            <div class="space-y-2">
+              <label for="upscale-model-select" class="micro block">Upscale model</label>
+              <select id="upscale-model-select" v-model="selectedUpscaleModel" class="select select-sm w-full">
+                <option v-for="m in pipelineModelsList" :key="m.id" :value="m.id">{{ m.name }}</option>
+              </select>
+            </div>
+
+            <!-- Advanced prompts -->
+            <div class="hair-list">
+              <button
+                type="button"
+                class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-surface-2 transition-colors"
+                :aria-expanded="showAdvancedPrompts"
+                @click="showAdvancedPrompts = !showAdvancedPrompts"
+              >
+                <span class="text-[14px] text-fg">Custom prompts</span>
+                <span class="flex items-center gap-2">
+                  <span v-if="showAdvancedPrompts" class="flex items-center gap-1.5 text-[12px] text-fg-2"><span class="dot text-success"></span>In use</span>
+                  <Icon :name="showAdvancedPrompts ? 'mdi:chevron-up' : 'mdi:chevron-down'" class="w-4 h-4 text-fg-3" />
+                </span>
+              </button>
+              <div v-if="showAdvancedPrompts" class="px-4 py-4 space-y-4">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label for="upscale-positive-prompt" class="micro">Positive prompt</label>
+                    <button type="button" class="btn btn-ghost btn-xs" @click="syncPromptsWithPreset()">Reset to preset</button>
+                  </div>
+                  <textarea
+                    id="upscale-positive-prompt"
+                    v-model="customPositivePrompt"
+                    rows="3"
+                    maxlength="4000"
+                    class="textarea w-full font-mono text-[12px] leading-relaxed"
+                    placeholder="How the background should be extended"
+                  ></textarea>
+                </div>
+                <div class="space-y-2">
+                  <label for="upscale-negative-prompt" class="micro block">Negative prompt</label>
+                  <textarea
+                    id="upscale-negative-prompt"
+                    v-model="customNegativePrompt"
+                    rows="3"
+                    maxlength="4000"
+                    class="textarea w-full font-mono text-[12px] leading-relaxed"
+                    placeholder="What to keep out, e.g. curtains, paths, duplicate person"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div v-if="isUpscaling || upscaleJob" class="space-y-3">
+            <div v-if="bulkUpscaleQueue.length > 1" class="flex items-center justify-between text-[13px] text-fg-2 pb-3 border-b border-line">
+              <span>Batch</span>
+              <span class="num">{{ bulkUpscaleIndex + 1 }} of {{ bulkUpscaleQueue.length }} · {{ bulkCompletedCount }} done</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2 min-w-0">
+                <span v-if="isUpscaling" class="loading loading-spinner loading-xs shrink-0"></span>
+                <Icon v-else-if="upscaleJob?.status === 'completed'" name="mdi:check-circle" class="w-4 h-4 text-success shrink-0" />
+                <Icon v-else-if="upscaleJob?.status === 'failed'" name="mdi:alert-circle" class="w-4 h-4 text-error shrink-0" />
+                <span class="text-[14px] text-fg truncate">{{ upscaleJob?.message || 'Connecting to ComfyUI...' }}</span>
+              </div>
+              <span class="num text-[13px] text-fg-2 shrink-0">{{ upscaleJob?.progress || (isUpscaling ? 15 : 0) }}%</span>
+            </div>
+
+            <div class="h-1 w-full bg-surface-2 rounded-full overflow-hidden" role="progressbar" :aria-valuenow="upscaleJob?.progress || 0" aria-valuemin="0" aria-valuemax="100">
+              <div
+                class="h-full bg-invert rounded-full transition-[width] duration-500 ease-out"
+                :style="{ width: `${upscaleJob?.progress || (isUpscaling ? 15 : 0)}%` }"
+              ></div>
+            </div>
+
+            <div class="flex items-center justify-between micro">
+              <span>{{ sceneLabel(bulkSavedSettings?.scenePreset || selectedScenePreset) }}</span>
+              <span>{{ modelLabel(bulkSavedSettings?.modelName || selectedUpscaleModel) }}</span>
+            </div>
+          </div>
+
+          <!-- Error -->
+          <div v-if="upscaleJob?.status === 'failed'" class="alert items-start text-[13px]">
+            <Icon name="mdi:alert-circle-outline" class="w-4 h-4 shrink-0 mt-0.5 text-error" />
+            <div class="space-y-1 min-w-0">
+              <p class="text-fg">Generation failed</p>
+              <p class="break-words">{{ upscaleJob.error }}</p>
+              <p class="text-fg-3">Check that ComfyUI is running and the URL under <NuxtLink to="/settings?cat=pipeline" class="underline hover:text-fg">Settings → AI Wallpaper Pipeline</NuxtLink> is correct.</p>
+            </div>
+          </div>
+
+          <!-- Success -->
+          <div v-if="upscaleJob?.status === 'completed'" class="alert items-start text-[13px]">
+            <Icon name="mdi:check-circle-outline" class="w-4 h-4 shrink-0 mt-0.5 text-success" />
+            <div class="space-y-1 min-w-0">
+              <p class="text-fg">{{ bulkUpscaleQueue.length > 1 ? 'All wallpapers saved' : 'Wallpaper saved' }}</p>
+              <p class="break-words">
+                <span v-if="bulkUpscaleQueue.length > 1" class="num">{{ bulkCompletedCount }} / {{ bulkUpscaleQueue.length }} · </span>
+                <span class="font-mono">{{ upscaleJob.outputName }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-line flex items-center justify-between gap-3 shrink-0">
+          <button v-if="upscaleJob?.status !== 'completed'" class="btn btn-sm btn-ghost" @click="closeUpscaleModal">
+            Cancel
+          </button>
+          <span v-else></span>
+          <div class="flex items-center gap-2">
+            <button
+              v-if="!isUpscaling && !upscaleJob && bulkUpscaleQueue.length > 1 && hasNextUpscaleItem"
+              class="btn btn-sm btn-ghost"
+              @click="skipCurrentBulkItem"
+            >
+              Skip
+            </button>
+            <button v-if="!isUpscaling && !upscaleJob" class="btn btn-sm btn-primary gap-1.5" @click="startUpscaleExecution">
+              <Icon name="mdi:auto-fix" class="w-4 h-4" />
+              {{ bulkApplyToAll ? `Generate all (${bulkUpscaleQueue.length - bulkUpscaleIndex})` : (bulkUpscaleQueue.length > 1 ? `Generate ${bulkUpscaleIndex + 1} of ${bulkUpscaleQueue.length}` : 'Generate') }}
+            </button>
+            <button
+              v-if="upscaleJob?.status === 'failed' && bulkUpscaleQueue.length > 1 && hasNextUpscaleItem"
+              class="btn btn-sm"
+              @click="skipAndContinueBulk"
+            >
+              Skip &amp; next
+            </button>
+            <button v-if="upscaleJob?.status === 'failed'" class="btn btn-sm btn-primary gap-1.5" @click="startUpscaleExecution">
+              <Icon name="mdi:refresh" class="w-4 h-4" />
+              Retry
+            </button>
+            <button v-else-if="upscaleJob?.status === 'completed'" class="btn btn-sm btn-primary" @click="closeUpscaleModal">
+              Done
+            </button>
           </div>
         </div>
       </div>
