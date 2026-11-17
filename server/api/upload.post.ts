@@ -1,15 +1,19 @@
 import { createWriteStream, createReadStream } from 'fs'
-import { mkdir } from 'fs/promises'
+import { mkdir, rm } from 'fs/promises'
 import { defineEventHandler, createError } from 'h3'
 import { IncomingForm, Fields, Files } from 'formidable'
 import path, { join, resolve } from 'path'
 import { isPathWithin, isTrashPath, clearUserCache } from '~/server/utils/fileUtils'
 import { checkDiskHeadroom, checkUserQuota } from '~/server/utils/storageQuota'
+import { reconcilePath } from '~/server/utils/tagCache'
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const userStoragePath = path.join(config.storagePath, event.context.user.name)
     const maxFileSize = config.maxFileSize || 500 * 1024 * 1024 // Default to 500MB
+
+    // formidable's temp copies; always removed, whether the upload succeeds or not
+    let tempFiles: string[] = []
 
     try {
         const form = new IncomingForm({
@@ -30,6 +34,7 @@ export default defineEventHandler(async (event) => {
 
         const folderPath = Array.isArray(fields.path) ? fields.path[0] : fields.path || ''
         const uploadedFiles = Array.isArray(files.files) ? files.files : files.files ? [files.files] : []
+        tempFiles = Object.values(files).flat().filter(Boolean).map((f: any) => f.filepath).filter(Boolean)
 
         if (uploadedFiles.length === 0) {
             console.error('Files field missing or empty')
@@ -102,8 +107,8 @@ export default defineEventHandler(async (event) => {
 
             const relativePath = path.relative(userStoragePath, resolvedPath).replace(/\\/g, '/')
             
-            // Initial cache update for the uploaded file
-            await updateFileInCache(event.context.user.name, relativePath, { tags: [] })
+            // Re-read the file's sidecar (a replaced file keeps its tags, favourite and wallpaper flags)
+            await reconcilePath(event.context.user.name, relativePath, false)
 
             await logActivity(event.context.user.name, 'UPLOAD', relativePath, undefined, event)
         }
@@ -117,5 +122,7 @@ export default defineEventHandler(async (event) => {
             statusCode: error.statusCode || (error.code === 'ERR_FORM_TOO_LARGE' ? 413 : 500),
             statusMessage: error.statusMessage || error.message || `File too large. Maximum allowed size is ${maxFileSize / 1024 / 1024} MB`,
         })
+    } finally {
+        await Promise.all(tempFiles.map(f => rm(f, { force: true }).catch(() => {})))
     }
 })

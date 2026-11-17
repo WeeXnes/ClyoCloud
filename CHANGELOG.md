@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.3] - 2026-11-18
+
+### Fixed
+- **Media tab loading**: `/api/videos` walked the whole storage again every 30 seconds, so on a large storage the Media tab in the app (and "Load more") could spin until it timed out. The list now stays cached until files change, concurrent requests share one scan, and while a rescan runs requests get the last known list after at most 4 seconds instead of waiting.
+- **Uploads leaked temporary files**: every upload left its temporary copy in the system temp folder. They are now removed, also when an upload fails.
+- **Re-uploading a file dropped its tags** from tag search and collections until the next rescan; the file's metadata is now re-read after upload.
+- WebP images get thumbnails (they returned an error before).
+- File browser: the drag-select rectangle is see-through with a thin border and no longer covers menus and the header.
+
 ## [2.21.2] - 2026-11-04
 
 ### Fixed

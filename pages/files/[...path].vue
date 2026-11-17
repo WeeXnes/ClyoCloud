@@ -2088,12 +2088,15 @@ const handleDropToFolder = async (event: DragEvent, folder: File) => {
   <div class="min-h-screen bg-base-100" :class="{ 'select-none': isSelecting }" @mousedown="handleMouseDown">
     <!-- Selection Box -->
     <div v-if="isSelecting" 
-         class="fixed border-2 border-fg bg-surface-2 z-[100] pointer-events-none"
+         class="fixed z-30 pointer-events-none"
          :style="{
            left: selectionBox.x + 'px',
            top: selectionBox.y + 'px',
            width: selectionBox.width + 'px',
-           height: selectionBox.height + 'px'
+           height: selectionBox.height + 'px',
+           background: 'color-mix(in srgb, var(--text) 6%, transparent)',
+           border: '1px solid color-mix(in srgb, var(--text) 35%, transparent)',
+           borderRadius: '4px'
          }">
     </div>
     <!-- Edge-to-Edge Sticky Header -->

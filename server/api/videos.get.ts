@@ -5,7 +5,47 @@ import type { Video, FileMeta, ShortMedia, SlideshowMedia } from '~/types/File'
 import { isPathWithin } from '~/server/utils/fileUtils'
 import { mediaCache, mediaCacheKey, setMediaCache } from '~/server/utils/mediaCache'
 
-const CACHE_TTL = 30 * 1000; // 30 seconds cache
+// Changes made through ClyoCloud and by the storage watcher clear the cache, so it can live long
+const CACHE_TTL = 10 * 60 * 1000;
+// How long a request waits for a rescan before answering with the last known list
+const MAX_WAIT_FOR_RESCAN_MS = 4000;
+
+// Last completed scan per user and folder. Unlike mediaCache it survives invalidation, so a
+// request can be answered at once while a fresh scan runs, instead of waiting for a full walk.
+const lastScan = new Map<string, ShortMedia[]>();
+const scansInFlight = new Map<string, Promise<ShortMedia[]>>();
+
+function scanShared(cacheKey: string, fullPath: string, userStoragePath: string): Promise<ShortMedia[]> {
+    const running = scansInFlight.get(cacheKey);
+    if (running) return running;
+    const scan = scanMedia(fullPath, userStoragePath)
+        .then((items) => {
+            setMediaCache(cacheKey, items);
+            lastScan.delete(cacheKey);
+            if (lastScan.size >= 200) lastScan.delete(lastScan.keys().next().value as string);
+            lastScan.set(cacheKey, items);
+            return items;
+        })
+        .finally(() => scansInFlight.delete(cacheKey));
+    scansInFlight.set(cacheKey, scan);
+    return scan;
+}
+
+/** Fresh cache, else a rescan that finishes quickly, else the last known list, else wait for the first scan. */
+async function getMedia(cacheKey: string, fullPath: string, userStoragePath: string): Promise<ShortMedia[]> {
+    const cached = mediaCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.items;
+
+    const scan = scanShared(cacheKey, fullPath, userStoragePath);
+    const previous = lastScan.get(cacheKey);
+    if (!previous) return scan;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), MAX_WAIT_FOR_RESCAN_MS); });
+    const result = await Promise.race([scan, timeout]);
+    clearTimeout(timer);
+    return result ?? previous;
+}
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -118,14 +158,7 @@ export default defineEventHandler(async (event): Promise<ShortMedia[]> => {
 
         // Keyed by sub-path too: a scan of one folder must not answer requests for another
         const cacheKey = mediaCacheKey(username, path.relative(userStoragePath, fullPath));
-        const cached = mediaCache.get(cacheKey);
-
-        if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-            items = cached.items;
-        } else {
-            items = await scanMedia(fullPath, userStoragePath);
-            setMediaCache(cacheKey, items);
-        }
+        items = await getMedia(cacheKey, fullPath, userStoragePath);
 
         const query = getQuery(event);
         const search = query.search ? query.search.toString().toLowerCase() : '';
