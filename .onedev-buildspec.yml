@@ -260,3 +260,25 @@ jobs:
   includeUpstreamWhenRebuild: false
   includeDownstreamWhenRebuild: false
   timeout: 14400
+- name: Mirror to GitHub
+  jobExecutor: Builder
+  steps:
+  - type: PushRepository
+    name: push to github.com/WeeXnes/ClyoCloud
+    remoteUrl: https://github.com/WeeXnes/ClyoCloud.git
+    userName: WeeXnes
+    passwordSecret: github-mirror-token
+    force: false
+    condition: SUCCESSFUL
+    optional: false
+  triggers:
+  - type: BranchUpdateTrigger
+    projects: ClyoCloud
+  - type: TagCreateTrigger
+    projects: ClyoCloud
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  includeUpstreamWhenRebuild: false
+  includeDownstreamWhenRebuild: false
+  timeout: 3600
