@@ -1,6 +1,7 @@
-version: 53
+version: 59
 jobs:
 - name: Build & Test
+  executeInSandbox: false
   jobExecutor: Builder
   steps:
   - type: CheckoutStep
@@ -173,12 +174,13 @@ jobs:
     branches: master
     userMatch: anyone
   retryCondition: never
-  maxRetries: 3
+  maxAttempts: 4
   retryDelay: 30
   includeUpstreamWhenRebuild: false
   includeDownstreamWhenRebuild: false
   timeout: 14400
 - name: Deploy to Server
+  executeInSandbox: false
   jobExecutor: ClyoCloud
   steps:
   - type: CommandStep
@@ -202,12 +204,13 @@ jobs:
     branches: master
     projects: ClyoCloud
   retryCondition: never
-  maxRetries: 3
+  maxAttempts: 4
   retryDelay: 30
   includeUpstreamWhenRebuild: false
   includeDownstreamWhenRebuild: false
   timeout: 14400
 - name: Release Stable AUR
+  executeInSandbox: false
   jobExecutor: Builder
   steps:
   - type: CheckoutStep
@@ -255,12 +258,13 @@ jobs:
     branches: master
     projects: ClyoCloud
   retryCondition: never
-  maxRetries: 3
+  maxAttempts: 4
   retryDelay: 30
   includeUpstreamWhenRebuild: false
   includeDownstreamWhenRebuild: false
   timeout: 14400
 - name: Mirror to GitHub
+  executeInSandbox: false
   jobExecutor: Builder
   steps:
   - type: PushRepository
@@ -277,7 +281,7 @@ jobs:
   - type: TagCreateTrigger
     projects: ClyoCloud
   retryCondition: never
-  maxRetries: 3
+  maxAttempts: 4
   retryDelay: 30
   includeUpstreamWhenRebuild: false
   includeDownstreamWhenRebuild: false
