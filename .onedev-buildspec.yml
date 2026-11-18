@@ -273,7 +273,7 @@ jobs:
     optional: false
   triggers:
   - type: BranchUpdateTrigger
-    projects: ClyoCloud
+    userMatch: anyone
   - type: TagCreateTrigger
     projects: ClyoCloud
   retryCondition: never
